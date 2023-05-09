@@ -1,0 +1,4 @@
+config TEST_FAB
+	bool "FAB"
+	help
+	fabric accessibility and baudwidth for key memory region

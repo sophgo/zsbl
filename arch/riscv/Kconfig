@@ -1,0 +1,56 @@
+menu "RISC-V Options"
+
+config RAM_START
+	hex "RAM Start"
+	help
+		RAM where this program run on
+
+config RAM_SIZE
+	hex "RAM Size"
+	help
+		RAM size that this program never exceed
+
+config ROM_BOOT
+	bool "Boot from ROM"
+	default n
+	help
+		Boot from rom. eg on chip bootrom or external spi flash
+
+if ROM_BOOT
+
+config ROM_START
+	hex "ROM Start"
+	help
+		ROM where this program load
+
+config ROM_SIZE
+	hex "ROM Size"
+	help
+		ROM size that this program never exceed
+
+endif
+
+config ARCH_SET_TIMER_FREQ
+	bool "Setup Arch Timer Frequency"
+	help
+		set arch timer frequency instead of using the default one.
+
+if ARCH_SET_TIMER_FREQ
+config ARCH_TIMER_FREQ
+	int "Arch Timer Frequency"
+	help
+		risc-v mtime timer frequency, it is usually 50MHz.
+endif
+
+config SUPPORT_SMP
+	bool "Wther support multiple core"
+	default n
+
+if SUPPORT_SMP
+config SMP_NUM
+	int "smp num"
+	help
+		the cpu numbers
+endif
+
+endmenu

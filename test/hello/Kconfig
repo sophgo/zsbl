@@ -1,0 +1,4 @@
+config TEST_HELLO
+	bool "HelloWorld"
+	help
+	sample testcase, you can use this as a testcase template

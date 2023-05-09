@@ -1,0 +1,4 @@
+config TEST_ARCH_TIMER
+	bool "Arch Timer"
+	help
+	arch timer test case

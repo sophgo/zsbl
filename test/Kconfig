@@ -1,0 +1,17 @@
+menuconfig TEST
+	bool "Test Mode"
+	help
+	enter test mode instead of real firmware function
+
+if TEST
+source "test/arch_timer/Kconfig"
+source "test/gic/Kconfig"
+source "test/fab/Kconfig"
+source "test/hello/Kconfig"
+source "test/smp/Kconfig"
+source "test/sd/Kconfig"
+source "test/fat32/Kconfig"
+source "test/spi-flash/Kconfig"
+source "test/riscv_exception/Kconfig"
+endif
+

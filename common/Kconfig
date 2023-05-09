@@ -1,0 +1,63 @@
+menu "Common Features"
+
+config DEBUG
+	bool "Enable Debug"
+	help
+	Generate executable file for debug
+
+config DEBUG_INFO
+	bool "Compile With Debug Info"
+	help
+	choosing this option will pass "-g" to your compiler, debug information
+	should be added into final elf file.
+
+choice
+	prompt "Compiler Optimization Level"
+	default CC_OPTIMIZE_FOR_PERFORMANCE
+
+config CC_OPTIMIZE_NONE
+	bool "Optimize Nothing (-O0)"
+	help
+	choosing this option will pass "-O0" to your compiler. compiler should
+	not optimize your program. this is for debug purpose. eg. using gdb
+	
+config CC_OPTIMIZE_FOR_PERFORMANCE
+	bool "Optimize for Performance (-O2)"
+	help
+	this is the default optimization level, building
+	with the "-O2" compiler flag for best performance and most
+	helpful compile-time warnings.
+
+config CC_OPTIMIZE_FOR_PERFORMANCE_O3
+	bool "Optimize More for Performance (-O3)"
+	depends on ARC
+	help
+	choosing this option will pass "-O3" to your compiler,
+	yet more for performance.
+
+config CC_OPTIMIZE_FOR_SIZE
+	bool "Optimize for Size (-Os)"
+	help
+	choosing this option will pass "-Os" to your compiler resulting
+	in a smaller executable file.
+
+endchoice
+
+config LIBS
+	string "External Library File"
+	help
+	external library, seperated by space. put static library full name here.
+	eg. foo/bar/libsome-lib.a
+
+config MMIO
+	bool "IO Safty Memory Operations"
+	default n
+	help
+	normally memset, memcpy and memmove assume memory regions are normal
+	memory, unaligned access is allowed. but for ram that mapped as device
+	memory by mmu, unaligned access is not allowed. memory access to those
+	regions are strictly aligned to natural boundary. enable this, if you
+	want access such regions using normal memset, memcpy or memmove. it
+	may speedup operations in most conditions.
+
+endmenu

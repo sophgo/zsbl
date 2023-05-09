@@ -1,0 +1,6 @@
+
+menu "Serial Ports"
+source "drivers/serial/pl01/Kconfig"
+source "drivers/serial/ns16550/Kconfig"
+endmenu
+

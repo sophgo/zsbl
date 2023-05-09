@@ -1,0 +1,4 @@
+config DRIVER_SD
+	bool "SD"
+	help
+	bitmain SD controller driver

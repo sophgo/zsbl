@@ -1,0 +1,4 @@
+config TEST_SPI_FLASH
+	bool "spi flash test"
+	help
+	use to test the function of spiflash

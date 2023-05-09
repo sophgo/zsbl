@@ -1,0 +1,4 @@
+config DRIVER_EFUSE
+	bool "eFuse"
+	help
+	bitmain eFuse controller driver

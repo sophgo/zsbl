@@ -1,0 +1,4 @@
+config TEST_RISCV_EXCEPTION
+	bool "riscv exception"
+	help
+	  qemu machine virt test riscv exception

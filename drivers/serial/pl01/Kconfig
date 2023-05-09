@@ -1,0 +1,4 @@
+config DRIVER_SERIAL_PL01
+	bool	"PL01x Serial Port Support"
+	help
+		pl01x serial port support

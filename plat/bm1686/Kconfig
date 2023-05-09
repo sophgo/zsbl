@@ -1,0 +1,21 @@
+choice
+	prompt "Work Mode"
+	default PLAT_BM1686_FORCE_WORK_MODE_AUTO
+
+config PLAT_BM1686_FORCE_WORK_MODE_SOC
+	bool "SoC"
+	help
+	Force BM1686 working at SoC mode
+
+config PLAT_BM1686_FORCE_WORK_MODE_PCIE
+	bool "PCIe"
+	help
+	Force BM1686 working at PCIe mode
+
+config PLAT_BM1686_FORCE_WORK_MODE_AUTO
+	bool "Auto"
+	help
+	Select a suitable working mode
+
+endchoice
+

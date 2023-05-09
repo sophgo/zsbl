@@ -1,0 +1,41 @@
+#!/bin/bash
+
+function help()
+{
+    echo 'bin2head INPUT-FILE OUTPUT-FILE VARIABLE-NAME'
+}
+
+if [[ $# != 3 ]]; then
+    echo 'invalid arguments'
+    help
+    exit 1
+fi
+
+input=$1
+output=$2
+
+variable=$3
+output_basename=`basename $output`
+macro=__`echo ${output_basename%.*} | tr '[:lower:]' '[:upper:]'`_H__
+date=`TZ=Asia/Shanghai date -R`
+
+echo "#ifndef $macro" > $output
+echo "#define $macro" >> $output
+
+echo '' >> $output
+
+echo "const unsigned int $variable[] = {" >> $output
+hexdump -v -e '1/4 "0x%08x,\n"' $input >> $output
+echo "};" >> $output
+
+echo '' >> $output
+
+echo "const char firmware_release_date[] = \"$date\";" >> $output
+
+echo '' >> $output
+
+echo "#endif" >> $output
+
+# hexdump may have a bug, escape character "\t" is interpreted as '\t' 't'
+# so just donot use escape in hexdump, just append '\t' by sed
+sed -i -e 's/^0x/\t0x/' $output

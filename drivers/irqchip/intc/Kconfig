@@ -1,0 +1,4 @@
+config DRIVER_IRQCHIP_INTC
+	bool "BM1686 Interrupt Controller"
+	help
+	based on designware ictl, it chains two ictl togather.

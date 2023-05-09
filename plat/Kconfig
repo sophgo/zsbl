@@ -1,0 +1,60 @@
+menu "Platform"
+
+choice
+	prompt "Platform"
+
+config PLAT_QEMU
+	bool "QEMU"
+
+config PLAT_BM1686
+	bool "BM1686"
+
+config PLAT_SG2042
+	bool "SG2042"
+
+endchoice
+
+if PLAT_BM1686
+source "plat/bm1686/Kconfig"
+endif
+
+config PLAT
+	string
+	default "BM1686" if PLAT_BM1686
+	default "QEMU" if PLAT_QEMU
+	default "SG2042" if PLAT_SG2042
+	default "unknown-platform"
+
+choice
+	prompt "Target"
+
+config TARGET_EMULATOR
+	bool "EDA Emulator"
+	help
+	ic design EDA emulation
+
+config TARGET_PALLADIUM
+	bool "Cadence Palladium"
+	help
+	cadence palladium emulation
+
+config TARGET_FPGA
+	bool "FPGA"
+	help
+	FPGA emulation
+
+config TARGET_ASIC
+	bool "ASIC"
+	help
+	real chip
+
+endchoice
+
+config TARGET
+	string
+	default "ASIC" if TARGET_ASIC
+	default "FPGA" if TARGET_FPGA
+	default "PALLADIUM" if TARGET_PALLADIUM
+	default "EMULATOR" if TARGET_EMULATOR
+
+endmenu
