@@ -9,7 +9,7 @@ _start:
 	li	t0, 0x70013
 	csrw	CSR_MCOR, t0
 
-	li	t0, 0x11ff
+	li	t0, 0x11ef
 	csrw	CSR_MHCR, t0
 
 	li	t0, 0xe0410009
