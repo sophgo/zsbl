@@ -19,8 +19,15 @@ typedef struct {
 } ddr_info;
 
 typedef struct {
+	uint64_t mac0;
+	uint64_t mac1;
+	uint8_t sn[32];
+	char *dtb_name;
+	uint64_t dtb_addr;
+} config_ini;
+typedef struct {
 	ddr_info ddr_info[SG2042_MAX_CHIP_NUM];
-
+	config_ini config_ini;
 	uint8_t multi_sockt_mode;
 } board_info;
 
@@ -28,5 +35,7 @@ typedef struct {
 	uint8_t reg_ddr_size[DDR_CHANLE_NUM];
 
 } reg_ddr_size;
+
+
 
 #endif
