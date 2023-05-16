@@ -99,14 +99,21 @@ void wbinv_va_range(unsigned long start, unsigned long end)
 }
 
 enum {
-        ID_OPENSBI = 0,
+	ID_CONFINI = 0,
+        ID_OPENSBI,
         ID_KERNEL,
         ID_RAMFS,
         ID_DEVICETREE,
         ID_MAX,
 };
 
+uint8_t conf_file[512] = {0};
 BOOT_FILE boot_file[ID_MAX] = {
+	[ID_CONFINI] = {
+		.id = ID_CONFINI,
+		.name = "0:riscv64/conf.ini",
+		.addr = (uint64_t)conf_file,
+	},
 	[ID_OPENSBI] = {
 		.id = ID_OPENSBI,
 		.name = "0:riscv64/fw_jump.bin",
@@ -130,6 +137,7 @@ BOOT_FILE boot_file[ID_MAX] = {
 };
 
 static char *img_name_sd[] = {
+	"0:riscv64/conf.ini",
 	"0:riscv64/fw_jump.bin",
 	"0:riscv64/riscv64_Image",
 	"0:riscv64/initrd.img",
@@ -137,6 +145,7 @@ static char *img_name_sd[] = {
 };
 
 static char *img_name_spi[] = {
+	"conf.ini",
 	"fw_jump.bin",
 	"riscv64_Image",
 	"initrd.img",
@@ -189,58 +198,115 @@ struct global_config {
 	uint64_t addr;
 };
 
-static struct global_config config;
+static inline char** get_bootfile_list(int dev_num, char** bootfile[])
+{
+	if (dev_num < IO_DEVICE_MAX)
+		return bootfile[dev_num];
+	return NULL;
+}
 
-static int handler(void* user, const char* section, const char* name,
+static int handler_dtb(void* user, const char* section, const char* name,
 				   const char* value)
 {
-	struct global_config *pconfig = (struct global_config *)user;
+	config_ini *pconfig = (config_ini *)user;
 
 	#define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
 
 	if (MATCH("devicetree", "name"))
-		pconfig->name = strdup(value);
+		pconfig->dtb_name = strdup(value);
 	else if (MATCH("devicetree", "addr"))
-		pconfig->addr = strtoul(value, NULL, 16);
+		pconfig->dtb_addr = strtoul(value, NULL, 16);
 	else
 		return 0;
 
 	return -1;
 }
 
-/* TODO: load conf.ini from EEPROM */
-static int mango_parse_ini(void)
+int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 {
+	FILINFO info;
+	uint32_t reg;
 	const char *header = "[sophgo-config]";
-	char read_buf[512];
+	char** dtbs = get_bootfile_list(dev_num, dtb_name);
+	char *sd_dtb_name = NULL;
 
-	read_buf[0] = 0;
+	if (dev_num == IO_DEVICE_SD) {
+		if (io_dev->func.open(boot_file[conf_file_index].name, FA_READ)) {
+			pr_err("dont have %s file\n", boot_file[conf_file_index].name);
+			goto parase;
+		}
 
-	bm_spi_init(FLASH1_BASE);
-	bm_spi_flash_read((uint8_t *)read_buf, 0, 256);
-	// back to DMMR mode
-	mmio_write_32(FLASH1_BASE + REG_SPI_DMMR, 1);
+		if (io_dev->func.get_file_info(boot_file, conf_file_index, &info)) {
+			pr_err("get %s info failed\n", boot_file[conf_file_index].name);
+			goto parase;
+		}
+		boot_file[conf_file_index].len = info.fsize;
+		if (io_dev->func.read(boot_file, conf_file_index, info.fsize)) {
+			pr_err("read %s failed\n", boot_file[conf_file_index].name);
+			goto parase;
+		}
 
-	if (strncmp(header, read_buf, strlen(header)))
-		return -1;
+		if (io_dev->func.close()) {
+			pr_err("close %s failed\n", boot_file[conf_file_index].name);
+			goto parase;
+		}
 
-	if (ini_parse_string((const char*)read_buf, handler, &config) < 0
-		|| config.name == NULL)
-		return -1;
+		wbinv_va_range(boot_file[conf_file_index].addr, boot_file[conf_file_index].addr + info.fsize);
+		__asm__ __volatile__ ("fence.i"::);
+	} else if (dev_num == IO_DEVICE_SPIFLASH) {
+		bm_spi_init(FLASH1_BASE);
+		bm_spi_flash_read((uint8_t *)boot_file[conf_file_index].addr, 0, 512);
+		// back to DMMR mode
+		mmio_write_32(FLASH1_BASE + REG_SPI_DMMR, 1);
+	}
+
+
+	if (strncmp(header, (const char *)boot_file[conf_file_index].addr, strlen(header))) {
+		pr_err("can not find [sophgo-config]\n");
+		goto parase;
+	}
+
+parase:
+	if (ini_parse_string((const char*)boot_file[conf_file_index].addr, handler_dtb,
+	    &(sg2042_board_info.config_ini)) < 0 || sg2042_board_info.config_ini.dtb_name == NULL) {
+		reg = mmio_read_32(BOARD_TYPE_REG);
+		if (reg >= 0x02 && reg <= 0x05)
+			boot_file[ID_DEVICETREE].name = dtbs[reg - 0x02];
+		else {
+			pr_err("can not find dtb\n");
+			return -1;
+		}
+	} else {
+		if (dev_num == IO_DEVICE_SD) {
+			sd_dtb_name = malloc(64);
+			memset(sd_dtb_name, 0, 64);
+			strcat(sd_dtb_name, "0:riscv64/");
+			strcat(sd_dtb_name, sg2042_board_info.config_ini.dtb_name);
+			boot_file[ID_DEVICETREE].name = sd_dtb_name;
+		} else if (dev_num == IO_DEVICE_SPIFLASH)
+			boot_file[ID_DEVICETREE].name = sg2042_board_info.config_ini.dtb_name;
+	}
 
 	return 0;
 }
 
-int read_all_img(IO_DEV *io_dev)
+int read_all_img(IO_DEV *io_dev, int dev_num)
 {
 	FILINFO info;
+	int ret = 0;
 
 	if (io_dev->func.init()) {
 		pr_err("init %s device failed\n", io_dev->type == IO_DEVICE_SD ? "sd" : "flash");
 		goto umount_dev;
 	}
 
-	for (int i = 0; i < ID_MAX; i++) {
+	ret = read_conf_and_parse(io_dev, ID_CONFINI, dev_num);
+	if (ret == -1)
+		goto close_file;
+	else if (ret == -2)
+		goto umount_dev;
+
+	for (int i = 1; i < ID_MAX; i++) {
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
 			pr_err("open %s failed\n", boot_file[i].name);
 			goto close_file;
@@ -286,35 +352,17 @@ int boot_device_register()
 	return 0;
 }
 
-static inline char** get_bootfile_list(int dev_num, char** bootfile[])
-{
-	if (dev_num < IO_DEVICE_MAX)
-		return bootfile[dev_num];
-	return NULL;
-}
-
 int build_bootfile_info(int dev_num)
 {
-	uint32_t reg;
 	char** imgs = get_bootfile_list(dev_num, img_name);
-	char** dtbs = get_bootfile_list(dev_num, dtb_name);
 
-	if (!imgs || !dtbs)
+
+	if (!imgs)
 		return -1;
 
 	for (int i = 0; i < ID_MAX; i++)
 		boot_file[i].name = imgs[i];
 
-	if (!mango_parse_ini()) {
-		if (dev_num == IO_DEVICE_SD)
-			boot_file[ID_DEVICETREE].name = strcat("0:riscv64/", config.name);
-		else if (dev_num == IO_DEVICE_SPIFLASH)
-			boot_file[ID_DEVICETREE].name = config.name;
-	} else {
-		reg = mmio_read_32(BOARD_TYPE_REG);
-		if (reg >= 0x02 && reg <= 0x05)
-			boot_file[ID_DEVICETREE].name = dtbs[reg - 0x02];
-	}
 
 	return 0;
 }
@@ -343,7 +391,7 @@ int read_boot_file(void)
 		return -1;
 	}
 
-	if (read_all_img(io_dev)) {
+	if (read_all_img(io_dev, dev_num)) {
 		if (dev_num == IO_DEVICE_SD) {
 			dev_num = IO_DEVICE_SPIFLASH;
 			build_bootfile_info(dev_num);
@@ -353,7 +401,7 @@ int read_boot_file(void)
 				return -1;
 			}
 
-			if (read_all_img(io_dev)) {
+			if (read_all_img(io_dev, dev_num)) {
 				pr_debug("%s read file failed\n",
 					 dev_num == IO_DEVICE_SD ? "sd" : "flash");
 				return -1;
@@ -467,10 +515,69 @@ int modify_cpu_node(void)
 	return 0;
 }
 
+static int handler_mac_addr(void* user, const char* section, const char* name,
+				   const char* value)
+{
+	config_ini *pconfig = (config_ini *)user;
+
+	#define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
+
+	if (MATCH("mac-address", "mac0"))
+		pconfig->mac0 = strtoul(value, NULL, 16);
+	else if (MATCH("mac-address", "mac1"))
+		pconfig->mac1 = strtoul(value, NULL, 16);
+	else
+		return 0;
+
+	return -1;
+}
+
+void parse_mac_from_confi(void)
+{
+	if (ini_parse_string((const char*)boot_file[ID_CONFINI].addr, handler_mac_addr,
+	    &(sg2042_board_info.config_ini)) < 0 || sg2042_board_info.config_ini.mac0 == 0) {
+		pr_info("use default mac address\n");
+	} else {
+		pr_info("mac0:0x%lx\n", sg2042_board_info.config_ini.mac0);
+		if (sg2042_board_info.multi_sockt_mode == 1) {
+			pr_info("mac1:0x%lx\n", sg2042_board_info.config_ini.mac1);
+		}
+	}
+}
+
+void modify_mac_address(void)
+{
+	uint64_t mac = 0;
+	uint8_t *mac_p = (uint8_t *)&sg2042_board_info.config_ini.mac0;
+
+	for (int i = 0; i < 6; i++)
+		mac |= ((uint64_t)mac_p[i]) << (5-i) * 8;
+	sg2042_board_info.config_ini.mac0 = mac;
+	of_modify_prop((void *)boot_file[ID_DEVICETREE].addr, boot_file[ID_DEVICETREE].len,
+		        	"/soc/ethernet@7040026000/", "local-mac-address", (void *)&sg2042_board_info.config_ini.mac0, 6, PROP_TYPE_U8);
+
+	if (sg2042_board_info.multi_sockt_mode == 1) {
+		mac = 0;
+		uint8_t *mac_p = (uint8_t *)&sg2042_board_info.config_ini.mac1;
+		for (int i = 0; i < 6; i++)
+			mac |= ((uint64_t)mac_p[i]) << (5-i) * 8;
+		sg2042_board_info.config_ini.mac1 = mac;
+		of_modify_prop((void *)boot_file[ID_DEVICETREE].addr, boot_file[ID_DEVICETREE].len,
+			       "/soc/ethernet@f040026000/", "local-mac-address", (void *)&sg2042_board_info.config_ini.mac1, 6, PROP_TYPE_U8);
+	}
+}
+
+void modify_eth_node(void)
+{
+	parse_mac_from_confi();
+	modify_mac_address();
+}
+
 int modify_dtb(void)
 {
 	modify_ddr_node();
 	modify_cpu_node();
+	modify_eth_node();
 
 	return 0;
 }

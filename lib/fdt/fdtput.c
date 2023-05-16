@@ -386,6 +386,11 @@ int of_modify_prop(void *original_fdt, int len, char *node_name,
 		for (int i = 0; i < step; i++) {
 			((uint64_t *)store_buf)[i] = fdt64_ld(&((uint64_t *)value)[i]);
 		}
+	} else if (prop_type == PROP_TYPE_U8) {
+		step = prop_size / sizeof(uint8_t);
+		for (int i = 0; i < step; i++) {
+			((uint8_t *)store_buf)[i] = ((uint8_t *)value)[i];
+		}
 	} else if (prop_type == PROP_TYPE_STR) {
 		store_buf = value;
 	} else {

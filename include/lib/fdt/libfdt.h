@@ -16,6 +16,7 @@ extern "C" {
 #define PROP_TYPE_U32	0x0
 #define PROP_TYPE_U64	0x1
 #define PROP_TYPE_STR	0x2
+#define PROP_TYPE_U8	0x3
 
 #define FDT_FIRST_SUPPORTED_VERSION	0x02
 #define FDT_LAST_COMPATIBLE_VERSION 0x10
