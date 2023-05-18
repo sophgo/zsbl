@@ -101,11 +101,14 @@ _start:
 	slli	t1, t1, SMP_CONTEXT_SIZE_SHIFT
 	add	t0, t0, t1
 	li	t1, SMP_CONTEXT_SIZE
+	li	t2, 0
 clean_smp_context:
-	beqz	t1, clean_smp_context_done
-	add	t2, t0, t1
-	sd	zero, (t2)
-	addi	t1, t1, -8
+	slt	t3, t2, t1
+	beqz	t3, clean_smp_context_done
+	add	t3, t0, t2
+	sd	zero, (t3)
+	addi	t2, t2, 8
+
 	j	clean_smp_context
 #endif
 clean_smp_context_done:
@@ -142,9 +145,6 @@ not_support_smp:
 #else
 2:
 secondary_core_poll:
-	la	t0, secondary_core_runtime_address
-	ld	t1, (t0)
-	bnez	t1, release_core_run
 
 	la	t0, smp_context
 	csrr	t1, mhartid
@@ -160,9 +160,6 @@ secondary_core_poll:
 	add	sp, t6, t5
 	ld	t5, (t2)
 	bnez	t5, mul_core_wake_up
-	j	secondary_core_poll
-release_core_run:
-	jalr	t1
 	j	secondary_core_poll
 mul_core_wake_up:
 	la      t0, smp_context
