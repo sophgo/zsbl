@@ -1,4 +1,3 @@
-#define DEBUG
 //#define MANGO_FORCE_ENABLE_RISCV
 
 #include <assert.h>

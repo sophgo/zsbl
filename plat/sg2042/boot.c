@@ -225,30 +225,26 @@ static int handler_dtb(void* user, const char* section, const char* name,
 int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 {
 	FILINFO info;
-	uint32_t reg;
 	const char *header = "[sophgo-config]";
-	char** dtbs = get_bootfile_list(dev_num, dtb_name);
 	char *sd_dtb_name = NULL;
 
 	if (dev_num == IO_DEVICE_SD) {
-		if (io_dev->func.open(boot_file[conf_file_index].name, FA_READ)) {
-			pr_err("dont have %s file\n", boot_file[conf_file_index].name);
-			goto parase;
-		}
+		if (io_dev->func.open(boot_file[conf_file_index].name, FA_READ))
+			return -1;
 
 		if (io_dev->func.get_file_info(boot_file, conf_file_index, &info)) {
 			pr_err("get %s info failed\n", boot_file[conf_file_index].name);
-			goto parase;
+			return -1;
 		}
 		boot_file[conf_file_index].len = info.fsize;
 		if (io_dev->func.read(boot_file, conf_file_index, info.fsize)) {
 			pr_err("read %s failed\n", boot_file[conf_file_index].name);
-			goto parase;
+			return -1;
 		}
 
 		if (io_dev->func.close()) {
 			pr_err("close %s failed\n", boot_file[conf_file_index].name);
-			goto parase;
+			return -1;
 		}
 
 		wbinv_va_range(boot_file[conf_file_index].addr, boot_file[conf_file_index].addr + info.fsize);
@@ -266,16 +262,13 @@ int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 		goto parase;
 	}
 
-parase:
+
 	if (ini_parse_string((const char*)boot_file[conf_file_index].addr, handler_dtb,
 	    &(sg2042_board_info.config_ini)) < 0 || sg2042_board_info.config_ini.dtb_name == NULL) {
-		reg = mmio_read_32(BOARD_TYPE_REG);
-		if (reg >= 0x02 && reg <= 0x05)
-			boot_file[ID_DEVICETREE].name = dtbs[reg - 0x02];
-		else {
-			pr_err("can not find dtb\n");
-			return -1;
-		}
+parase:
+
+		boot_file[ID_DEVICETREE].name = NULL;
+		return -1;
 	} else {
 		if (dev_num == IO_DEVICE_SD) {
 			sd_dtb_name = malloc(64);
@@ -293,18 +286,24 @@ parase:
 int read_all_img(IO_DEV *io_dev, int dev_num)
 {
 	FILINFO info;
-	int ret = 0;
+	uint32_t reg = 0;
+	char** dtbs = get_bootfile_list(dev_num, dtb_name);
+
+	if (boot_file[ID_DEVICETREE].name == NULL) {
+		reg = mmio_read_32(BOARD_TYPE_REG);
+		if (reg >= 0x02 && reg <= 0x05) {
+			boot_file[ID_DEVICETREE].name = dtbs[reg - 0x02];
+		} else {
+			pr_err("can not find dtb\n");
+			return -1;
+		}
+	}
 
 	if (io_dev->func.init()) {
 		pr_err("init %s device failed\n", io_dev->type == IO_DEVICE_SD ? "sd" : "flash");
 		goto umount_dev;
 	}
 
-	ret = read_conf_and_parse(io_dev, ID_CONFINI, dev_num);
-	if (ret == -1)
-		goto close_file;
-	else if (ret == -2)
-		goto umount_dev;
 
 	for (int i = 1; i < ID_MAX; i++) {
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
@@ -360,9 +359,65 @@ int build_bootfile_info(int dev_num)
 	if (!imgs)
 		return -1;
 
-	for (int i = 0; i < ID_MAX; i++)
+	for (int i = 0; i < ID_MAX; i++) {
+		if (i == ID_DEVICETREE)
+			continue;
 		boot_file[i].name = imgs[i];
+	}
 
+
+
+	return 0;
+}
+
+int read_config_file(void)
+{
+	IO_DEV *io_dev;
+	int dev_num;
+	int ret = 0;
+
+	if (boot_device_register())
+		return -1;
+
+	if (bm_sd_card_detect()) {
+		dev_num = IO_DEVICE_SD;
+
+	} else {
+		dev_num = IO_DEVICE_SPIFLASH;
+
+	}
+
+	io_dev = set_current_io_device(dev_num);
+	if (io_dev == NULL) {
+		pr_debug("set current io device failed\n");
+		return -1;
+	}
+
+	io_dev->func.init();
+	ret = read_conf_and_parse(io_dev, ID_CONFINI, dev_num);
+	if (ret != 0) {
+		if (dev_num == IO_DEVICE_SD) {
+			io_dev->func.destroy();
+			dev_num = IO_DEVICE_SPIFLASH;
+			io_dev = set_current_io_device(dev_num);
+			if (io_dev == NULL) {
+				pr_debug("set current io device failed\n");
+				return -1;
+			}
+			io_dev->func.init();
+			ret = read_conf_and_parse(io_dev, ID_CONFINI, dev_num);
+			if (ret != 0) {
+				pr_err("have no conf.ini file\n");
+			} else {
+				pr_debug("read config from spi flash\n");
+			}
+		}
+
+	} else {
+		pr_debug("read config from %s\n", dev_num == IO_DEVICE_SD ? "sd": "flash");
+	}
+
+	io_dev->func.destroy();
 
 	return 0;
 }
@@ -632,6 +687,8 @@ static void secondary_core_fun(void *priv)
 #endif // ZSBL_BOOT_DEBUG_LOOP
 
 #endif // ZSBL_BOOT_DEBUG
+	//disable l0btb for workaroud auipc bug
+	csr_read_clear(CSR_MHCR, UL(1<<12));
 
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
@@ -728,6 +785,8 @@ int boot(void)
 	print_banner();
 	build_board_info();
 
+	read_config_file();
+
 	if (read_boot_file()) {
 		pr_err("read boot file faile\n");
 		assert(0);
@@ -778,6 +837,9 @@ int boot(void)
 #endif // ZSBL_BOOT_DEBUG_LOOP
 
 #endif // ZSBL_BOOT_DEBUG
+
+	//disable l0btb for workaroud auipc bug
+	csr_read_clear(CSR_MHCR, UL(1<<12));
 
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
