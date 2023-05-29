@@ -100,11 +100,11 @@ void wbinv_va_range(unsigned long start, unsigned long end)
 
 enum {
 	ID_CONFINI = 0,
-        ID_OPENSBI,
-        ID_KERNEL,
-        ID_RAMFS,
-        ID_DEVICETREE,
-        ID_MAX,
+	ID_OPENSBI,
+	ID_KERNEL,
+	ID_RAMFS,
+	ID_DEVICETREE,
+	ID_MAX,
 };
 
 uint8_t conf_file[512] = {0};
@@ -193,11 +193,6 @@ char *ddr_node_name[SG2042_MAX_CHIP_NUM][DDR_CHANLE_NUM] = {
 
 board_info sg2042_board_info;
 
-struct global_config {
-	char *name;
-	uint64_t addr;
-};
-
 static inline char** get_bootfile_list(int dev_num, char** bootfile[])
 {
 	if (dev_num < IO_DEVICE_MAX)
@@ -205,7 +200,7 @@ static inline char** get_bootfile_list(int dev_num, char** bootfile[])
 	return NULL;
 }
 
-static int handler_dtb(void* user, const char* section, const char* name,
+static int handler_img(void* user, const char* section, const char* name,
 				   const char* value)
 {
 	config_ini *pconfig = (config_ini *)user;
@@ -216,6 +211,18 @@ static int handler_dtb(void* user, const char* section, const char* name,
 		pconfig->dtb_name = strdup(value);
 	else if (MATCH("devicetree", "addr"))
 		pconfig->dtb_addr = strtoul(value, NULL, 16);
+	else if (MATCH("kernel", "name"))
+		pconfig->kernel_name = strdup(value);
+	else if (MATCH("kernel", "addr"))
+		pconfig->kernel_addr = strtoul(value, NULL, 16);
+	else if (MATCH("firmware", "name"))
+		pconfig->fw_name = strdup(value);
+	else if (MATCH("firmware", "addr"))
+		pconfig->fw_addr = strtoul(value, NULL, 16);
+	else if (MATCH("ramfs", "name"))
+		pconfig->ramfs_name =  strdup(value);
+	else if (MATCH("ramfs", "addr"))
+		pconfig->ramfs_addr = strtoul(value, NULL, 16);
 	else
 		return 0;
 
@@ -226,7 +233,6 @@ int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 {
 	FILINFO info;
 	const char *header = "[sophgo-config]";
-	char *sd_dtb_name = NULL;
 
 	if (dev_num == IO_DEVICE_SD) {
 		if (io_dev->func.open(boot_file[conf_file_index].name, FA_READ))
@@ -250,34 +256,69 @@ int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 		wbinv_va_range(boot_file[conf_file_index].addr, boot_file[conf_file_index].addr + info.fsize);
 		__asm__ __volatile__ ("fence.i"::);
 	} else if (dev_num == IO_DEVICE_SPIFLASH) {
-		bm_spi_init(FLASH1_BASE);
+		bm_spi_init(FLASH0_BASE);
 		bm_spi_flash_read((uint8_t *)boot_file[conf_file_index].addr, 0, 512);
 		// back to DMMR mode
-		mmio_write_32(FLASH1_BASE + REG_SPI_DMMR, 1);
+		mmio_write_32(FLASH0_BASE + REG_SPI_DMMR, 1);
 	}
-
 
 	if (strncmp(header, (const char *)boot_file[conf_file_index].addr, strlen(header))) {
 		pr_err("can not find [sophgo-config]\n");
-		goto parase;
+		goto parse;
 	}
 
-
-	if (ini_parse_string((const char*)boot_file[conf_file_index].addr, handler_dtb,
+	if (ini_parse_string((const char*)boot_file[conf_file_index].addr, handler_img,
 	    &(sg2042_board_info.config_ini)) < 0 || sg2042_board_info.config_ini.dtb_name == NULL) {
-parase:
-
+parse:
 		boot_file[ID_DEVICETREE].name = NULL;
 		return -1;
 	} else {
 		if (dev_num == IO_DEVICE_SD) {
-			sd_dtb_name = malloc(64);
-			memset(sd_dtb_name, 0, 64);
-			strcat(sd_dtb_name, "0:riscv64/");
-			strcat(sd_dtb_name, sg2042_board_info.config_ini.dtb_name);
-			boot_file[ID_DEVICETREE].name = sd_dtb_name;
-		} else if (dev_num == IO_DEVICE_SPIFLASH)
-			boot_file[ID_DEVICETREE].name = sg2042_board_info.config_ini.dtb_name;
+			char dtb_dst[] = "0:riscv64/";
+			strcpy(boot_file[ID_DEVICETREE].name,
+					strcat(dtb_dst, sg2042_board_info.config_ini.dtb_name));
+
+			if (sg2042_board_info.config_ini.kernel_name != NULL) {
+				char kernel_dst[] = "0:riscv64/";
+				strcpy(boot_file[ID_KERNEL].name,
+					strcat(kernel_dst, sg2042_board_info.config_ini.kernel_name));
+			}
+
+			if (sg2042_board_info.config_ini.fw_name != NULL) {
+				char fw_dst[] = "0:riscv64/";
+				strcpy(boot_file[ID_OPENSBI].name,
+						strcat(fw_dst, sg2042_board_info.config_ini.fw_name));
+			}
+
+			if (sg2042_board_info.config_ini.ramfs_name != NULL) {
+				char ramfs_dst[] = "0:riscv64/";
+				strcpy(boot_file[ID_RAMFS].name,
+						strcat(ramfs_dst, sg2042_board_info.config_ini.ramfs_name));
+			}
+		} else if (dev_num == IO_DEVICE_SPIFLASH) {
+			strcpy(boot_file[ID_DEVICETREE].name, sg2042_board_info.config_ini.dtb_name);
+
+			if (sg2042_board_info.config_ini.kernel_name != NULL)
+				strcpy(boot_file[ID_KERNEL].name, sg2042_board_info.config_ini.kernel_name);
+
+			if (sg2042_board_info.config_ini.fw_name != NULL)
+				strcpy(boot_file[ID_OPENSBI].name, sg2042_board_info.config_ini.fw_name);
+
+			if (sg2042_board_info.config_ini.ramfs_name != NULL)
+				strcpy(boot_file[ID_RAMFS].name, sg2042_board_info.config_ini.ramfs_name);
+		}
+
+		if (sg2042_board_info.config_ini.dtb_addr)
+			boot_file[ID_DEVICETREE].addr = sg2042_board_info.config_ini.dtb_addr;
+
+		if (sg2042_board_info.config_ini.kernel_addr)
+			boot_file[ID_KERNEL].addr = sg2042_board_info.config_ini.kernel_addr;
+
+		if (sg2042_board_info.config_ini.fw_addr)
+			boot_file[ID_OPENSBI].addr = sg2042_board_info.config_ini.fw_addr;
+
+		if (sg2042_board_info.config_ini.ramfs_addr)
+			boot_file[ID_RAMFS].addr = sg2042_board_info.config_ini.ramfs_addr;
 	}
 
 	return 0;
@@ -303,7 +344,6 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 		pr_err("init %s device failed\n", io_dev->type == IO_DEVICE_SD ? "sd" : "flash");
 		goto umount_dev;
 	}
-
 
 	for (int i = 1; i < ID_MAX; i++) {
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
@@ -344,9 +384,8 @@ umount_dev:
 
 int boot_device_register()
 {
-	if (sd_io_device_register() || flash_io_device_register()) {
+	if (sd_io_device_register() || flash_io_device_register())
 		return -1;
-	}
 
 	return 0;
 }
@@ -354,7 +393,6 @@ int boot_device_register()
 int build_bootfile_info(int dev_num)
 {
 	char** imgs = get_bootfile_list(dev_num, img_name);
-
 
 	if (!imgs)
 		return -1;
@@ -364,8 +402,6 @@ int build_bootfile_info(int dev_num)
 			continue;
 		boot_file[i].name = imgs[i];
 	}
-
-
 
 	return 0;
 }
@@ -379,13 +415,10 @@ int read_config_file(void)
 	if (boot_device_register())
 		return -1;
 
-	if (bm_sd_card_detect()) {
+	if (bm_sd_card_detect())
 		dev_num = IO_DEVICE_SD;
-
-	} else {
+	else
 		dev_num = IO_DEVICE_SPIFLASH;
-
-	}
 
 	io_dev = set_current_io_device(dev_num);
 	if (io_dev == NULL) {
