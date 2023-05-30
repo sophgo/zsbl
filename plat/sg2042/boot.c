@@ -107,7 +107,7 @@ enum {
 	ID_MAX,
 };
 
-uint8_t conf_file[512] = {0};
+uint8_t conf_file[1024] = {0};
 BOOT_FILE boot_file[ID_MAX] = {
 	[ID_CONFINI] = {
 		.id = ID_CONFINI,
@@ -233,10 +233,8 @@ int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 {
 	FILINFO info;
 	const char *header = "[sophgo-config]";
-	char *sd_dtb_name = NULL;
-	char *sd_kernel_name = NULL;
-	char *sd_fw_name = NULL;
-	char *sd_ramfs_name = NULL;
+	const char *tail = "[eof]";
+	char *eof;
 
 	if (dev_num == IO_DEVICE_SD) {
 		if (io_dev->func.open(boot_file[conf_file_index].name, FA_READ))
@@ -261,77 +259,30 @@ int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 		__asm__ __volatile__ ("fence.i"::);
 	} else if (dev_num == IO_DEVICE_SPIFLASH) {
 		bm_spi_init(FLASH0_BASE);
-		bm_spi_flash_read((uint8_t *)boot_file[conf_file_index].addr, 0, 512);
+		bm_spi_flash_read((uint8_t *)boot_file[conf_file_index].addr, 0, sizeof(conf_file) - 1);
 		// back to DMMR mode
 		mmio_write_32(FLASH0_BASE + REG_SPI_DMMR, 1);
 	}
 
+	boot_file[ID_DEVICETREE].name = NULL;
+
 	if (strncmp(header, (const char *)boot_file[conf_file_index].addr, strlen(header))) {
-		pr_err("can not find [sophgo-config]\n");
-		goto parse;
-	}
-
-	if (ini_parse_string((const char*)boot_file[conf_file_index].addr, handler_img,
-	    &(sg2042_board_info.config_ini)) < 0 || sg2042_board_info.config_ini.dtb_name == NULL) {
-parse:
-		boot_file[ID_DEVICETREE].name = NULL;
+		pr_err("conf.ini should start with \"%s\"\n", header);
 		return -1;
-	} else {
-		if (dev_num == IO_DEVICE_SD) {
-			sd_dtb_name = malloc(64);
-			memset(sd_dtb_name, 0, 64);
-			strcat(sd_dtb_name, "0:riscv64/");
-			strcat(sd_dtb_name, sg2042_board_info.config_ini.dtb_name);
-			boot_file[ID_DEVICETREE].name = sd_dtb_name;
-
-			if (sg2042_board_info.config_ini.kernel_name != NULL) {
-				sd_kernel_name = malloc(64);
-				memset(sd_kernel_name, 0, 64);
-				strcat(sd_kernel_name, "0:riscv64/");
-				strcat(sd_kernel_name, sg2042_board_info.config_ini.kernel_name);
-				boot_file[ID_KERNEL].name = sd_kernel_name;
-			}
-
-			if (sg2042_board_info.config_ini.fw_name != NULL) {
-				sd_fw_name = malloc(64);
-				memset(sd_fw_name, 0, 64);
-				strcat(sd_fw_name, "0:riscv64/");
-				strcat(sd_fw_name, sg2042_board_info.config_ini.fw_name);
-				boot_file[ID_OPENSBI].name = sd_fw_name;
-			}
-
-			if (sg2042_board_info.config_ini.ramfs_name != NULL) {
-				sd_ramfs_name = malloc(64);
-				memset(sd_ramfs_name, 0, 64);
-				strcat(sd_ramfs_name, "0:riscv64/");
-				strcat(sd_ramfs_name, sg2042_board_info.config_ini.ramfs_name);
-				boot_file[ID_RAMFS].name = sd_ramfs_name;
-			}
-		} else if (dev_num == IO_DEVICE_SPIFLASH) {
-			boot_file[ID_DEVICETREE].name = sg2042_board_info.config_ini.dtb_name;
-
-			if (sg2042_board_info.config_ini.kernel_name != NULL)
-				boot_file[ID_KERNEL].name = sg2042_board_info.config_ini.kernel_name;
-
-			if (sg2042_board_info.config_ini.fw_name != NULL)
-				boot_file[ID_OPENSBI].name = sg2042_board_info.config_ini.fw_name;
-
-			if (sg2042_board_info.config_ini.ramfs_name != NULL)
-				boot_file[ID_RAMFS].name = sg2042_board_info.config_ini.ramfs_name;
-		}
-
-		if (sg2042_board_info.config_ini.dtb_addr)
-			boot_file[ID_DEVICETREE].addr = sg2042_board_info.config_ini.dtb_addr;
-
-		if (sg2042_board_info.config_ini.kernel_addr)
-			boot_file[ID_KERNEL].addr = sg2042_board_info.config_ini.kernel_addr;
-
-		if (sg2042_board_info.config_ini.fw_addr)
-			boot_file[ID_OPENSBI].addr = sg2042_board_info.config_ini.fw_addr;
-
-		if (sg2042_board_info.config_ini.ramfs_addr)
-			boot_file[ID_RAMFS].addr = sg2042_board_info.config_ini.ramfs_addr;
 	}
+
+	eof = strstr((const char *)boot_file[conf_file_index].addr, tail);
+
+	if (!eof) {
+		pr_err("conf.ini should terminated by \"%s\"\n", tail);
+		return -1;
+	}
+
+	*eof = 0;
+
+	if (ini_parse_string((const char*)boot_file[conf_file_index].addr,
+			     handler_img, &(sg2042_board_info.config_ini)) < 0)
+		return -1;
 
 	return 0;
 }
@@ -404,10 +355,74 @@ int boot_device_register()
 
 int build_bootfile_info(int dev_num)
 {
+	char *sd_dtb_name = NULL;
+	char *sd_kernel_name = NULL;
+	char *sd_fw_name = NULL;
+	char *sd_ramfs_name = NULL;
+
 	char** imgs = get_bootfile_list(dev_num, img_name);
 
 	if (!imgs)
 		return -1;
+
+	if (dev_num == IO_DEVICE_SD) {
+		if (sg2042_board_info.config_ini.dtb_name != NULL) {
+			sd_dtb_name = malloc(64);
+			memset(sd_dtb_name, 0, 64);
+			strcat(sd_dtb_name, "0:riscv64/");
+			strcat(sd_dtb_name, sg2042_board_info.config_ini.dtb_name);
+			boot_file[ID_DEVICETREE].name = sd_dtb_name;
+		}
+
+		if (sg2042_board_info.config_ini.kernel_name != NULL) {
+			sd_kernel_name = malloc(64);
+			memset(sd_kernel_name, 0, 64);
+			strcat(sd_kernel_name, "0:riscv64/");
+			strcat(sd_kernel_name, sg2042_board_info.config_ini.kernel_name);
+			boot_file[ID_KERNEL].name = sd_kernel_name;
+		}
+
+		if (sg2042_board_info.config_ini.fw_name != NULL) {
+			sd_fw_name = malloc(64);
+			memset(sd_fw_name, 0, 64);
+			strcat(sd_fw_name, "0:riscv64/");
+			strcat(sd_fw_name, sg2042_board_info.config_ini.fw_name);
+			boot_file[ID_OPENSBI].name = sd_fw_name;
+		}
+
+		if (sg2042_board_info.config_ini.ramfs_name != NULL) {
+			sd_ramfs_name = malloc(64);
+			memset(sd_ramfs_name, 0, 64);
+			strcat(sd_ramfs_name, "0:riscv64/");
+			strcat(sd_ramfs_name, sg2042_board_info.config_ini.ramfs_name);
+			boot_file[ID_RAMFS].name = sd_ramfs_name;
+		}
+	} else if (dev_num == IO_DEVICE_SPIFLASH) {
+		if (sg2042_board_info.config_ini.dtb_name != NULL)
+			boot_file[ID_DEVICETREE].name = sg2042_board_info.config_ini.dtb_name;
+
+		if (sg2042_board_info.config_ini.kernel_name != NULL)
+			boot_file[ID_KERNEL].name = sg2042_board_info.config_ini.kernel_name;
+
+		if (sg2042_board_info.config_ini.fw_name != NULL)
+			boot_file[ID_OPENSBI].name = sg2042_board_info.config_ini.fw_name;
+
+		if (sg2042_board_info.config_ini.ramfs_name != NULL)
+			boot_file[ID_RAMFS].name = sg2042_board_info.config_ini.ramfs_name;
+	}
+
+	if (sg2042_board_info.config_ini.dtb_addr)
+		boot_file[ID_DEVICETREE].addr = sg2042_board_info.config_ini.dtb_addr;
+
+	if (sg2042_board_info.config_ini.kernel_addr)
+		boot_file[ID_KERNEL].addr = sg2042_board_info.config_ini.kernel_addr;
+
+	if (sg2042_board_info.config_ini.fw_addr)
+		boot_file[ID_OPENSBI].addr = sg2042_board_info.config_ini.fw_addr;
+
+	if (sg2042_board_info.config_ini.ramfs_addr)
+		boot_file[ID_RAMFS].addr = sg2042_board_info.config_ini.ramfs_addr;
+
 
 	if (sg2042_board_info.config_ini.kernel_name == NULL)
 		boot_file[ID_KERNEL].name = imgs[ID_KERNEL];

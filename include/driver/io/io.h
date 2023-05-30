@@ -4,17 +4,17 @@
 #include <ff.h>
 
 enum {
-		IO_DEVICE_SD = 0,
-		IO_DEVICE_SPIFLASH,
-		IO_DEVICE_MAX,
+	IO_DEVICE_SD = 0,
+	IO_DEVICE_SPIFLASH,
+	IO_DEVICE_MAX,
 };
 
 typedef struct boot_file {
-		uint32_t id;
-		char *name;
-		uint64_t addr;
-		int len;
-		uint32_t offset;
+	uint32_t id;
+	char *name;
+	uint64_t addr;
+	int len;
+	uint32_t offset;
 } BOOT_FILE;
 
 typedef struct {
