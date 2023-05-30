@@ -577,10 +577,7 @@ int modify_ddr_node(void)
 		for (int j = 0; j < DDR_CHANLE_NUM; j++) {
 			value[0] = sg2042_board_info.ddr_info[i].ddr_start_base[j];
 			value[1] = sg2042_board_info.ddr_info[i].chip_ddr_size[j];
-			if (i == 0 && j == 0) {
-				value[0] += DDR0_RESERVED;
-				value[1] -= DDR0_RESERVED;
-			}
+			
 			of_modify_prop((void *)boot_file[ID_DEVICETREE].addr, boot_file[ID_DEVICETREE].len,
 				       sg2042_board_info.ddr_info[i].ddr_node_name[j], "reg", (void *)value,
 				       sizeof(value), PROP_TYPE_U64);
