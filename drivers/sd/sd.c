@@ -14,7 +14,7 @@
 #include <timer.h>
 
 #define SDCARD_INIT_FREQ	(200 * 1000)
-#define SDCARD_TRAN_FREQ	(6 * 1000 * 1000)
+#define SDCARD_TRAN_FREQ	(50 * 1000 * 1000)
 
 void flush_dcache_range(unsigned long start, unsigned long stop);
 static void bm_sd_hw_init(void);
@@ -738,7 +738,7 @@ int bm_sd_init(uint32_t flags)
 
 	bm_sd_phy_init();
 
-	ret = mmc_init(&bm_sd_ops, bm_params.clk_rate, bm_params.bus_width,
+	ret = mmc_init(&bm_sd_ops, SDCARD_TRAN_FREQ, bm_params.bus_width,
 		       bm_params.flags, &sd_info);
 
 	if (ret != 0)
