@@ -129,13 +129,18 @@ size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size)
 void bm_spi_init(unsigned long base)
 {
 	uint32_t tran_csr = 0;
+	uint32_t tmp;
 
 	ctrl_base = base;
 	/* disable DMMR (direct memory mapping read) */
 	pr_debug("spif init disable DMMR\n");
 	mmio_write_32(ctrl_base + REG_SPI_DMMR, 0);
 	/* soft reset and set SCK frequency = HCLK frequency/(2(sckdiv+1))*/
-	mmio_write_32(ctrl_base + REG_SPI_CTRL, mmio_read_32(ctrl_base + REG_SPI_CTRL) | BIT_SPI_CTRL_SRST | 0x3);
+	tmp = mmio_read_32(ctrl_base + REG_SPI_CTRL);
+	tmp |= BIT_SPI_CTRL_SRST;
+	tmp &= ~((1 << 11) - 1);
+	tmp |= 1;
+	mmio_write_32(ctrl_base + REG_SPI_CTRL,  tmp);
 	/* sent 4 byte each time */
 	tran_csr |= (0x03 << SPI_TRAN_CSR_ADDR_BYTES_SHIFT);
 	/* itr and DMA req when >= 4byte */

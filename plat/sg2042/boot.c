@@ -647,17 +647,21 @@ static int handler_mac_addr(void* user, const char* section, const char* name,
 	return -1;
 }
 
-void parse_mac_from_confi(void)
+int parse_mac_from_confi(void)
 {
 	if (ini_parse_string((const char*)boot_file[ID_CONFINI].addr, handler_mac_addr,
 	    &(sg2042_board_info.config_ini)) < 0 || sg2042_board_info.config_ini.mac0 == 0) {
 		pr_info("use default mac address\n");
+		return false;
 	} else {
 		pr_info("mac0:0x%lx\n", sg2042_board_info.config_ini.mac0);
 		if (sg2042_board_info.multi_sockt_mode == 1) {
 			pr_info("mac1:0x%lx\n", sg2042_board_info.config_ini.mac1);
 		}
+		return true;
 	}
+
+	return true;
 }
 
 void modify_mac_address(void)
@@ -684,8 +688,8 @@ void modify_mac_address(void)
 
 void modify_eth_node(void)
 {
-	parse_mac_from_confi();
-	modify_mac_address();
+	if (parse_mac_from_confi())
+		modify_mac_address();
 }
 
 int modify_dtb(void)
