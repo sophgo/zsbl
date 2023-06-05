@@ -10,7 +10,7 @@ _start:
 	csrw	CSR_MCOR, t0
 
 	/* disable l0btb to workround auipc bug */
-	li	t0, 0x1ef
+	li	t0, 0x1ff
 	csrw	CSR_MHCR, t0
 
 	li	t0, 0xe0410009
