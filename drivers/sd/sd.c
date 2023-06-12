@@ -14,7 +14,7 @@
 #include <timer.h>
 
 #define SDCARD_INIT_FREQ	(200 * 1000)
-#define SDCARD_TRAN_FREQ	(50 * 1000 * 1000)
+#define SDCARD_TRAN_FREQ	(25 * 1000 * 1000)
 
 void flush_dcache_range(unsigned long start, unsigned long stop);
 static void bm_sd_hw_init(void);
