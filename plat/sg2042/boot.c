@@ -577,7 +577,7 @@ int modify_ddr_node(void)
 		for (int j = 0; j < DDR_CHANLE_NUM; j++) {
 			value[0] = sg2042_board_info.ddr_info[i].ddr_start_base[j];
 			value[1] = sg2042_board_info.ddr_info[i].chip_ddr_size[j];
-			
+
 			of_modify_prop((void *)boot_file[ID_DEVICETREE].addr, boot_file[ID_DEVICETREE].len,
 				       sg2042_board_info.ddr_info[i].ddr_node_name[j], "reg", (void *)value,
 				       sizeof(value), PROP_TYPE_U64);
@@ -844,6 +844,20 @@ int print_banner(void)
 	return 0;
 }
 
+void sg2042_top_reset(uint32_t index)
+{
+	uint32_t ret;
+
+	ret = mmio_read_32(TOP_RESET_BASE);
+	ret &= ~(1 << index);
+	mmio_write_32(TOP_RESET_BASE, ret);
+
+	timer_udelay(100);
+
+	ret |= 1 << index;
+	mmio_write_32(TOP_RESET_BASE, ret);
+}
+
 int boot(void)
 {
 	print_banner();
@@ -904,7 +918,7 @@ int boot(void)
 
 	//disable l0btb for workaroud auipc bug
 	csr_read_clear(CSR_MHCR, UL(1<<12));
-
+	sg2042_top_reset(SD_RESET_INDEX);
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
 		boot_file[ID_DEVICETREE].addr);
