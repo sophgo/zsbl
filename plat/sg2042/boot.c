@@ -751,8 +751,6 @@ static void secondary_core_fun(void *priv)
 #endif // ZSBL_BOOT_DEBUG_LOOP
 
 #endif // ZSBL_BOOT_DEBUG
-	//disable l0btb for workaroud auipc bug
-	csr_read_clear(CSR_MHCR, UL(1<<12));
 
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
@@ -916,8 +914,6 @@ int boot(void)
 
 #endif // ZSBL_BOOT_DEBUG
 
-	//disable l0btb for workaroud auipc bug
-	csr_read_clear(CSR_MHCR, UL(1<<12));
 	sg2042_top_reset(SD_RESET_INDEX);
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
