@@ -732,7 +732,7 @@ int bm_sd_init(uint32_t flags)
 	int ret;
 
 	bm_params.clk_rate = bm_get_sd_clock();
-	printf("SD initializing %dHz\n", bm_params.clk_rate);
+	printf("SD initializing %dHz (transfer frequency at %dHz)\n", bm_params.clk_rate, SDCARD_TRAN_FREQ);
 
 	bm_params.flags = flags;
 
