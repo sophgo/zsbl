@@ -2,10 +2,14 @@
 #define __BOARD_H__
 
 #include "platform.h"
+#include "board_scm.h"
 
 #define VERSION_MAJOR "0."
 #define VERSION_MINOR "1"
-#define ZSBL_VERSION VERSION_MAJOR""VERSION_MINOR
+#ifndef VERSION_SCM
+#define VERSION_SCM ""
+#endif
+#define ZSBL_VERSION VERSION_MAJOR""VERSION_MINOR""VERSION_SCM
 
 #define DDR_CHANLE_NUM	4
 #define DDR_SIZE_ZERO	41
