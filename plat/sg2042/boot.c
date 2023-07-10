@@ -333,7 +333,15 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 			pr_err("get %s info failed\n", boot_file[i].name);
 			goto close_file;
 		}
+
+		/* skip empty file */
+		if (info.fsize == 0) {
+			pr_warn("%s file length zero, skip it!\n", boot_file[i].name);
+			continue;
+		}
+
 		boot_file[i].len = info.fsize;
+
 		if (io_dev->func.read(boot_file, i, info.fsize)) {
 			pr_err("read %s failed\n", boot_file[i].name);
 			goto close_file;
