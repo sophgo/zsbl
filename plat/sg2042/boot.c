@@ -320,6 +320,11 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 			continue;
 
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
+			if (ID_RAMFS) {
+				pr_warn("ramfs open fail, ignore it!\n");
+				continue;
+			}
+
 			pr_err("open %s failed\n", boot_file[i].name);
 			goto close_file;
 		}
