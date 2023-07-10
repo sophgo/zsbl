@@ -219,8 +219,15 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->fw_name = strdup(value);
 	else if (MATCH("firmware", "addr"))
 		pconfig->fw_addr = strtoul(value, NULL, 16);
-	else if (MATCH("ramfs", "name"))
-		pconfig->ramfs_name =  strdup(value);
+	else if (MATCH("ramfs", "name")) {
+		if (value && strlen(value)) {
+			pconfig->ramfs_name = strdup(value);
+		} else {
+			boot_file[ID_RAMFS].name = NULL;
+			img_name_sd[ID_RAMFS] = NULL;
+			img_name_spi[ID_RAMFS] = NULL;
+		}
+	}
 	else if (MATCH("ramfs", "addr"))
 		pconfig->ramfs_addr = strtoul(value, NULL, 16);
 	else
@@ -309,6 +316,9 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 	}
 
 	for (int i = 1; i < ID_MAX; i++) {
+		if (boot_file[i].name == NULL)
+			continue;
+
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
 			pr_err("open %s failed\n", boot_file[i].name);
 			goto close_file;
