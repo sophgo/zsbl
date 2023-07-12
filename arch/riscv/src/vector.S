@@ -23,6 +23,9 @@ _start:
 	li	t1, 3
 	slli	t1, t1, 7
 	or	t0, t0, t1
+	li	t1, 1
+	slli	t1, t1, 22
+	or	t0, t0, t1
 	csrw	CSR_MHINT2, t0
 
 	li	t0, 0x638000
