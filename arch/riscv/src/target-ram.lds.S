@@ -8,8 +8,10 @@ MEMORY
 SECTIONS
 {
 	. = ALIGN(16);
+
 	.text :
 	{
+		PROVIDE(_fw_start = .);
 		__ld_program_start = .;
 		KEEP (*(.vector));
 		KEEP (*(.exception_handler));
@@ -113,12 +115,20 @@ SECTIONS
 		__ld_bss_end = .;
 	} > RAM
 
-	/DISCARD/ :
-	{
-		libc.a ( * );
-		libm.a ( * );
-		libgcc.a ( * );
-	}
+	.dynsym : {
+		PROVIDE(__dyn_sym_start = .);
+		*(.dynsym)
+		PROVIDE(__dyn_sym_end = .);
+	} > RAM
+
+	.rela.dyn : {
+		PROVIDE(__rel_dyn_start = .);
+		*(.rela*)
+		. = ALIGN(8);
+		PROVIDE(__rel_dyn_end = .);
+	} > RAM
+
+
 
 	__ld_ram_start = ORIGIN(RAM);
 	__ld_ram_end = ORIGIN(RAM) + LENGTH(RAM);

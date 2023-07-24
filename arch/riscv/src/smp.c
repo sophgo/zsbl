@@ -1,25 +1,26 @@
 #include <smp.h>
 #include <stdlib.h>
 #include <arch.h>
-
+#include <stdio.h>
+#include "thread_safe_printf.h"
 #ifndef CONFIG_SMP_NUM
 #error "we need smp number"
 #endif
 
 long secondary_core_runtime_address;
 
-typedef void (*jump_fun)(long hartid, long dtb_addr);
+typedef void (*jump_fun)(long hartid, long dtb_addr, long dynamic_info_addr);
 
 void release_other_core(long jump_addr)
 {
         secondary_core_runtime_address = jump_addr;
 }
 
-void jump_to(long jump_addr, long hartid, long dtb_addr)
+void jump_to(long jump_addr, long hartid, long dtb_addr, long dynamic_info_addr)
 {
 	jump_fun fun = (jump_fun)jump_addr;
-
-	fun(hartid, dtb_addr);
+	// thread_safe_printf("dynamic info addr:0x%lx\n", dynamic_info_addr);
+	fun(hartid, dtb_addr, dynamic_info_addr);
 }
 
 struct smp_context{

@@ -9,7 +9,7 @@
 #include <libfdt.h>
 
 #include "libfdt_internal.h"
-
+#include <stdio.h>
 /*
  * Minimal sanity check for a read-only tree. fdt_ro_probe_() checks
  * that the given buffer contains what appears to be a flattened
@@ -19,27 +19,41 @@ int32_t fdt_ro_probe_(const void *fdt)
 {
 	uint32_t totalsize = fdt_totalsize(fdt);
 
-	if (can_assume(VALID_DTB))
+	if (can_assume(VALID_DTB)) {
+		printf("fdt ro probe total size: 0x%x\n", totalsize);
 		return totalsize;
+	}
+
 
 	/* The device tree must be at an 8-byte aligned address */
-	if ((uintptr_t)fdt & 7)
+	if ((uintptr_t)fdt & 7) {
+		printf("not align 8\n");
 		return -FDT_ERR_ALIGNMENT;
+	}
 
 	if (fdt_magic(fdt) == FDT_MAGIC) {
 		/* Complete tree */
 		if (!can_assume(LATEST)) {
-			if (fdt_version(fdt) < FDT_FIRST_SUPPORTED_VERSION)
+			if (fdt_version(fdt) < FDT_FIRST_SUPPORTED_VERSION) {
+				printf("bad version\n");
 				return -FDT_ERR_BADVERSION;
+			}
 			if (fdt_last_comp_version(fdt) >
-					FDT_LAST_SUPPORTED_VERSION)
-				return -FDT_ERR_BADVERSION;
+					FDT_LAST_SUPPORTED_VERSION) {
+						printf("bad version1\n");
+						return -FDT_ERR_BADVERSION;
+					}
+
 		}
 	} else if (fdt_magic(fdt) == FDT_SW_MAGIC) {
 		/* Unfinished sequential-write blob */
-		if (!can_assume(VALID_INPUT) && fdt_size_dt_struct(fdt) == 0)
+		if (!can_assume(VALID_INPUT) && fdt_size_dt_struct(fdt) == 0) {
+			printf("bad state\n");
 			return -FDT_ERR_BADSTATE;
+		}
+
 	} else {
+		printf("err badmagic\n");
 		return -FDT_ERR_BADMAGIC;
 	}
 

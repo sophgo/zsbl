@@ -1,0 +1,1 @@
+obj-y += sbi_console.o sbi_string.o

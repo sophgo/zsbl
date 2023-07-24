@@ -112,7 +112,9 @@ void system_init(void)
 		 (module_init_func *)__ld_module_init_end);
 }
 
+
 /* newlib stub */
+#define _ssize_t ssize_t
 
 static unsigned long heap_start;
 static unsigned long heap_end;
@@ -122,13 +124,25 @@ void *_sbrk(unsigned long inc)
 	void *last;
 
 	if (heap_start == 0) {
-		heap_start = (unsigned long)__ld_bss_end;
+		if ((unsigned long)__ld_bss_end & (0x7)) {
+			heap_start = ((unsigned long)__ld_bss_end & ~(unsigned long)(0x7)) + 0x8;
+		} else {
+			heap_start = (unsigned long)__ld_bss_end;
+		}
+
 		heap_end = heap_start;
 	}
 	last = (void *)heap_end;
+	if (inc & 0x7) {
+		inc = (inc & ~(0x7)) + 0x8;
+	}
 	heap_end += inc;
 	return last;
 }
+#if 0
+struct _reent {
+	int fd;
+};
 
 _ssize_t _write_r(struct _reent *ptr, int fd,
 		  const void *buf, size_t cnt)
@@ -211,4 +225,5 @@ int puts(const char *s)
 	return 0;
 }
 
+#endif
 #endif

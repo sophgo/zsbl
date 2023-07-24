@@ -2,7 +2,6 @@
 /*
  * Copyright (c) 2011 The Chromium OS Authors. All rights reserved.
  */
-
 #include <assert.h>
 #include <ctype.h>
 #include <getopt.h>
@@ -61,7 +60,7 @@ static void report_error(const char *name, int namelen, int err)
 {
 	if (namelen == -1)
 		namelen = strlen(name);
-	fprintf(stderr, "Error at '%1.*s': %s\n", namelen, name,
+	printf("Error at '%1.*s': %s\n", namelen, name,
 		fdt_strerror(err));
 }
 
@@ -88,7 +87,7 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 	upto = 0;
 
 	if (disp->verbose)
-		fprintf(stderr, "Decoding value:\n");
+		printf("Decoding value:\n");
 
 	fmt[0] = '%';
 	fmt[1] = disp->type ? disp->type : 'd';
@@ -110,7 +109,7 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 		if (disp->type == 's') {
 			memcpy(ptr, *arg, len);
 			if (disp->verbose)
-				fprintf(stderr, "\tstring: '%s'\n", ptr);
+				printf("\tstring: '%s'\n", ptr);
 		} else {
 			fdt32_t *iptr = (fdt32_t *)ptr;
 			sscanf(*arg, fmt, &ival);
@@ -119,7 +118,7 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 			else
 				*ptr = (uint8_t)ival;
 			if (disp->verbose) {
-				fprintf(stderr, "\t%s: %d\n",
+				printf("\t%s: %d\n",
 					disp->size == 1 ? "byte" :
 					disp->size == 2 ? "short" : "int",
 					ival);
@@ -129,7 +128,7 @@ static int encode_value(struct display_info *disp, char **arg, int arg_count,
 	*value_len = upto;
 	*valuep = value;
 	if (disp->verbose)
-		fprintf(stderr, "Value size %d\n", upto);
+		printf("Value size %d\n", upto);
 	return 0;
 }
 
@@ -341,6 +340,10 @@ char *utilfdt_read(const char *original_fdt, size_t len)
 	}
 	memcpy(buf, original_fdt, len);
 	// pr_err("utilfdt copy ok\n");
+	// printf("utilfdt read:\n");
+	// for (int i = 0; i < 16; i++) {
+	// 	printf("dst:0x%x, src:0x%x\n", buf[i], original_fdt[i]);
+	// }
 
 	return buf;
 }
@@ -348,11 +351,15 @@ char *utilfdt_read(const char *original_fdt, size_t len)
 int utilfdt_write(char *original_fdt, void *blob)
 {
 	int totalsize;
+	// char *buf = (char *)blob;
 
 	totalsize = fdt_totalsize(blob);
 
 	memcpy(original_fdt, blob, totalsize);
-
+	// printf("utilfdt write:\n");
+	// for (int i = 0; i < 16; i++) {
+	// 	printf("dst:0x%x, src:0x%x\n", original_fdt[i], buf[i]);
+	// }
 	return 0;
 }
 

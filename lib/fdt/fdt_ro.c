@@ -9,7 +9,7 @@
 #include <libfdt.h>
 
 #include "libfdt_internal.h"
-
+#include <stdio.h>
 static int fdt_nodename_eq_(const void *fdt, int offset,
 			    const char *s, int len)
 {
@@ -254,7 +254,6 @@ int fdt_path_offset_namelen(const void *fdt, const char *path, int namelen)
 	int offset = 0;
 
 	FDT_RO_PROBE(fdt);
-
 	/* see if we have an alias */
 	if (*path != '/') {
 		const char *q = memchr(path, '/', end - p);
@@ -263,8 +262,11 @@ int fdt_path_offset_namelen(const void *fdt, const char *path, int namelen)
 			q = end;
 
 		p = fdt_get_alias_namelen(fdt, p, q - p);
-		if (!p)
+		if (!p) {
+			// printf("%s\n", __LINE__);
 			return -FDT_ERR_BADPATH;
+		}
+
 		offset = fdt_path_offset(fdt, p);
 
 		p = q;
@@ -275,16 +277,21 @@ int fdt_path_offset_namelen(const void *fdt, const char *path, int namelen)
 
 		while (*p == '/') {
 			p++;
-			if (p == end)
+			if (p == end) {
+				// printf("%s:offset=%x\n", __LINE__, offset);
 				return offset;
+			}
+
 		}
 		q = memchr(p, '/', end - p);
 		if (! q)
 			q = end;
 
 		offset = fdt_subnode_offset_namelen(fdt, offset, p, q-p);
-		if (offset < 0)
-			return offset;
+		if (offset < 0) {
+				// printf("%s:offset=%x\n", __LINE__, offset);
+				return offset;
+		}
 
 		p = q;
 	}
