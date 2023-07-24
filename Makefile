@@ -564,7 +564,7 @@ export KBUILD_MODULES KBUILD_BUILTIN
 ifdef need-config
 include include/config/auto.conf
 endif
-
+include include/libc.h
 # Append platform include
 PLAT		:= $(shell echo $(CONFIG_PLAT) | tr A-Z a-z)
 LINUXINCLUDE	+= -I$(srctree)/plat/$(PLAT)/include

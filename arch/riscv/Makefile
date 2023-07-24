@@ -10,5 +10,12 @@ else
 KBUILD_LDS := arch/riscv/src/target-ram.lds
 endif
 
+
 KBUILD_CFLAGS += -g -mcmodel=medany -DARCH_RISCV
-KBUILD_LDFLAGS += -g
+
+KBUILD_CFLAGS += -nostdlib -O1
+
+KBUILD_LDFLAGS += -nostdlib
+KBUILD_CFLAGS += -fPIE -pie -include libc.h
+KBUILD_LDFLAGS += -g -Wl,--no-dynamic-linker -Wl,-pie
+KBUILD_AFLAGS += -fpic

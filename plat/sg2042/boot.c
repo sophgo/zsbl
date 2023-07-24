@@ -23,7 +23,8 @@
 #include "board.h"
 #include <libfdt.h>
 #include "ini.h"
-//#include <thread_safe_printf.h>
+#include "sbi.h"
+#include <thread_safe_printf.h>
 
 //#define ZSBL_BOOT_DEBUG
 //#define ZSBL_BOOT_DEBUG_LOOP
@@ -192,6 +193,13 @@ char *ddr_node_name[SG2042_MAX_CHIP_NUM][DDR_CHANLE_NUM] = {
 };
 
 board_info sg2042_board_info;
+struct fw_dynamic_info dynamic_info = {
+	.magic = FW_DYNAMIC_INFO_MAGIC_VALUE,
+	.version = 0,
+	.next_addr = KERNEL_ADDR,
+	.next_mode = FW_DYNAMIC_INFO_NEXT_MODE_S,
+	.boot_hart = 0xffffffffffffffff,
+};
 
 static inline char** get_bootfile_list(int dev_num, char** bootfile[])
 {
@@ -777,7 +785,7 @@ static void secondary_core_fun(void *priv)
 
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
-		boot_file[ID_DEVICETREE].addr);
+		boot_file[ID_DEVICETREE].addr, (unsigned long)&dynamic_info);
 }
 
 int boot_next_img(void)
@@ -939,9 +947,10 @@ int boot(void)
 
 	sg2042_top_reset(SD_RESET_INDEX);
 	__asm__ __volatile__ ("fence.i"::);
+	thread_safe_printf("main core sbi jump to 0x%lx, dynamic info:%p\n", boot_file[ID_OPENSBI].addr, &dynamic_info);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
-		boot_file[ID_DEVICETREE].addr);
+		boot_file[ID_DEVICETREE].addr, (unsigned long)&dynamic_info);
 
 	return 0;
 }
-test_case(boot);
+plat_init(boot);

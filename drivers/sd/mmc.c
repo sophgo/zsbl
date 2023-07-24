@@ -24,11 +24,11 @@
 static const struct mmc_ops *ops;
 static unsigned int mmc_ocr_value;
 static struct mmc_csd_emmc mmc_csd;
-static unsigned char mmc_ext_csd[512] __aligned(16);
+static unsigned char mmc_ext_csd[512] __attribute__((aligned(16)));
 static unsigned int mmc_flags;
 static struct mmc_device_info *mmc_dev_info;
 static unsigned int rca;
-static unsigned int scr[2]__aligned(16) = { 0 };
+static unsigned int scr[2] __attribute__((aligned(16))) = { 0 };
 
 static const unsigned char tran_speed_base[16] = {
 	0, 10, 12, 13, 15, 20, 26, 30, 35, 40, 45, 52, 55, 60, 70, 80

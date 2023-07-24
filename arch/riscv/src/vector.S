@@ -3,6 +3,7 @@
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_trap.h>
 #include <sbi/riscv_asm.h>
+#include <sbi/riscv_elf.h>
 	.section .vector, "ax"
 	.global _start
 _start:
@@ -22,9 +23,6 @@ _start:
 	csrr	t0, CSR_MHINT2
 	li	t1, 3
 	slli	t1, t1, 7
-	or	t0, t0, t1
-	li	t1, 1
-	slli	t1, t1, 22
 	or	t0, t0, t1
 	csrw	CSR_MHINT2, t0
 
@@ -80,6 +78,7 @@ _start:
 	add     x30, zero, zero
 	add     sp,  zero, zero
 
+loop:
 	/* Setup trap handler */
 	la	a4, _trap_handler
 	csrw	CSR_MTVEC, a4
@@ -104,8 +103,66 @@ clean_smp_context_done:
 	la	a0, smp_boot_spin_lock
 	li	t1, 1
 	amoadd.w	a0, t1, (a0)
-	bnez	a0, 2f
+	bnez	a0, secondary_core_poll
 
+
+
+	/* Save load address */
+	lla	t0, _load_start
+	lla	t1, _fw_start
+	REG_S	t1, 0(t0)
+
+	/* relocate the global table content */
+	lla	t0, _link_start
+	REG_L	t0, 0(t0)
+	/* t1 shall has the address of _fw_start */
+	sub	t2, t1, t0
+	lla	t3, _runtime_offset
+	REG_S	t2, (t3)
+	lla	t0, __rel_dyn_start
+	lla	t1, __rel_dyn_end
+	beq	t0, t1, _relocate_done
+	j	5f
+2:
+	REG_L	t5, -(REGBYTES*2)(t0)	/* t5 <-- relocation info:type */
+	li	t3, R_RISCV_RELATIVE	/* reloc type R_RISCV_RELATIVE */
+	bne	t5, t3, 3f
+	REG_L	t3, -(REGBYTES*3)(t0)
+	REG_L	t5, -(REGBYTES)(t0)	/* t5 <-- addend */
+	add	t5, t5, t2
+	add	t3, t3, t2
+	REG_S	t5, 0(t3)		/* store runtime address to the GOT entry */
+	j	5f
+
+3:
+	lla	t4, __dyn_sym_start
+
+4:
+	REG_L	t5, -(REGBYTES*2)(t0)	/* t5 <-- relocation info:type */
+	srli	t6, t5, SYM_INDEX	/* t6 <--- sym table index */
+	andi	t5, t5, 0xFF		/* t5 <--- relocation type */
+	li	t3, RELOC_TYPE
+	bne	t5, t3, 5f
+
+	/* address R_RISCV_64 or R_RISCV_32 cases*/
+	REG_L	t3, -(REGBYTES*3)(t0)
+	li	t5, SYM_SIZE
+	mul	t6, t6, t5
+	add	s5, t4, t6
+	REG_L	t6, -(REGBYTES)(t0)	/* t0 <-- addend */
+	REG_L	t5, REGBYTES(s5)
+	add	t5, t5, t6
+	add	t5, t5, t2		/* t5 <-- location to fix up in RAM */
+	add	t3, t3, t2		/* t3 <-- location to fix up in RAM */
+	REG_S	t5, 0(t3)		/* store runtime address to the variable */
+
+5:
+	addi	t0, t0, (REGBYTES*3)
+	ble	t0, t1, 2b
+	j	_relocate_done
+
+
+_relocate_done:
 1:
 	/* setup stack */
 	la	t0, __ld_stack_top
@@ -117,9 +174,6 @@ clean_smp_context_done:
 #endif
 	jal	load_data
 	jal	system_init
-	jal	__libc_init_array
-	jal	main
-	jal	_exit
 _end:
 	wfi
 	beqz	zero, _end
@@ -132,7 +186,7 @@ not_support_smp:
 	wfi
 	beqz	zero, not_support_smp
 #else
-2:
+
 secondary_core_poll:
 
 	la	t0, smp_context
@@ -290,6 +344,12 @@ _skip_mstatush_restore:
 
 .align 3
 smp_boot_spin_lock:
-.dword 0
+	.dword 0
 main_boot_core:
-.dword 0
+	.dword 0
+_load_start:
+	RISCV_PTR	_fw_start
+_link_start:
+	RISCV_PTR	CONFIG_RAM_START
+_runtime_offset:
+	RISCV_PTR	0

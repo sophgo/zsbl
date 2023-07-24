@@ -10,7 +10,7 @@ home page for more info:
 https://github.com/benhoyt/inih
 
 */
-
+int zsbl_isspace(int c);
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -48,7 +48,7 @@ typedef struct {
 static char* rstrip(char* s)
 {
 	char* p = s + strlen(s);
-	while (p > s && isspace((unsigned char)(*--p)))
+	while (p > s && zsbl_isspace((unsigned char)(*--p)))
 		*p = '\0';
 	return s;
 }
@@ -56,7 +56,7 @@ static char* rstrip(char* s)
 /* Return pointer to first non-whitespace char in given string. */
 static char* lskip(const char* s)
 {
-	while (*s && isspace((unsigned char)(*s)))
+	while (*s && zsbl_isspace((unsigned char)(*s)))
 		s++;
 	return (char*)s;
 }
@@ -70,7 +70,7 @@ static char* find_chars_or_comment(const char* s, const char* chars)
 	int was_space = 0;
 	while (*s && (!chars || !strchr(chars, *s)) &&
 			!(was_space && strchr(INI_INLINE_COMMENT_PREFIXES, *s))) {
-		was_space = isspace((unsigned char)(*s));
+		was_space = zsbl_isspace((unsigned char)(*s));
 		s++;
 	}
 #else

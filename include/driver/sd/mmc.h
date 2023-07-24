@@ -6,7 +6,7 @@
 
 #ifndef MMC_H
 #define MMC_H
-
+#define __packed __attribute__((packed))
 #include <stdint.h>
 
 #include <lib/utils_def.h>
