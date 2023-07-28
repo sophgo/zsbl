@@ -5,7 +5,7 @@
 #include "board_scm.h"
 
 #define VERSION_MAJOR "0."
-#define VERSION_MINOR "1"
+#define VERSION_MINOR "2"
 #ifndef VERSION_SCM
 #define VERSION_SCM ""
 #endif

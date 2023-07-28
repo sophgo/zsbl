@@ -16,6 +16,6 @@ KBUILD_CFLAGS += -g -mcmodel=medany -DARCH_RISCV
 KBUILD_CFLAGS += -nostdlib -O1
 
 KBUILD_LDFLAGS += -nostdlib
-KBUILD_CFLAGS += -fPIE -pie -include libc.h
+KBUILD_CFLAGS += -fno-pie -no-pie -fPIE -pie -include libc.h
 KBUILD_LDFLAGS += -g -Wl,--no-dynamic-linker -Wl,-pie
-KBUILD_AFLAGS += -fpic
+KBUILD_AFLAGS +=

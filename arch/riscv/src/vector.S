@@ -4,6 +4,9 @@
 #include <sbi/sbi_trap.h>
 #include <sbi/riscv_asm.h>
 #include <sbi/riscv_elf.h>
+
+#define BOOT_STATUS_BOOT_HART_DONE	2
+
 	.section .vector, "ax"
 	.global _start
 _start:
@@ -78,34 +81,11 @@ _start:
 	add     x30, zero, zero
 	add     sp,  zero, zero
 
-loop:
-	/* Setup trap handler */
-	la	a4, _trap_handler
-	csrw	CSR_MTVEC, a4
-
-#ifdef CONFIG_SUPPORT_SMP
-	la	t0, smp_context
-	csrr	t1, mhartid
-	slli	t1, t1, SMP_CONTEXT_SIZE_SHIFT
-	add	t0, t0, t1
-	li	t1, SMP_CONTEXT_SIZE
-	li	t2, 0
-clean_smp_context:
-	slt	t3, t2, t1
-	beqz	t3, clean_smp_context_done
-	add	t3, t0, t2
-	sd	zero, (t3)
-	addi	t2, t2, 8
-
-	j	clean_smp_context
-#endif
-clean_smp_context_done:
+_try_lottery:
 	la	a0, smp_boot_spin_lock
 	li	t1, 1
 	amoadd.w	a0, t1, (a0)
-	bnez	a0, secondary_core_poll
-
-
+	bnez	a0, _wait_relocate_copy_done
 
 	/* Save load address */
 	lla	t0, _load_start
@@ -159,10 +139,19 @@ clean_smp_context_done:
 5:
 	addi	t0, t0, (REGBYTES*3)
 	ble	t0, t1, 2b
+
+	/* mark boot hart done */
+	li	t0, BOOT_STATUS_BOOT_HART_DONE
+	lla	t1, _boot_status
+	REG_S	t0, 0(t1)
+	fence	rw, rw
+
 	j	_relocate_done
 
-
 _relocate_done:
+	/* Setup trap handler */
+	la	a4, _trap_handler
+	csrw	CSR_MTVEC, a4
 1:
 	/* setup stack */
 	la	t0, __ld_stack_top
@@ -187,6 +176,37 @@ not_support_smp:
 	beqz	zero, not_support_smp
 #else
 
+_wait_relocate_copy_done:
+	li	t0, BOOT_STATUS_BOOT_HART_DONE
+	lla	t1, _boot_status
+	REG_L	t1, 0(t1)
+	/* Reduce the bus traffic so that boot hart may proceed faster */
+	nop
+	nop
+	nop
+	bne	t0, t1, _wait_relocate_copy_done
+
+	/* Setup trap handler */
+	la	a4, _trap_handler
+	csrw	CSR_MTVEC, a4
+
+#ifdef CONFIG_SUPPORT_SMP
+	la	t0, smp_context
+	csrr	t1, mhartid
+	slli	t1, t1, SMP_CONTEXT_SIZE_SHIFT
+	add	t0, t0, t1
+	li	t1, SMP_CONTEXT_SIZE
+	li	t2, 0
+clean_smp_context:
+	slt	t3, t2, t1
+	beqz	t3, clean_smp_context_done
+	add	t3, t0, t2
+	sd	zero, (t3)
+	addi	t2, t2, 8
+
+	j	clean_smp_context
+#endif
+clean_smp_context_done:
 secondary_core_poll:
 
 	la	t0, smp_context
@@ -343,6 +363,8 @@ _skip_mstatush_restore:
 	mret
 
 .align 3
+_boot_status:
+	RISCV_PTR	0
 smp_boot_spin_lock:
 	.dword 0
 main_boot_core:
