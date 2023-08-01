@@ -1,0 +1,25 @@
+#ifndef __SG_COMMON_H__
+#define __SG_COMMON_H__
+
+enum {
+	CORE_TOP_MCU = 0,
+	CORE_64CORE_RV,
+	CORE_TPU_SCALAR0,
+	CORE_TPU_SCALAR1,
+	CORE_TPU_SCALAR2,
+	CORE_TPU_SCALAR3,
+	CORE_TPU_SCALAR4,
+	CORE_TPU_SCALAR5,
+	CORE_TPU_SCALAR6,
+	CORE_TPU_SCALAR7,
+};
+
+#define ZSBL_IMAGE_OFFSET	0xa00000
+#define KERNEL_IMAGE_OFFSET	0x3000000
+#define DTB_OFFSET	0x12000000
+#define RAMFS_OFFSET	0x13000000
+
+uint64_t get_work_mode(void);
+uint64_t get_core_type(void);
+
+#endif
