@@ -228,13 +228,8 @@ static int handler_img(void* user, const char* section, const char* name,
 	else if (MATCH("firmware", "addr"))
 		pconfig->fw_addr = strtoul(value, NULL, 16);
 	else if (MATCH("ramfs", "name")) {
-		if (value && strlen(value)) {
+		if (value && strlen(value))
 			pconfig->ramfs_name = strdup(value);
-		} else {
-			boot_file[ID_RAMFS].name = NULL;
-			img_name_sd[ID_RAMFS] = NULL;
-			img_name_spi[ID_RAMFS] = NULL;
-		}
 	}
 	else if (MATCH("ramfs", "addr"))
 		pconfig->ramfs_addr = strtoul(value, NULL, 16);
@@ -461,7 +456,9 @@ int build_bootfile_info(int dev_num)
 	if (sg2042_board_info.config_ini.fw_name == NULL)
 		boot_file[ID_OPENSBI].name = imgs[ID_OPENSBI];
 
-	if (sg2042_board_info.config_ini.ramfs_name == NULL)
+	if ((strcmp(boot_file[ID_KERNEL].name, "0:riscv64/u-boot.bin") == 0) || (strcmp(boot_file[ID_KERNEL].name, "u-boot.bin") == 0))
+		boot_file[ID_RAMFS].name = NULL;
+	else if (sg2042_board_info.config_ini.ramfs_name == NULL)
 		boot_file[ID_RAMFS].name = imgs[ID_RAMFS];
 
 	return 0;
