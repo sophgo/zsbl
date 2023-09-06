@@ -14,7 +14,7 @@ static unsigned long ctrl_base;
 
 /* load zsbl from spi flash */
 #define ZSBL_IMAGE_NAME		"zsbl.bin"
-#define OPENSBI_IMAGE_NAME		"fw_jump.bin"
+#define OPENSBI_IMAGE_NAME		"fw_dynamic.bin"
 #define KERNEL_IMAGE_NAME		"Image"
 #define RAMFS_IMAGE_NAME		"initrd.img"
 #define DEVICE_TREE_IMAGE_NAME		"mango.dtb"
