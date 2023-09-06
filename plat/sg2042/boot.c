@@ -117,7 +117,7 @@ BOOT_FILE boot_file[ID_MAX] = {
 	},
 	[ID_OPENSBI] = {
 		.id = ID_OPENSBI,
-		.name = "0:riscv64/fw_jump.bin",
+		.name = "0:riscv64/fw_dynamic.bin",
 		.addr = OPENSBI_ADDR,
 	},
 	[ID_KERNEL] = {
@@ -139,7 +139,7 @@ BOOT_FILE boot_file[ID_MAX] = {
 
 static char *img_name_sd[] = {
 	"0:riscv64/conf.ini",
-	"0:riscv64/fw_jump.bin",
+	"0:riscv64/fw_dynamic.bin",
 	"0:riscv64/riscv64_Image",
 	"0:riscv64/initrd.img",
 	"0:riscv64/mango.dtb",
@@ -147,7 +147,7 @@ static char *img_name_sd[] = {
 
 static char *img_name_spi[] = {
 	"conf.ini",
-	"fw_jump.bin",
+	"fw_dynamic.bin",
 	"riscv64_Image",
 	"initrd.img",
 	"mango.dtb",
