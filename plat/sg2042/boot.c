@@ -720,11 +720,85 @@ void modify_eth_node(void)
 		modify_mac_address();
 }
 
+static char bootargs[1024] = {0};
+static char append[256] = {0};
+int modify_bootargs()
+{
+	struct fdt_property *prop;
+	void *fdt, *ramfs;
+	int node;
+	int oldlen;
+	int ret = 0;
+
+	fdt = (void *)boot_file[ID_DEVICETREE].addr;
+	ramfs = (void*)boot_file[ID_RAMFS].addr;
+	sprintf(append, "root=/dev/ram0 rw initrd=0x%lx,32M", (unsigned long)ramfs);
+
+	node = fdt_path_offset(fdt, "/chosen");
+	if (node < 0) {
+		node = fdt_path_offset(fdt, "/");
+		node = fdt_add_subnode(fdt, node, "chosen");
+		if (node < 0) {
+			pr_err("fdt: create /chosen failed, error[%d]\n", node);
+			return -1;
+		}
+	}
+
+	prop = fdt_get_property_w(fdt, node, "bootargs", &oldlen);
+	if (prop) {
+		if (oldlen > sizeof(bootargs)-strlen(append)-1) {
+			pr_err("fdt: old bootargs is too large\n");
+			return -1;
+		}
+		sprintf(bootargs,"%s %s", (char*)prop->data, append);
+	} else {
+		sprintf(bootargs,
+			"console=ttyS0,115200 earlycon root=/dev/ram0 rw initrd=0x%lx,32M",
+			(unsigned long)ramfs);
+	}
+	ret = fdt_setprop_string(fdt, node, "bootargs", bootargs);
+
+	return ret;
+}
+
+/*Resize fdt to modify some node, eg: bootargs*/
+int resize_dtb(int delta)
+{
+	void *fdt;
+	int size;
+	int ret = 0;
+
+	fdt = (void *)boot_file[ID_DEVICETREE].addr;
+	size = fdt_totalsize(fdt) + delta;
+
+	fdt = realloc(fdt, size);
+	if (fdt) {
+		ret = fdt_open_into(fdt, fdt, size);
+		if (ret != 0)
+			pr_err("fdt: resize failed, error[%d\n]", ret);
+		else {
+			boot_file[ID_DEVICETREE].addr = (uint64_t)fdt;
+			boot_file[ID_DEVICETREE].len = size;
+		}
+	} else {
+		pr_err("fdt: realloc fdt failed\n");
+		ret = -1;
+	}
+
+	return ret;
+}
+
 int modify_dtb(void)
 {
+	int ret = 0;
+
 	modify_ddr_node();
 	modify_cpu_node();
 	modify_eth_node();
+
+	ret = resize_dtb(sizeof(bootargs));
+	if (!ret)
+		modify_bootargs();
 
 	return 0;
 }
