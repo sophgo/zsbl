@@ -561,28 +561,65 @@ int read_boot_file(void)
 	return 0;
 }
 
-int show_ddr_node(char *path)
+int show_ddr_node(uint64_t addr)
 {
-	int len;
+	void *fdt;
 	int node;
+	char path[64] = {0};
 	const uint64_t *p_value = NULL;
+	int p_len;
 
-	node = fdt_path_offset((void *)boot_file[ID_DEVICETREE].addr, path);
+	fdt = (void *)boot_file[ID_DEVICETREE].addr;
+	sprintf(path, "/memory@%lx", addr);
+
+	node = fdt_path_offset(fdt, path);
 	if (node < 0) {
 		pr_err("can not find %s\n", path);
 		return -1;
 	}
-	p_value = fdt_getprop((void *)boot_file[ID_DEVICETREE].addr, node, "reg", &len);
+
+	p_value = fdt_getprop(fdt, node, "reg", &p_len);
 	if (!p_value) {
 		pr_err("can not get reg\n");
 		return -1;
 	}
-	if (len != 16) {
+	if (p_len != 16) {
+
 		pr_err("the size is error\n");
 		return -1;
 	}
 
-	pr_debug("    base:0x%lx, len:0x%lx\n", fdt64_ld(&p_value[0]), fdt64_ld(&p_value[1]));
+	pr_debug("    base:0x%010lx, len:0x%lx\n", fdt64_ld(&p_value[0]), fdt64_ld(&p_value[1]));
+
+	return 0;
+}
+
+int add_memory_node(uint64_t addr, uint64_t len, int numa_node_id)
+{
+	void *fdt;
+	int root_node, memory_node;
+	char name[64];
+
+	if (len == 0)
+		return 0;
+
+	fdt = (void *)boot_file[ID_DEVICETREE].addr;
+	root_node = fdt_path_offset(fdt, "/");
+
+	memset(name, 0, sizeof(name));
+	sprintf(name, "memory@%lx", addr);
+
+	memory_node = fdt_add_subnode(fdt, root_node, name);
+	if (memory_node < 0) {
+		pr_err("fdt: failed to add memory node [%lx, %lx], error(%d)\n", addr, addr+len, memory_node);
+		return -1;
+	}
+
+	fdt_setprop_string(fdt, memory_node, "device_type", "memory");
+
+	fdt_appendprop_addrrange(fdt, root_node, memory_node, "reg", addr, len);
+
+	fdt_setprop_u32(fdt, memory_node, "numa-node-id", numa_node_id);
 
 	return 0;
 }
@@ -591,6 +628,7 @@ int modify_ddr_node(void)
 {
 	uint64_t value[2];
 	int chip_num = 1;
+	int numa_node_id;
 
 	if (sg2042_board_info.multi_sockt_mode)
 		chip_num = SG2042_MAX_CHIP_NUM;
@@ -601,11 +639,11 @@ int modify_ddr_node(void)
 			value[0] = sg2042_board_info.ddr_info[i].ddr_start_base[j];
 			value[1] = sg2042_board_info.ddr_info[i].chip_ddr_size[j];
 
-			of_modify_prop((void *)boot_file[ID_DEVICETREE].addr, boot_file[ID_DEVICETREE].len,
-				       sg2042_board_info.ddr_info[i].ddr_node_name[j], "reg", (void *)value,
-				       sizeof(value), PROP_TYPE_U64);
-
-			show_ddr_node(sg2042_board_info.ddr_info[i].ddr_node_name[j]);
+			if (value[1] != 0) {
+				numa_node_id = ((i==0) ? j : (i*DDR_CHANLE_NUM+j));
+				add_memory_node(value[0], value[1], numa_node_id);
+				show_ddr_node(value[0]);
+			}
 		}
 	}
 
@@ -631,7 +669,6 @@ int modify_chip_node(int chip_num)
 				sprintf(cpu_node, "/cpus/cpu@%d/", cpu_id);
 				of_modify_prop((void *)boot_file[ID_DEVICETREE].addr, boot_file[ID_DEVICETREE].len,
 						cpu_node, "status", (void *)"dis", sizeof("dis"), PROP_TYPE_STR);
-
 			}
 		}
 	}
@@ -787,13 +824,14 @@ int modify_dtb(void)
 {
 	int ret = 0;
 
-	modify_ddr_node();
+	ret = resize_dtb(4096);
+	if (!ret) {
+		modify_ddr_node();
+		modify_bootargs();
+	}
+
 	modify_cpu_node();
 	modify_eth_node();
-
-	ret = resize_dtb(sizeof(bootargs));
-	if (!ret)
-		modify_bootargs();
 
 	return 0;
 }
