@@ -652,13 +652,16 @@ int modify_ddr_node(void)
 				switch (board) {
 					case BOARD_TYPE_SOPHGO_PISCES:
 						reserved_start = 0xc0000000;
-						reserved_size = 0x40000000;
+						reserved_size  = 0x40000000;
 						break;
 					case BOARD_TYPE_SOPHGO_X4EVB:
+						reserved_start = 0x80000000;
+						reserved_size  = 0x80000000;
+						break;
 					case BOARD_TYPE_SOPHGO_X8EVB:
 					case BOARD_TYPE_MILKV_PIONEER:
 						reserved_start = 0xf8000000;
-						reserved_size = 0x8000000;
+						reserved_size  = 0x08000000;
 						break;
 					default:
 						reserved_size = 0x0;
