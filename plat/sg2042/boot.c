@@ -305,7 +305,7 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 
 	if (boot_file[ID_DEVICETREE].name == NULL) {
 		reg = mmio_read_32(BOARD_TYPE_REG);
-		if (reg >= 0x02 && reg <= 0x05) {
+		if (reg >= BOARD_TYPE_MIN && reg <= BOARD_TYPE_MAX) {
 			boot_file[ID_DEVICETREE].name = dtbs[reg - 0x02];
 		} else {
 			pr_err("can not find dtb\n");
@@ -589,7 +589,8 @@ int show_ddr_node(uint64_t addr)
 		return -1;
 	}
 
-	pr_debug("    base:0x%010lx, len:0x%lx\n", fdt64_ld(&p_value[0]), fdt64_ld(&p_value[1]));
+	if (fdt64_ld(&p_value[1]) != 0)
+		pr_debug("    base:0x%010lx, len:0x%lx\n", fdt64_ld(&p_value[0]), fdt64_ld(&p_value[1]));
 
 	return 0;
 }
@@ -626,9 +627,13 @@ int add_memory_node(uint64_t addr, uint64_t len, int numa_node_id)
 
 int modify_ddr_node(void)
 {
-	uint64_t value[2];
+	uint64_t start, size;
+	uint64_t reserved_start, reserved_size;
+	uint32_t board;
 	int chip_num = 1;
 	int numa_node_id;
+
+	board = mmio_read_32(BOARD_TYPE_REG);
 
 	if (sg2042_board_info.multi_sockt_mode)
 		chip_num = SG2042_MAX_CHIP_NUM;
@@ -636,14 +641,42 @@ int modify_ddr_node(void)
 	for (int i = 0; i < chip_num; i++) {
 		pr_debug("chip%d ddr node in dtb:\n", i);
 		for (int j = 0; j < DDR_CHANLE_NUM; j++) {
-			value[0] = sg2042_board_info.ddr_info[i].ddr_start_base[j];
-			value[1] = sg2042_board_info.ddr_info[i].chip_ddr_size[j];
+			start = sg2042_board_info.ddr_info[i].ddr_start_base[j];
+			size = sg2042_board_info.ddr_info[i].chip_ddr_size[j];
+			numa_node_id = ((i==0) ? j : (i*DDR_CHANLE_NUM+j));
 
-			if (value[1] != 0) {
-				numa_node_id = ((i==0) ? j : (i*DDR_CHANLE_NUM+j));
-				add_memory_node(value[0], value[1], numa_node_id);
-				show_ddr_node(value[0]);
+			if (size == 0)
+				break;
+
+			if (i == 0 && j == 0) {
+				switch (board) {
+					case BOARD_TYPE_SOPHGO_PISCES:
+						reserved_start = 0xc0000000;
+						reserved_size = 0x40000000;
+						break;
+					case BOARD_TYPE_SOPHGO_X4EVB:
+					case BOARD_TYPE_SOPHGO_X8EVB:
+					case BOARD_TYPE_MILKV_PIONEER:
+						reserved_start = 0xf8000000;
+						reserved_size = 0x8000000;
+						break;
+					default:
+						reserved_size = 0x0;
+				}
+
+				if (reserved_size != 0
+				    && reserved_start >= start
+				    && (reserved_start + reserved_size) <= (start + size)) {
+					add_memory_node(start, reserved_start-start, numa_node_id);
+					show_ddr_node(start);
+
+					size = (start + size) - (reserved_start + reserved_size);
+					start = reserved_start + reserved_size;
+				}
 			}
+
+			add_memory_node(start, size, numa_node_id);
+			show_ddr_node(start);
 		}
 	}
 
