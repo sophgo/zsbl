@@ -629,11 +629,8 @@ int modify_ddr_node(void)
 {
 	uint64_t start, size;
 	uint64_t reserved_start, reserved_size;
-	uint32_t board;
 	int chip_num = 1;
 	int numa_node_id;
-
-	board = mmio_read_32(BOARD_TYPE_REG);
 
 	if (sg2042_board_info.multi_sockt_mode)
 		chip_num = SG2042_MAX_CHIP_NUM;
@@ -649,26 +646,11 @@ int modify_ddr_node(void)
 				break;
 
 			if (i == 0 && j == 0) {
-				switch (board) {
-					case BOARD_TYPE_SOPHGO_PISCES:
-						reserved_start = 0xc0000000;
-						reserved_size  = 0x40000000;
-						break;
-					case BOARD_TYPE_SOPHGO_X4EVB:
-						reserved_start = 0x80000000;
-						reserved_size  = 0x80000000;
-						break;
-					case BOARD_TYPE_SOPHGO_X8EVB:
-					case BOARD_TYPE_MILKV_PIONEER:
-						reserved_start = 0xf8000000;
-						reserved_size  = 0x08000000;
-						break;
-					default:
-						reserved_size = 0x0;
-				}
+				//reserved memory for pcie switch
+				reserved_start = 0xc0000000;
+				reserved_size  = 0x40000000;
 
-				if (reserved_size != 0
-				    && reserved_start >= start
+				if (reserved_start >= start
 				    && (reserved_start + reserved_size) <= (start + size)) {
 					add_memory_node(start, reserved_start-start, numa_node_id);
 					show_ddr_node(start);
