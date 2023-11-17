@@ -418,8 +418,8 @@ LINUXINCLUDE    := \
 		--include=autoconf.h
 
 
-KBUILD_AFLAGS   := -D__ASSEMBLY__ -fno-PIE
-KBUILD_CFLAGS   := -Wall -Werror -std=gnu11
+KBUILD_AFLAGS   := -D__ASSEMBLY__ -fno-PIE -march=rv64imafdc_zicbom -misa-spec=2.2
+KBUILD_CFLAGS   := -Wall -Werror -std=gnu11 -march=rv64imafdc_zicbom -misa-spec=2.2
 KBUILD_CPPFLAGS :=
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
