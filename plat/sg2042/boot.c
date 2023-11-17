@@ -451,7 +451,10 @@ int build_bootfile_info(int dev_num)
 	if (sg2042_board_info.config_ini.fw_name == NULL)
 		boot_file[ID_OPENSBI].name = imgs[ID_OPENSBI];
 
-	if ((strcmp(boot_file[ID_KERNEL].name, "0:riscv64/u-boot.bin") == 0) || (strcmp(boot_file[ID_KERNEL].name, "u-boot.bin") == 0))
+	if ((strcmp(boot_file[ID_KERNEL].name, "0:riscv64/u-boot.bin") == 0)
+		|| (strcmp(boot_file[ID_KERNEL].name, "u-boot.bin") == 0)
+		|| (strcmp(boot_file[ID_KERNEL].name, "0:riscv64/SG2042.fd") == 0)
+		|| (strcmp(boot_file[ID_KERNEL].name, "SG2042.fd") == 0))
 		boot_file[ID_RAMFS].name = NULL;
 	else if (sg2042_board_info.config_ini.ramfs_name == NULL)
 		boot_file[ID_RAMFS].name = imgs[ID_RAMFS];
