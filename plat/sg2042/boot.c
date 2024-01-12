@@ -163,6 +163,7 @@ static char *dtb_name_sd[] = {
 	"0:riscv64/mango-milkv-pioneer.dtb",
 	"0:riscv64/mango-sophgo-pisces.dtb",
 	"0:riscv64/mango-sophgo-x4evb.dtb",
+	"0:riscv64/mango-sophgo-capricorn.dtb",
 };
 
 static char *dtb_name_spi[] = {
@@ -170,6 +171,7 @@ static char *dtb_name_spi[] = {
 	"mango-milkv-pioneer.dtb",
 	"mango-sophgo-pisces.dtb",
 	"mango-sophgo-x4evb.dtb",
+	"mango-sophgo-capricorn.dtb"
 };
 
 char **dtb_name[] = {
