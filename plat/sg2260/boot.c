@@ -541,10 +541,27 @@ int boot_next_img(void)
 	return 0;
 }
 
+void print_core_ctrlreg()
+{
+	pr_info("C920 control register information:\n");
+
+#define P_REG(reg) \
+	pr_info("\t %s - %016lx\n", #reg, csr_read(reg))
+
+	P_REG(CSR_MCOR);
+	P_REG(CSR_MHCR);
+	P_REG(CSR_MCCR2);
+	P_REG(CSR_MSMPR);
+	P_REG(CSR_MENVCFG);
+	P_REG(CSR_MHINT);
+	P_REG(CSR_MHINT2);
+	P_REG(CSR_MHINT4);
+	P_REG(CSR_MXSTATUS);
+}
+
 int print_banner(void)
 {
 	pr_info("\n\nSOPHGO ZSBL\nsg22260:v%s\n\n", ZSBL_VERSION);
-
 	return 0;
 }
 
@@ -585,7 +602,9 @@ uint64_t pod_mode_build_board_info(void)
 int boot(void)
 {
 	print_banner();
+	print_core_ctrlreg();
 
+#if 0
 	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
 		read_config_file();
 		if (read_boot_file()) {
@@ -595,6 +614,7 @@ int boot(void)
 	} else {
 		pod_mode_build_board_info();
 	}
+#endif
 
 	if (boot_next_img()) {
 		pr_err("boot next img failed\n");
@@ -603,7 +623,6 @@ int boot(void)
 
 
 
-	sg2042_top_reset(SD_RESET_INDEX);
 	__asm__ __volatile__ ("fence.i"::);
 	thread_safe_printf("main core sbi jump to 0x%lx, dynamic info:%p\n", boot_file[ID_OPENSBI].addr, &dynamic_info);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
