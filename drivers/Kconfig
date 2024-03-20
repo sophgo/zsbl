@@ -6,5 +6,6 @@ source "drivers/efuse/Kconfig"
 source "drivers/sd/Kconfig"
 source "drivers/spi-flash/Kconfig"
 source "drivers/io/Kconfig"
+source "drivers/ddr/Kconfig"
 
 endmenu

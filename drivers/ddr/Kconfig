@@ -1,0 +1,4 @@
+config DRIVER_DDR
+	bool "DDR"
+	help
+	sophgo DDR controller driver

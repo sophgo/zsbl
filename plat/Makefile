@@ -2,3 +2,4 @@ obj-$(CONFIG_PLAT_QEMU) += qemu/
 obj-$(CONFIG_PLAT_BM1686) += bm1686/
 obj-$(CONFIG_PLAT_SG2042) += sg2042/
 obj-$(CONFIG_PLAT_SG2260) += sg2260/
+obj-$(CONFIG_PLAT_SG2380) += sg2380/

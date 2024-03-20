@@ -1,0 +1,13 @@
+#ifndef __PLATFORM_H__
+#define __PLATFORM_H__
+
+#define OPENSBI_ADDR 0x80000000
+#define DEVICETREE_ADDR	0x88000000
+#define KERNEL_ADDR	0x80200000
+#define RAMFS_ADDR	0x8b000000
+
+#define BOOT_FROM_SD_FIRST	BIT(0)
+#define MULTI_CORE_FLAG     0x70500001c0
+#endif
+
+
