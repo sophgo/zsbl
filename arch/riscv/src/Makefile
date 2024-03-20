@@ -4,8 +4,7 @@ else
 extra-y += target-ram.lds
 endif
 
-obj-$(CONFIG_SUPPORT_SMP) += smp.o
-obj-y += vector.o
+obj-y += smp.o
 obj-y += crt.o
 obj-y += timer.o
 obj-y += riscv_atomic.o
@@ -14,3 +13,6 @@ obj-y += riscv_locks.o
 obj-y += sbi_trap.o
 obj-n += sbi_safe_console.o
 obj-y += riscv_asm.o
+
+obj-$(CONFIG_THEAD) += t-head/
+obj-$(CONFIG_SIFIVE) += sifive/

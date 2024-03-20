@@ -7,8 +7,6 @@
 #ifndef __BM_SPI_H__
 #define __BM_SPI_H__
 
-#define FLASH0_BASE		0x7000180000
-#define FLASH1_BASE		0x7002180000
 #define BM_FLASH_BASE		0x06000000
 #define DISK_PART_TABLE_ADDR		0x600000
 #define MANGO_SOCKET_MAX		2

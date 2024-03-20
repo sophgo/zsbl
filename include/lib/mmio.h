@@ -56,6 +56,16 @@ static inline uint64_t mmio_read_64(uintptr_t addr)
 	return *(volatile uint64_t*)addr;
 }
 
+static inline void mmio_clrbits_16(uintptr_t addr, uint16_t clear)
+{
+	mmio_write_16(addr, mmio_read_16(addr) & ~clear);
+}
+
+static inline void mmio_setbits_16(uintptr_t addr, uint16_t set)
+{
+	mmio_write_16(addr, mmio_read_16(addr) | set);
+}
+
 static inline void mmio_clrbits_32(uintptr_t addr, uint32_t clear)
 {
 	mmio_write_32(addr, mmio_read_32(addr) & ~clear);

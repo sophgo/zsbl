@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 #include <framework/common.h>
-
+#include <memmap.h>
 #include <driver/io/io.h>
 #include <driver/spi-flash/mango_spif.h>
 
@@ -27,7 +27,7 @@ static IO_DEV flash_io_device = {
 
 int flash_device_init(void)
 {
-	bm_spi_init(FLASH1_BASE);
+	bm_spi_init(FLASH0_BASE);
 
 	return 0;
 }

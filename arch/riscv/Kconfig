@@ -53,4 +53,10 @@ config SMP_NUM
 		the cpu numbers
 endif
 
+config THEAD
+	bool "SG2260"
+
+config SIFIVE
+	bool "SG2380"
+
 endmenu

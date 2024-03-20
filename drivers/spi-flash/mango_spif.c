@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <lib/libc/errno.h>
 #include <lib/mmio.h>
+#include <memmap.h>
 #include <driver/spi-flash/mango_spif.h>
 #include <string.h>
 #include <stdio.h>
