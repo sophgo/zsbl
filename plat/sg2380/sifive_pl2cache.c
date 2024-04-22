@@ -5,6 +5,7 @@
 #include <sifive_pl2cache0.h>
 #include <machine.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <sbi/riscv_asm.h>
 #include <sbi/riscv_encoding.h>
 

@@ -102,9 +102,9 @@ SECTIONS
 		__ld_program_end = .;
 	} > RAM
 
-	. = ALIGN(16);
 	.bss :
 	{
+		. = ALIGN(16);
 		__ld_bss_start = .;
 		*(.bss);
 		*(.bss*);

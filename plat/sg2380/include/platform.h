@@ -7,7 +7,7 @@
 #define RAMFS_ADDR	0x8b000000
 
 #define BOOT_FROM_SD_FIRST	BIT(0)
-#define MULTI_CORE_FLAG     0x70500001c0
+
 #endif
 
 
