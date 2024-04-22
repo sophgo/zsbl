@@ -14,7 +14,6 @@
 #include <driver/spi-flash/mango_spif.h>
 #include <stdlib.h>
 #include <string.h>
-
 #include <ff.h>
 #include <platform.h>
 #include <memmap.h>
@@ -224,7 +223,7 @@ int read_boot_file(BOOT_FILE *boot_file, int file_num)
 	if (boot_device_register())
 		return -1;
 
-	if (!(mmio_read_32(BOOT_SEL_ADDR) & BOOT_FROM_SD_FIRST) &&
+	if (!(mmio_read_32(BOOT_SEL) & BOOT_FROM_SD_FIRST) &&
 	    bm_sd_card_detect()) {
 		dev_num = IO_DEVICE_SD;
 		pr_debug("rv boot from sd card\n");

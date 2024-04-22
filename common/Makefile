@@ -1,4 +1,5 @@
 obj-y += core.o
+obj-y += ecdc.o
 
 core-$(CONFIG_MMIO) += mmio.o
 

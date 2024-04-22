@@ -9,6 +9,7 @@
 #include <sbi/sbi_trap.h>
 #include <sbi/riscv_asm.h>
 #include <sbi/riscv_elf.h>
+#include <memmap.h>
 
 /* This code executes before _start, which is contained inside the C library.
  In embedded systems we want to ensure that _enter, which contains the first
@@ -69,19 +70,96 @@ _start:
 1:
 #endif
 
-#if 0
 #ifdef CONFIG_SUPPORT_SMP
 	li t0, MULTI_CORE_FLAG
-	li t1, 0x0
+	li t1, 0x1
 	fence ow, ow
 	sd t1, 0(t0)
 #endif
-#endif
+
+1:
+	csrr	    a5, misa
+	li	    a4, METAL_ISA_U_EXTENSIONS
+	and	    a4, a4, a5
+	beqz	    a4, 1f
+
+	la	    t0, __metal_wgcpu_mwidlist_masks_table
+	csrr	    a0, mhartid
+	slli	    t1, a0, REG_SIZE_LOG2
+	add	    t0, t0, t1
+
+	load_x	    t2, (t0)
+	beqz	    t2, 1f
+	mv	    a3, t2
+	li	    t0, 0
+
+.Lmlwidloop:
+	andi	    t1, t2, 1
+	bne	    t1, x0, .Lmlwid_found
+	addi	    t0, t0, 1
+	srli	    t2, t2, 1
+	j	    .Lmlwidloop
+
+.Lmlwid_found:
+	la	    t1, 1f
+	csrw	    mtvec, t1
+	csrw	    METAL_WG_CSR_MLWID, t0
+
+	csrr	    a5, misa
+	li	    a4, METAL_ISA_S_EXTENSIONS
+	and	    a4, a4, a5
+	beqz	    a4, 1f
+
+	csrw	    METAL_WG_CSR_MWIDDELEG, a3
+	csrw	    METAL_WG_CSR_SLWID, t0
+
+.align 4
+1:
+	la	    t0, __metal_wgchecker2_base_address_table
+
+.Lchecker2loop:
+	load_x	    t1, (t0)
+	beqz	    t1, .Lchecker2end
+
+	lw	    s1, 0x8(t1)
+	addi	    t1, t1, 0x20
+	li	    s0, (1<<31)
+	sw	    s0, 0x10(t1)
+
+.Lcheckeraddrloop:
+	addi	    t1, t1, 0x20
+	addi	    s1, s1, -1
+	bnez	    s1, .Lcheckeraddrloop
+
+	li	    s0, -1
+	sw	    s0, 0x8(t1)
+	sw	    s0, 0xc(t1)
+
+	li	    s0, 0x80000301
+	sw	    s0, 0x10(t1)
+	addi	    t0, t0, REG_SIZE
+	j	    .Lchecker2loop
+
+.Lchecker2end:
+	la	    t0, __metal_wgmarker2_base_address_table
+	li	    s0, METAL_SIFIVE_WORLDGUARD_TRUSTEDWID
+	li	    s1, 0x2 // Valid bit
+
+.Lmarker2loop:
+	load_x	    t1, (t0)
+	beqz	    t1, .Linit
+
+	sw	    s0, 0x08(t1)
+
+	sw	    s1, 0x0C(t1)
+
+	addi	    t0, t0, REG_SIZE
+	j	    .Lmarker2loop
 
 .align 4
 1:
 _try_lottery:
-	la	a0, 0
+	la	a0, smp_boot_spin_lock
 	li	t1, 1
 	amoadd.w	a0, t1, (a0)
 	bnez a0, _wait_relocate_copy_done
@@ -134,7 +212,7 @@ _try_lottery:
 	csrc	    0x7C1, t0
 
 	li	t0, BOOT_STATUS_BOOT_HART_DONE
-	lla	t1, 0
+	lla	t1, _boot_status
 	REG_S	t0, 0(t1)
 	fence	rw, rw
 
@@ -162,7 +240,7 @@ _wait_relocate_copy_done:
 
 #if 1
 	li	t0, BOOT_STATUS_BOOT_HART_DONE
-	lla	t1, 0
+	lla	t1, _boot_status
 	REG_L	t1, 0(t1)
 	/* Reduce the bus traffic so that boot hart may proceed faster */
 	nop
@@ -343,3 +421,9 @@ _skip_mstatush_restore:
 	REG_L	sp, SBI_TRAP_REGS_OFFSET(sp)(sp)
 
 	mret
+
+.align 3
+_boot_status:
+	RISCV_PTR	0
+smp_boot_spin_lock:
+	.dword 0

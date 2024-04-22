@@ -14,7 +14,7 @@ uint64_t timer_frequency(void)
 
 uint64_t timer_get_tick(void)
 {
-#ifdef CONFIG_PLAT_QEMU
+#if defined CONFIG_PLAT_QEMU || CONFIG_PLAT_SG2380
 	return *(unsigned long *)(0x200bff8);
 #else
 	return csr_read(CSR_TIME);

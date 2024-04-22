@@ -643,7 +643,7 @@ include/config/auto.conf:
 endif # may-sync-config
 endif # need-config
 
-KBUILD_CFLAGS += -fno-builtin-memcpy -fno-builtin-memset -fno-builtin-memmove
+KBUILD_CFLAGS += -fno-builtin
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_PERFORMANCE
 KBUILD_CFLAGS += -O2
