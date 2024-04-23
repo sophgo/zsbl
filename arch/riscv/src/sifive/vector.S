@@ -72,10 +72,16 @@ _start:
 
 #ifdef CONFIG_SUPPORT_SMP
 	li t0, MULTI_CORE_FLAG
-	li t1, 0x0
+	li t1, 0x1
 	fence ow, ow
 	sd t1, 0(t0)
 #endif
+
+_try_lottery:
+	la	a0, smp_boot_spin_lock
+	li	t1, 1
+	amoadd.w	a0, t1, (a0)
+	bnez a0, _wait_relocate_copy_done
 
 1:
 	csrr	    a5, misa
@@ -157,12 +163,6 @@ _start:
 	j	    .Lmarker2loop
 
 .align 4
-1:
-_try_lottery:
-	la	a0, smp_boot_spin_lock
-	li	t1, 1
-	amoadd.w	a0, t1, (a0)
-	bnez a0, _wait_relocate_copy_done
 
 .Linit:
 	/* If the __metal_chicken_bit symbol is set to 0, do not change the Feature
@@ -236,9 +236,6 @@ _end:
 	beqz	    zero, _end
 
 _wait_relocate_copy_done:
-	wfi
-
-#if 1
 	li	t0, BOOT_STATUS_BOOT_HART_DONE
 	lla	t1, _boot_status
 	REG_L	t1, 0(t1)
@@ -306,7 +303,6 @@ mul_core_wake_up:
 	add	t1, t1, SMP_CONTEXT_FN_OFFSET
 	sd	zero, (t1)
 	j	secondary_core_poll
-#endif
 
 .align 4
 
