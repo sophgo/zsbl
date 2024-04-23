@@ -22,7 +22,7 @@ const uintptr_t __metal_wgcpu_mwidlist_masks_table[]  = {
 					0
 };
 
-const uintptr_t __metal_wgchecker2_base_address_table[] = {
+const uintptr_t __metal_wgchecker2_base_address_table[] __attribute__((weak,section(".startup_rodata"))) = {
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4000000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4001000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4002000_BASE_ADDRESS,
@@ -39,6 +39,8 @@ const uintptr_t __metal_wgchecker2_base_address_table[] = {
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4052000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4054000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4056000_BASE_ADDRESS,
+					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4070000_BASE_ADDRESS,
+					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4071000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4073000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4076000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4077000_BASE_ADDRESS,
@@ -46,12 +48,10 @@ const uintptr_t __metal_wgchecker2_base_address_table[] = {
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4079000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_407A000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_407B000_BASE_ADDRESS,
-/*
-					(uintptr_t)METAL_SIFIVE_WGCHECKER2_407C000_BASE_ADDRESS,
-					(uintptr_t)METAL_SIFIVE_WGCHECKER2_407D000_BASE_ADDRESS,
-*/
+					// (uintptr_t)METAL_SIFIVE_WGCHECKER2_407C000_BASE_ADDRESS,
+					// (uintptr_t)METAL_SIFIVE_WGCHECKER2_407D000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4080000_BASE_ADDRESS,
-		 			(uintptr_t)METAL_SIFIVE_WGCHECKER2_4081000_BASE_ADDRESS,
+					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4081000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4082000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4083000_BASE_ADDRESS,
 					(uintptr_t)METAL_SIFIVE_WGCHECKER2_4084000_BASE_ADDRESS,

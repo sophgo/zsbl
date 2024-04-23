@@ -138,7 +138,7 @@ void switch_clk_to_pll(void)
 {
 	mmio_write_32(REG_CLK_BYP_H1A8, 0);
 	mmio_write_32(REG_CLK_BYP_H1AC, 0);
-	mmio_write_32(REG_CLK_BYP_H180, 0);
+	mmio_write_32(REG_CLK_BYP_H1B0, 0);
 	mmio_write_32(REG_CLK_BYP_H1B4, 0);
 	mmio_write_32(REG_CLK_BYP_H1B8, 0);
 }

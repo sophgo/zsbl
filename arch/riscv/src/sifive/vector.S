@@ -72,7 +72,7 @@ _start:
 
 #ifdef CONFIG_SUPPORT_SMP
 	li t0, MULTI_CORE_FLAG
-	li t1, 0x1
+	li t1, 0x0
 	fence ow, ow
 	sd t1, 0(t0)
 #endif
