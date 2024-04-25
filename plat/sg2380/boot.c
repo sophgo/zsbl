@@ -134,20 +134,10 @@ void sg2380_fakeddr_init(void)
 
 }
 
-void switch_clk_to_pll(void)
-{
-	mmio_write_32(REG_CLK_BYP_H1A8, 0);
-	mmio_write_32(REG_CLK_BYP_H1AC, 0);
-	mmio_write_32(REG_CLK_BYP_H1B0, 0);
-	mmio_write_32(REG_CLK_BYP_H1B4, 0);
-	mmio_write_32(REG_CLK_BYP_H1B8, 0);
-}
-
 int boot(void)
 {
 #if defined(CONFIG_TARGET_PALLADIUM)
 	printf("Sophgo SG2380 zsbl!\n");
-	switch_clk_to_pll();
 	sifive_extensiblecache0_init();
 	platform_init();
 	ncore_direct_config();
