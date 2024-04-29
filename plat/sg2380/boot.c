@@ -134,6 +134,36 @@ void sg2380_fakeddr_init(void)
 
 }
 
+void _reg_write_mask(uintptr_t addr, uint32_t mask, uint32_t data)
+{
+	uint32_t value;
+
+	value = mmio_read_32(addr) & ~mask;
+	value |= (data & mask);
+	mmio_write_32(addr, value);
+}
+
+void sg2380_multimedia_itlvinit(void)
+{
+    _reg_write_mask(0x5082520000, 0x63, 0x3);
+    _reg_write_mask(0x5082520004, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520008, 0x63, 0x3);
+    _reg_write_mask(0x508252000c, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520010, 0x63, 0x3);
+    _reg_write_mask(0x5082520014, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520018, 0x63, 0x3);
+    _reg_write_mask(0x508252001c, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520020, 0x63, 0x3);
+    _reg_write_mask(0x5082520024, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520028, 0x63, 0x3);
+    _reg_write_mask(0x508252002c, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520030, 0x63, 0x3);
+    _reg_write_mask(0x5082520034, 0x7fffffff, 0x7fffffff);
+    _reg_write_mask(0x5082520038, 0x63, 0x3);
+    _reg_write_mask(0x508252003c, 0x7fffffff, 0x7fffffff);
+    printf("itlv done...\n");
+}
+
 int boot(void)
 {
 #if defined(CONFIG_TARGET_PALLADIUM)
@@ -143,6 +173,7 @@ int boot(void)
 	ncore_direct_config();
 	printf("ncore init done\n");
 	sg2380_fakeddr_init();
+	sg2380_multimedia_itlvinit();
 	cli_loop(0);
 	sg2380_ddr_init_asic();
 	if (boot_next_img())
