@@ -1,0 +1,4 @@
+config DRIVER_PCIE
+	bool "PCIE"
+	help
+	sophgo PCIE controller driver
