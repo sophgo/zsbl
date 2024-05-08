@@ -22,6 +22,8 @@
 #define STACK_SIZE 4096
 #define DDR_CFG_BASEADDR 0X05000000000
 
+// #define CONFIG_TPU_SYS
+
 extern int boot_from_storage(void);
 
 struct fw_dynamic_info pld_dynamic_info = {
@@ -164,6 +166,23 @@ void sg2380_multimedia_itlvinit(void)
 	printf("itlv init done...\n");
 }
 
+#ifdef CONFIG_TPU_SYS
+void sg2380_set_tpu_run(void)
+{
+	// release ec_sys reset
+	mmio_write_32(0x5088103000, mmio_read_32(0x5088103000) | (1 << 18));
+	printf("calling x280...\n");
+	// set x280 rvba
+	for (int i = 0; i < 4; i++) {
+		mmio_write_32(0x50bf000000 + 0x168 + 0x8 * i, i * 0x1800000);
+		mmio_write_32(0x50bf000000 + 0x16c + 0x8 * i, 0x1);
+	}
+	// reset x280
+	mmio_write_32(0x50bf000124, mmio_read_32(0x50bf000124) & ~0x1f);
+	mmio_write_32(0x50bf000124, mmio_read_32(0x50bf000124) | 0x1f);
+}
+#endif
+
 int boot(void)
 {
 #if defined(CONFIG_TARGET_PALLADIUM)
@@ -174,8 +193,11 @@ int boot(void)
 	printf("ncore init done\n");
 	sg2380_fakeddr_init();
 	sg2380_multimedia_itlvinit();
-	cli_loop(0);
 	sg2380_ddr_init_asic();
+#ifdef CONFIG_TPU_SYS
+	sg2380_set_tpu_run();
+#endif
+	cli_loop(0);
 	if (boot_next_img())
 		pr_err("boot next img failed\n");
 
