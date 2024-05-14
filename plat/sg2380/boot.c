@@ -115,8 +115,7 @@ static void dwc_ddrctl_cinit_seq_pwr_on_rst(uint64_t base_ddr_subsys_reg)
 	rddata = modified_bits_by_value(rddata, 0b11, 7, 6);
 	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
 
-	// mdelay(1);
-	printf("mdelay in fake ddr init\n");
+	mdelay(1);
 
 	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4); //bit 5 -> soft-reset
 	rddata = modified_bits_by_value(rddata, 0x3f, 5, 0);
