@@ -59,4 +59,10 @@ config THEAD
 config SIFIVE
 	bool "SG2380"
 
+config THEAD_CMO
+	bool
+
+config RISCV_CMO
+	bool
+
 endmenu

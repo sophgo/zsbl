@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <arch.h>
+#include <lib/mmio.h>
 #include "timer.h"
 
 uint64_t timer_frequency(void)
@@ -15,7 +16,11 @@ uint64_t timer_frequency(void)
 uint64_t timer_get_tick(void)
 {
 #if defined CONFIG_PLAT_QEMU || CONFIG_PLAT_SG2380
-	return *(unsigned long *)(0x200bff8);
+	uint64_t cntpct=0;
+
+	cntpct = mmio_read_64(0x0200bff8);
+
+	return cntpct;
 #else
 	return csr_read(CSR_TIME);
 #endif
