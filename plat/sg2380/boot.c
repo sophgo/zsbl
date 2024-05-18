@@ -6,6 +6,7 @@
 #include <framework/module.h>
 #include <framework/common.h>
 #include <lib/libc/errno.h>
+#include <lib/utils_def.h>
 #include <smp.h>
 #include <sifive_extensiblecache0.h>
 #include <sifive_buserror0.h>
@@ -77,12 +78,9 @@ int boot_next_img(void)
 	return 0;
 }
 
-#define GENMASK(h, l) \
-	(((~0UL) << (l)) & (~0UL >> (32 - 1 - (h)))) 
-
 static inline uint32_t modified_bits_by_value(uint32_t orig, uint32_t value, uint32_t msb, uint32_t lsb)
 {
-	uint32_t bitmask = GENMASK(msb, lsb);
+	uint32_t bitmask = GENMASK_32(msb, lsb);
 
 	orig &= ~bitmask;
 	return (orig | ((value << lsb) & bitmask));

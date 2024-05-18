@@ -8,5 +8,6 @@ source "drivers/spi-flash/Kconfig"
 source "drivers/io/Kconfig"
 source "drivers/ddr/Kconfig"
 source "drivers/pcie/Kconfig"
+source "drivers/iommu/Kconfig"
 
 endmenu
