@@ -14,6 +14,7 @@
 #include <platform.h>
 #include <memmap.h>
 #include <ncore_boot.h>
+#include <iommu.h>
 #include <sbi/riscv_asm.h>
 #include <driver/ddr/ddr.h>
 #include "sbi.h"
@@ -77,12 +78,9 @@ int boot_next_img(void)
 	return 0;
 }
 
-#define GENMASK(h, l) \
-	(((~0UL) << (l)) & (~0UL >> (32 - 1 - (h)))) 
-
 static inline uint32_t modified_bits_by_value(uint32_t orig, uint32_t value, uint32_t msb, uint32_t lsb)
 {
-	uint32_t bitmask = GENMASK(msb, lsb);
+	uint32_t bitmask = GENMASK_32(msb, lsb);
 
 	orig &= ~bitmask;
 	return (orig | ((value << lsb) & bitmask));
@@ -190,6 +188,7 @@ int boot(void)
 	platform_init();
 	ncore_direct_config();
 	printf("ncore init done\n");
+	sg2380_iommu_init();
 	sg2380_fakeddr_init();
 	sg2380_multimedia_itlvinit();
 	//sg2380_ddr_init_asic();
