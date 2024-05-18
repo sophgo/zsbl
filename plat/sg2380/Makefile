@@ -10,6 +10,7 @@ obj-y += ncore_boot.o
 obj-y += console.o
 obj-y += cli.o
 obj-y += wg.o
+obj-y += iommu.o
 
 LINUXINCLUDE += -I$(srctree)/plat/sg2380/ \
 				-I$(srctree)/plat/sg2380/include \
