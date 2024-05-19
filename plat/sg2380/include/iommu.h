@@ -7,7 +7,7 @@
 
 #include <lib/utils_def.h>
 
-#define IOMMU_GLOBAL_CFG        0x0
+#define IOMMU_GLOBAL_CFG        0x2000 + 0x0
 #define BYPASS_ENABLE_OFFSET     BIT(0)
 
 void sg2380_iommu_init(void);
