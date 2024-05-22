@@ -39,11 +39,11 @@ static int hello_module_init(void)
 }
 
 module_init(hello_module_init);
-#if 0
+
 static int hello(void)
 {
 	while (1) {
-		pr_info("Hello BM1686 A53-Lite System\n");
+		pr_info("Hello World\n");
 		mdelay(1000);
 	}
 
@@ -51,4 +51,3 @@ static int hello(void)
 }
 
 test_case(hello);
-#endif

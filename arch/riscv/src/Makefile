@@ -12,5 +12,4 @@ obj-y += riscv_atomic.o
 obj-y += cache.o
 obj-y += riscv_locks.o
 obj-y += sbi_trap.o
-obj-n += sbi_safe_console.o
 obj-y += riscv_asm.o

@@ -7,22 +7,24 @@
  *   Anup Patel <anup.patel@wdc.com>
  */
 
-#include <sbi/riscv_locks.h>
-#include <sbi/sbi_console.h>
 #include <sbi/sbi_hart.h>
-// #include <sbi/sbi_platform.h>
 #include <sbi/sbi_scratch.h>
-#include <sbi/sbi_string.h>
+
+#include <spinlock.h>
+
+#include <framework/common.h>
+
+#include <string.h>
 
 #define CONSOLE_TBUF_MAX 256
 
-static struct sbi_console_device local_console_device;
-static struct sbi_console_device *console_dev = &local_console_device;
 static char console_tbuf[CONSOLE_TBUF_MAX];
-static u32 console_tbuf_len;
+static size_t console_tbuf_len;
 static spinlock_t console_out_lock	       = SPIN_LOCK_INITIALIZER;
 
-bool sbi_isprintable(char c)
+static void panic(const char *format, ...);
+
+bool isprintable(char c)
 {
 	if (((31 < c) && (c < 127)) || (c == '\f') || (c == '\r') ||
 	    (c == '\n') || (c == '\t')) {
@@ -31,35 +33,20 @@ bool sbi_isprintable(char c)
 	return false;
 }
 
-int sbi_getc(void)
+int putchar(int c)
 {
-	if (console_dev && console_dev->console_getc)
-		return console_dev->console_getc();
-	return -1;
-}
-
-void sbi_putc(char ch)
-{
-	if (console_dev && console_dev->console_putc) {
-		if (ch == '\n')
-			console_dev->console_putc('\r');
-		console_dev->console_putc(ch);
-	}
+	stdio_output(c);
+	return c;
 }
 
 static unsigned long nputs(const char *str, unsigned long len)
 {
-	unsigned long i, ret;
+	unsigned long i;
 
-	if (console_dev && console_dev->console_puts) {
-		ret = console_dev->console_puts(str, len);
-	} else {
-		for (i = 0; i < len; i++)
-			sbi_putc(str[i]);
-		ret = len;
-	}
+	for (i = 0; i < len; i++)
+		putchar(str[i]);
 
-	return ret;
+	return len;
 }
 
 static void nputs_all(const char *str, unsigned long len)
@@ -70,32 +57,24 @@ static void nputs_all(const char *str, unsigned long len)
 		p += nputs(&str[p], len - p);
 }
 
-void sbi_puts(const char *str)
+int puts(const char *str)
 {
-	unsigned long len = sbi_strlen(str);
+	unsigned long len = strlen(str);
 
 	spin_lock(&console_out_lock);
 	nputs_all(str, len);
-	spin_unlock(&console_out_lock);
-}
-
-unsigned long sbi_nputs(const char *str, unsigned long len)
-{
-	unsigned long ret;
-
-	spin_lock(&console_out_lock);
-	ret = nputs(str, len);
+	stdio_output('\n');
 	spin_unlock(&console_out_lock);
 
-	return ret;
+	return len;
 }
 
-void sbi_gets(char *s, int maxwidth, char endchar)
+void gets(char *s, int maxwidth, char endchar)
 {
 	int ch;
 	char *retval = s;
 
-	while ((ch = sbi_getc()) != endchar && ch >= 0 && maxwidth > 1) {
+	while ((ch = stdio_input()) != endchar && ch >= 0 && maxwidth > 1) {
 		*retval = (char)ch;
 		retval++;
 		maxwidth--;
@@ -103,13 +82,13 @@ void sbi_gets(char *s, int maxwidth, char endchar)
 	*retval = '\0';
 }
 
-unsigned long sbi_ngets(char *str, unsigned long len)
+unsigned long ngets(char *str, unsigned long len)
 {
 	int ch;
 	unsigned long i;
 
 	for (i = 0; i < len; i++) {
-		ch = sbi_getc();
+		ch = stdio_input();
 		if (ch < 0)
 			break;
 		str[i] = ch;
@@ -128,10 +107,10 @@ unsigned long sbi_ngets(char *str, unsigned long len)
 #define va_arg __builtin_va_arg
 typedef __builtin_va_list va_list;
 
-static void printc(char **out, u32 *out_len, char ch)
+static void printc(char **out, size_t *out_len, char ch)
 {
 	if (!out) {
-		sbi_putc(ch);
+		stdio_output(ch);
 		return;
 	}
 
@@ -148,7 +127,7 @@ static void printc(char **out, u32 *out_len, char ch)
 		--(*out_len);
 }
 
-static int prints(char **out, u32 *out_len, const char *string, int width,
+static int prints(char **out, size_t *out_len, const char *string, int width,
 		  int flags)
 {
 	int pc	     = 0;
@@ -184,7 +163,7 @@ static int prints(char **out, u32 *out_len, const char *string, int width,
 	return pc;
 }
 
-static int printi(char **out, u32 *out_len, long long i, int b, int sg,
+static int printi(char **out, size_t *out_len, long long i, int b, int sg,
 		  int width, int flags, int letbase)
 {
 	char print_buf[PRINT_BUF_LEN];
@@ -235,7 +214,7 @@ static int printi(char **out, u32 *out_len, long long i, int b, int sg,
 	return pc + prints(out, out_len, s, width, flags);
 }
 
-static int print(char **out, u32 *out_len, const char *format, va_list args)
+static int print(char **out, size_t *out_len, const char *format, va_list args)
 {
 	int width, flags, pc = 0;
 	char scr[2], *tout;
@@ -398,7 +377,7 @@ int sprintf(char *out, const char *format, ...)
 	int retval;
 
 	if (unlikely(!out))
-		sbi_panic("sbi_sprintf called with NULL output string\n");
+		panic("sprintf called with NULL output string\n");
 
 	va_start(args, format);
 	retval = print(&out, NULL, format, args);
@@ -407,13 +386,13 @@ int sprintf(char *out, const char *format, ...)
 	return retval;
 }
 
-int sbi_snprintf(char *out, u32 out_sz, const char *format, ...)
+int snprintf(char *out, size_t out_sz, const char *format, ...)
 {
 	va_list args;
 	int retval;
 
 	if (unlikely(!out && out_sz != 0))
-		sbi_panic("sbi_snprintf called with NULL output string and "
+		panic("snprintf called with NULL output string and "
 			  "output size is not zero\n");
 
 	va_start(args, format);
@@ -423,7 +402,7 @@ int sbi_snprintf(char *out, u32 out_sz, const char *format, ...)
 	return retval;
 }
 
-int sbi_printf(const char *format, ...)
+int printf(const char *format, ...)
 {
 	va_list args;
 	int retval;
@@ -437,7 +416,7 @@ int sbi_printf(const char *format, ...)
 	return retval;
 }
 
-int sbi_dprintf(const char *format, ...)
+int dprintf(int fd, const char *format, ...)
 {
 	va_list args;
 	int retval = 0;
@@ -454,7 +433,7 @@ int sbi_dprintf(const char *format, ...)
 	return retval;
 }
 
-void sbi_panic(const char *format, ...)
+static void panic(const char *format, ...)
 {
 	va_list args;
 
@@ -468,33 +447,3 @@ void sbi_panic(const char *format, ...)
 	while (1);
 }
 
-
-
-const struct sbi_console_device *sbi_console_get_device(void)
-{
-	return console_dev;
-}
-
-// void sbi_console_set_device(const struct sbi_console_device *dev)
-// {
-// 	if (!dev || console_dev)
-// 		return;
-
-// 	console_dev = dev;
-// }
-
-// int sbi_console_init(struct sbi_scratch *scratch)
-// {
-// 	return sbi_platform_console_init(sbi_platform_ptr(scratch));
-// }
-
-void register_stdio(int (*stdinput)(void), void (*stdoutput)(char))
-{
-	console_dev->console_getc = stdinput;
-	console_dev->console_putc = stdoutput;
-}
-
-int stdout_ready(void)
-{
-	return console_dev->console_putc != NULL;
-}

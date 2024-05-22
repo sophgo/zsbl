@@ -25,7 +25,6 @@
 #include "ini.h"
 #include "sbi.h"
 #include "sg_common.h"
-#include <thread_safe_printf.h>
 
 #define L1_CACHE_BYTES 64
 
@@ -605,7 +604,7 @@ int boot(void)
 
 	sg2042_top_reset(SD_RESET_INDEX);
 	__asm__ __volatile__ ("fence.i"::);
-	thread_safe_printf("main core sbi jump to 0x%lx, dynamic info:%p\n", boot_file[ID_OPENSBI].addr, &dynamic_info);
+	printf("main core sbi jump to 0x%lx, dynamic info:%p\n", boot_file[ID_OPENSBI].addr, &dynamic_info);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
 		boot_file[ID_DEVICETREE].addr, (unsigned long)&dynamic_info);
 
