@@ -7,6 +7,7 @@
 #include <driver/spi-flash/mango_spif.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <timer.h>
 #include <framework/common.h>
 

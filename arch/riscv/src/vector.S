@@ -7,42 +7,16 @@
 
 #define BOOT_STATUS_BOOT_HART_DONE	2
 
+	.func plat_early_setup
+	.weak plat_early_setup
+plat_early_setup:
+	ret
+
 	.section .vector, "ax"
 	.global _start
 _start:
-	li	t0, 0x70013
-	csrw	CSR_MCOR, t0
-
-	li	t0, 0x11ff
-	csrw	CSR_MHCR, t0
-
-	// enable L2Cache ECC
-	li	t0, 0xe249000b
-	csrw	CSR_MCCR2, t0
-
-	li	t0, 1
-	csrw	CSR_MSMPR, t0
-
-	// disable fence.i fence sfence.vma broadcast
-	li	t0, 0x3fea32c
-	csrw	CSR_MHINT, t0
-
-	li      t0, 0x180
-	csrw    CSR_MHINT2, t0
-
-	/* disable dvm transaction out of cluster*/
-	li      t0, 0x20
-	csrw    CSR_MHINT4, t0
-
-	// enable THEADISAEE 	- bit 22
-	// enable CLINTEE 	- bit 17
-	li	t0, 0x438000
-	csrw	CSR_MXSTATUS, t0
-
-	/* delegate 0-7 exceptions to S-mode */
-	csrr	t0, CSR_MEDELEG
-	ori	t0, t0, 0xff
-	csrw	CSR_MEDELEG, t0
+	la	t0, plat_early_setup
+	jalr	t0
 
 	fence.i
 	fence iorw, iorw
@@ -163,6 +137,8 @@ _relocate_done:
 #endif
 	jal	load_data
 	jal	system_init
+	jal	main
+	jal	_exit
 _end:
 	wfi
 	beqz	zero, _end

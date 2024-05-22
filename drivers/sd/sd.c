@@ -12,6 +12,7 @@
 #include <memmap.h>
 #include <lib/mmio.h>
 #include <timer.h>
+#include <stdint.h>
 
 #define SDCARD_INIT_FREQ	(200 * 1000)
 #define SDCARD_TRAN_FREQ	(25 * 1000 * 1000)

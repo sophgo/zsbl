@@ -413,8 +413,9 @@ LINUXINCLUDE    := \
 		-I$(objtree)/include/generated \
 		$(if $(building_out_of_srctree),-I$(srctree)/include/lib/fat32) \
 		$(if $(building_out_of_srctree),-I$(srctree)/include/lib/fdt) \
-		-I$(objtree)/include/lib/fat32 \
-		-I$(objtree)/include/lib/fdt \
+		-I$(srctree)/include/lib/fat32 \
+		-I$(srctree)/include/lib/fdt \
+		-I$(srctree)/include/lib/libc \
 		--include=autoconf.h
 
 
@@ -564,7 +565,6 @@ export KBUILD_MODULES KBUILD_BUILTIN
 ifdef need-config
 include include/config/auto.conf
 endif
-include include/libc.h
 # Append platform include
 PLAT		:= $(shell echo $(CONFIG_PLAT) | tr A-Z a-z)
 LINUXINCLUDE	+= -I$(srctree)/plat/$(PLAT)/include

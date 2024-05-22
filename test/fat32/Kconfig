@@ -1,5 +1,5 @@
 config TEST_FAT32
-	bool "HelloWorld"
+	bool "FAT32"
 	select DRIVER_SD
 	help
 	FAT32 testcase

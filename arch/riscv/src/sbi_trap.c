@@ -2,7 +2,6 @@
 #include <sbi/riscv_encoding.h>
 #include <sbi/sbi_error.h>
 #include <sbi/sbi_trap.h>
-#include <thread_safe_printf.h>
 #include <stdio.h>
 
 void sbi_hart_hang(void)
@@ -18,47 +17,47 @@ static void  sbi_trap_error(const char *msg, int rc,
 {
 	u32 hartid = current_hartid();
 
-	thread_safe_printf("%s: hart%d: %s (error %d)\n", __func__, hartid, msg, rc);
-	thread_safe_printf("%s: hart%d: mcause=0x%" PRILX " mtval=0x%" PRILX "\n",
+	printf("%s: hart%d: %s (error %d)\n", __func__, hartid, msg, rc);
+	printf("%s: hart%d: mcause=0x%" PRILX " mtval=0x%" PRILX "\n",
 		   __func__, hartid, mcause, mtval);
 	if (misa_extension('H')) {
-		thread_safe_printf("%s: hart%d: mtval2=0x%" PRILX
+		printf("%s: hart%d: mtval2=0x%" PRILX
 			   " mtinst=0x%" PRILX "\n",
 			   __func__, hartid, mtval2, mtinst);
 	}
-	thread_safe_printf("%s: hart%d: mepc=0x%" PRILX " mstatus=0x%" PRILX "\n",
+	printf("%s: hart%d: mepc=0x%" PRILX " mstatus=0x%" PRILX "\n",
 		   __func__, hartid, regs->mepc, regs->mstatus);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "ra", regs->ra, "sp", regs->sp);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "gp", regs->gp, "tp", regs->tp);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "s0", regs->s0, "s1", regs->s1);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "a0", regs->a0, "a1", regs->a1);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "a2", regs->a2, "a3", regs->a3);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "a4", regs->a4, "a5", regs->a5);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "a6", regs->a6, "a7", regs->a7);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "s2", regs->s2, "s3", regs->s3);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "s4", regs->s4, "s5", regs->s5);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "s6", regs->s6, "s7", regs->s7);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "s8", regs->s8, "s9", regs->s9);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "s10", regs->s10, "s11", regs->s11);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "t0", regs->t0, "t1", regs->t1);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "t2", regs->t2, "t3", regs->t3);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
+	printf("%s: hart%d: %s=0x%" PRILX " %s=0x%" PRILX "\n", __func__,
 		   hartid, "t4", regs->t4, "t5", regs->t5);
-	thread_safe_printf("%s: hart%d: %s=0x%" PRILX "\n", __func__, hartid, "t6",
+	printf("%s: hart%d: %s=0x%" PRILX "\n", __func__, hartid, "t6",
 		   regs->t6);
 
 	sbi_hart_hang();

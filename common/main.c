@@ -3,8 +3,6 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/unistd.h>
 
 #include <timer.h>
 

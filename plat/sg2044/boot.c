@@ -26,7 +26,6 @@
 #include "sbi.h"
 #include "sg_common.h"
 #include "tp_dtb.h"
-#include <thread_safe_printf.h>
 
 #define L1_CACHE_BYTES 64
 
@@ -643,7 +642,7 @@ int boot(void)
 			assert(0);
 		}
 	} else if (get_work_mode() == CHIP_WORK_MODE_PCIE) {
-		thread_safe_printf("boot file have been load by sram, go!\n");
+		printf("boot file have been load by sram, go!\n");
 	} else {
 		build_board_info();
 	}
@@ -655,7 +654,7 @@ int boot(void)
 #endif
 
 	__asm__ __volatile__ ("fence.i"::);
-	thread_safe_printf("main core %u sbi jump to 0x%lx, dynamic info:%p\n",
+	printf("main core %u sbi jump to 0x%lx, dynamic info:%p\n",
 			    current_hartid(), boot_file[ID_OPENSBI].addr, &dynamic_info);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
 		boot_file[ID_DEVICETREE].addr, (unsigned long)&dynamic_info);

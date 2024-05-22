@@ -3,8 +3,6 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/unistd.h>
 #include <assert.h>
 #include <arch.h>
 #include <timer.h>
@@ -112,10 +110,6 @@ void system_init(void)
 		 (module_init_func *)__ld_module_init_end);
 }
 
-
-/* newlib stub */
-#define _ssize_t ssize_t
-
 static unsigned long heap_start;
 static unsigned long heap_end;
 
@@ -139,58 +133,6 @@ void *_sbrk(unsigned long inc)
 	heap_end += inc;
 	return last;
 }
-#if 0
-struct _reent {
-	int fd;
-};
-
-_ssize_t _write_r(struct _reent *ptr, int fd,
-		  const void *buf, size_t cnt)
-{
-	size_t i;
-
-	for (i = 0; i < cnt; ++i)
-		stdio_output(((uint8_t *)buf)[i]);
-
-	return cnt;
-}
-
-int _close_r(struct _reent *reent, int fd)
-{
-	return 0;
-}
-
-int _fstat_r(struct _reent *reent, int fd, struct stat *stat)
-{
-	if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
-		memset(stat, 0, sizeof(struct stat));
-		stat->st_mode = S_IFCHR;
-		return 0;
-	}
-
-	errno = EBADF;
-
-	return -errno;
-}
-
-int _isatty_r(struct _reent *reent, int fd)
-{
-	return 1;
-}
-
-off_t _lseek_r(struct _reent *reent, int fd, off_t offset, int pos)
-{
-	return 0;
-}
-
-_ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t len)
-{
-	return 0;
-}
-
-void _init(void)
-{
-}
 
 void _exit(int n)
 {
@@ -199,31 +141,3 @@ void _exit(int n)
 		;
 }
 
-void _kill(int pid, int sig)
-{
-	printf("kill %d with signal %d\n", pid, sig);
-	_exit(-1);
-}
-
-int _getpid(void)
-{
-	return 0;
-}
-
-#ifdef CONFIG_TARGET_EMULATOR
-
-/* overwrite default output functions
- * waiting uart output is not happy for emulator
- */
-int printf(const char *format, ...)
-{
-	return 0;
-}
-
-int puts(const char *s)
-{
-	return 0;
-}
-
-#endif
-#endif

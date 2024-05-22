@@ -483,6 +483,7 @@ int testmain(int argc, char *argv[])
 	int opt;
 	struct display_info disp;
 	char *filename = NULL;
+	int optind = 0;
 
 	memset(&disp, '\0', sizeof(disp));
 	disp.size = -1;

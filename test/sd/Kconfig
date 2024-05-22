@@ -1,5 +1,5 @@
 config TEST_SD
-	bool "HelloWorld"
+	bool "SD Card"
 	select DRIVER_SD
 	help
-	SD testcase
+	SD card testcase
