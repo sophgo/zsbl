@@ -1,17 +1,8 @@
-/*
- * Copyright (c) 2021, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
-#ifndef MMC_H
-#define MMC_H
+#ifndef __MMC_H__
+#define __MMC_H__
 #define __packed __attribute__((packed))
 #include <stdint.h>
-
-#include <lib/utils_def.h>
 #include <stddef.h>
-// #include <lib/libc/cdefs.h>
 
 #define MMC_BLOCK_SIZE			U(512)
 #define MMC_BLOCK_MASK			(MMC_BLOCK_SIZE - U(1))
@@ -253,4 +244,4 @@ int mmc_init(const struct mmc_ops *ops_ptr, unsigned int clk,
 	     unsigned int width, unsigned int flags,
 	     struct mmc_device_info *device_info);
 
-#endif /* MMC_H */
+#endif

@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
 #include <assert.h>
 #include <stdio.h>
 #include <framework/common.h>

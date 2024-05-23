@@ -18,12 +18,12 @@
 #include <assert.h>
 #include <of.h>
 #include <smp.h>
-#include <sbi/riscv_asm.h>
+#include <asm.h>
 #include "spinlock.h"
 #include "board.h"
 #include <libfdt.h>
 #include "ini.h"
-#include "sbi.h"
+#include <sbi.h>
 
 //#define ZSBL_BOOT_DEBUG
 //#define ZSBL_BOOT_DEBUG_LOOP

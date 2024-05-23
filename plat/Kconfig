@@ -3,11 +3,13 @@ menu "Platform"
 choice
 	prompt "Platform"
 
-config PLAT_QEMU
-	bool "QEMU"
+config PLAT_QEMU_RISCV_VIRT
+	depends on ARCH_RISCV
+	bool "QEMU RISCV Virt Machine"
 
-config PLAT_BM1686
-	bool "BM1686"
+config PLAT_QEMU_AARCH64_VIRT
+	depends on ARCH_ARM64
+	bool "QEMU AARCH64 Virt Machine"
 
 config PLAT_SG2042
 	bool "SG2042"
@@ -17,14 +19,10 @@ config PLAT_SG2260
 
 endchoice
 
-if PLAT_BM1686
-source "plat/bm1686/Kconfig"
-endif
-
 config PLAT
 	string
-	default "BM1686" if PLAT_BM1686
-	default "QEMU" if PLAT_QEMU
+	default "QEMU-RISCV-Virt" if PLAT_QEMU_RISCV_VIRT
+	default "QEMU-AARCH64-Virt" if PLAT_QEMU_AARCH64_VIRT
 	default "SG2042" if PLAT_SG2042
 	default "SG2260" if PLAT_SG2260
 	default "unknown-platform"

@@ -1,5 +1,5 @@
 ifeq ($(strip $(CROSS_COMPILE)), )
-    CROSS_COMPILE := riscv64-linux-gnu-
+    CROSS_COMPILE := riscv64-unknown-linux-gnu-
 endif
 
 core-y += arch/riscv/src/

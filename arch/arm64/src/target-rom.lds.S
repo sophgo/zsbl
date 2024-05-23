@@ -108,13 +108,6 @@ SECTIONS
 		__ld_bss_end = .;
 	} > RAM
 
-	/DISCARD/ :
-	{
-		libc.a ( * );
-		libm.a ( * );
-		libgcc.a ( * );
-	}
-
 	__ld_ram_start = ORIGIN(RAM);
 	__ld_ram_end = ORIGIN(RAM) + LENGTH(RAM);
 	__ld_data_load_start = LOADADDR(.data);

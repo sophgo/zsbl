@@ -1,11 +1,3 @@
-/*
- * Copyright (c) 2018-2021, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
-/* Define a simple and generic interface to access eMMC and SD-card devices. */
-
 #include <assert.h>
 #include <errno.h>
 #include <stdbool.h>

@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <sysreg.h>
 #include <rwonce.h>
+#include <spinlock.h>
 
 typedef uint8_t u8;
 typedef uint16_t u16;
@@ -133,55 +134,6 @@ static inline void arch_local_irq_restore(unsigned long flags)
 
 void set_handle_irq(void (*irq_handler)(void));
 void set_handle_fiq(void (*fiq_handler)(void));
-
-#ifdef CONFIG_SMP
-#error "smp not supported yet"
-#endif
-
-typedef struct spinlock {
-	int lock;
-} spinlock_t;
-
-static inline void spin_lock_init(spinlock_t *lock)
-{
-	WRITE_ONCE(lock->lock, 0);
-}
-
-int spin_trylock(spinlock_t *lock);
-
-static inline int spin_is_locked(spinlock_t *lock)
-{
-	return READ_ONCE(lock->lock);
-}
-
-static inline void spin_lock(spinlock_t *lock)
-{
-	while (1) {
-		if (spin_is_locked(lock))
-			continue;
-
-		if (spin_trylock(lock))
-			break;
-	}
-}
-
-static inline void spin_unlock(spinlock_t *lock)
-{
-	WRITE_ONCE(lock->lock, 0);
-}
-
-/* disable irq is enough for uniprocessor system */
-#define spin_lock_irqsave(lock, flags)		\
-	do {					\
-		flags = arch_local_irq_save();	\
-		spin_lock(lock);		\
-	} while (0)
-
-#define spin_unlock_irqrestore(lock, flags)	\
-	do {					\
-		arch_local_irq_restore(flags);	\
-		spin_unlock(lock);		\
-	} while (0)
 
 #endif
 
