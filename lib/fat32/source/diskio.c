@@ -12,7 +12,6 @@
 #include <driver/sd/mmc.h>
 #include "ff.h"			/* Obtains integer types */
 #include "diskio.h"		/* Declarations of disk functions */
-int sbi_printf(const char *format, ...);
 /* Definitions of physical drive number for each drive */
 // #define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
 #define DEV_MMC		0	/* Example: Map MMC/SD card to physical drive 1 */

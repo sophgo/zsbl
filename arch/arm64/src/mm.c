@@ -1,5 +1,4 @@
 #include <stdint.h>
-#include <malloc.h>
 #include <assert.h>
 #include <string.h>
 #include <system.h>
@@ -226,7 +225,7 @@ static uint64_t *create_table(void)
 
 static void set_pte_table(uint64_t *pte, uint64_t *table)
 {
-	*pte = PTE_TYPE_TABLE | (ulong)table;
+	*pte = PTE_TYPE_TABLE | (unsigned long)table;
 }
 
 /* Splits a block PTE into table with subpages spanning the old block */

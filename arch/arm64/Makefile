@@ -1,5 +1,5 @@
 ifeq ($(strip $(CROSS_COMPILE)), )
-    CROSS_COMPILE := aarch64-none-elf-
+    CROSS_COMPILE := aarch64-linux-gnu-
 endif
 
 core-y += arch/arm64/src/
@@ -10,4 +10,5 @@ else
 KBUILD_LDS := arch/arm64/src/target-ram.lds
 endif
 
-KBUILD_CFLAGS += -march=armv8-a+simd+nocrypto -DARCH_ARM64
+KBUILD_CFLAGS += -g -march=armv8-a+simd+nocrypto -DARCH_ARM64 -nostdinc
+KBUILD_LDFLAGS += -nostdlib

@@ -1,21 +1,8 @@
-/*
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2019 Western Digital Corporation or its affiliates.
- *
- * Authors:
- *   Atish Patra <atish.patra@wdc.com>
- */
-
-/*
- * Simple libc functions. These are not optimized at all and might have some
- * bugs as well. Use any optimized routines from newlib or glibc if required.
- */
-
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+
 /*
   Provides strcmp for the completeness of supporting string functions.
   it is not recommended to use strcmp() but use strncmp instead.

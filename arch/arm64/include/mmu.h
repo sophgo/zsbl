@@ -1,10 +1,3 @@
-/*
- * (C) Copyright 2013
- * David Feng <fenghua@phytium.com.cn>
- *
- * SPDX-License-Identifier:	GPL-2.0+
- */
-
 #ifndef _ASM_ARMV8_MMU_H_
 #define _ASM_ARMV8_MMU_H_
 
@@ -21,7 +14,9 @@
  * block/section address mask and size definitions.
  */
 
+#ifndef UL
 #define UL(_v)	(unsigned long)(_v)
+#endif
 
 /* PAGE_SHIFT determines the page size */
 #undef  PAGE_SIZE

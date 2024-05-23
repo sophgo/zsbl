@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2016-2017, ARM Limited and Contributors. All rights reserved.
- *
- * SPDX-License-Identifier: BSD-3-Clause
- */
-
 #ifndef __BM_SD_H__
 #define __BM_SD_H__
 
@@ -175,4 +169,4 @@ typedef struct bm_sd_params {
 int bm_sd_card_detect(void);
 int bm_sd_init(uint32_t flags);
 
-#endif	/* __BM_SD_H__ */
+#endif

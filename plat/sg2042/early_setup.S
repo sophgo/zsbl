@@ -1,5 +1,5 @@
 #include <platform.h>
-#include <sbi/riscv_encoding.h>
+#include <encoding.h>
 
 	.global plat_early_setup
 	.func plat_early_setup

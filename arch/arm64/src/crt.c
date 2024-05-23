@@ -3,8 +3,6 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-#include <sys/stat.h>
-#include <sys/unistd.h>
 #include <assert.h>
 #include <arch.h>
 #include <cache.h>
@@ -236,16 +234,15 @@ void set_handle_fiq(void (*fiq_handler)(void))
 
 int spin_trylock(spinlock_t *lock)
 {
-	int old, tmp;
+	int old, tmp0, tmp1;
 
-	asm volatile ("1:	ldxr	%w0, %2\n"
+	asm volatile ("1:	ldxr	%w0, %3\n"
 		      "		cbnz	%w0, 2f\n"	/* out */
-		      "		add	%w0, %w0, #1\n"
-		      "		stxr	%w1, %w0, %2\n"
-		      "		cbnz	%w1, 1b\n"
-		      "		ldr	%w0, #0\n"	/* get lock success */
+		      "		add	%w1, %w0, #1\n"
+		      "		stxr	%w2, %w1, %3\n"
+		      "		cbnz	%w2, 1b\n"
 		      "2:\n"
-		      : "=r"(old), "=r"(tmp), "+Q"(lock->lock)
+		      : "=r"(old), "=r"(tmp0), "=r"(tmp1), "+Q"(lock->lock)
 		      :
 		      : "memory"
 		      );
@@ -369,54 +366,6 @@ void *_sbrk(unsigned long inc)
 	return last;
 }
 
-_ssize_t _write_r(struct _reent *ptr, int fd,
-		  const void *buf, size_t cnt)
-{
-	size_t i;
-
-	for (i = 0; i < cnt; ++i)
-		stdio_output(((uint8_t *)buf)[i]);
-
-	return cnt;
-}
-
-int _close_r(struct _reent *reent, int fd)
-{
-	return 0;
-}
-
-int _fstat_r(struct _reent *reent, int fd, struct stat *stat)
-{
-	if (fd == STDOUT_FILENO || fd == STDERR_FILENO) {
-		memset(stat, 0, sizeof(struct stat));
-		stat->st_mode = S_IFCHR;
-		return 0;
-	}
-
-	errno = EBADF;
-
-	return -errno;
-}
-
-int _isatty_r(struct _reent *reent, int fd)
-{
-	return 1;
-}
-
-off_t _lseek_r(struct _reent *reent, int fd, off_t offset, int pos)
-{
-	return 0;
-}
-
-_ssize_t _read_r(struct _reent *reent, int fd, void *buf, size_t len)
-{
-	return 0;
-}
-
-void _init(void)
-{
-}
-
 void _exit(int n)
 {
 	printf("a53lite terminated with code %d\n", n);
@@ -424,15 +373,12 @@ void _exit(int n)
 		;
 }
 
-void _kill(int pid, int sig)
-{
-	printf("kill %d with signal %d\n", pid, sig);
-	_exit(-1);
-}
+void *__stack_chk_guard = (void *)0xdeadbeef;
 
-int _getpid(void)
-{
-	return 0;
+void __stack_chk_fail(void) {
+	printf("Stack smashing detected.\n");
+	while (true)
+		;
 }
 
 #ifdef CONFIG_TARGET_EMULATOR

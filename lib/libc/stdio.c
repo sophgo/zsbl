@@ -1,20 +1,7 @@
-/*
- * SPDX-License-Identifier: BSD-2-Clause
- *
- * Copyright (c) 2019 Western Digital Corporation or its affiliates.
- *
- * Authors:
- *   Anup Patel <anup.patel@wdc.com>
- */
-
-#include <sbi/sbi_hart.h>
-#include <sbi/sbi_scratch.h>
-
 #include <spinlock.h>
-
 #include <framework/common.h>
-
 #include <string.h>
+#include <stdbool.h>
 
 #define CONSOLE_TBUF_MAX 256
 
@@ -169,7 +156,7 @@ static int printi(char **out, size_t *out_len, long long i, int b, int sg,
 	char print_buf[PRINT_BUF_LEN];
 	char *s;
 	int neg = 0, pc = 0;
-	u64 t;
+	uint64_t t;
 	unsigned long long u = i;
 
 	if (sg && b == 10 && i < 0) {
@@ -376,7 +363,7 @@ int sprintf(char *out, const char *format, ...)
 	va_list args;
 	int retval;
 
-	if (unlikely(!out))
+	if (!out)
 		panic("sprintf called with NULL output string\n");
 
 	va_start(args, format);
@@ -391,7 +378,7 @@ int snprintf(char *out, size_t out_sz, const char *format, ...)
 	va_list args;
 	int retval;
 
-	if (unlikely(!out && out_sz != 0))
+	if (!out && out_sz != 0)
 		panic("snprintf called with NULL output string and "
 			  "output size is not zero\n");
 
@@ -416,23 +403,6 @@ int printf(const char *format, ...)
 	return retval;
 }
 
-int dprintf(int fd, const char *format, ...)
-{
-	va_list args;
-	int retval = 0;
-	struct sbi_scratch *scratch = sbi_scratch_thishart_ptr();
-
-	va_start(args, format);
-	if (scratch->options & SBI_SCRATCH_DEBUG_PRINTS) {
-		spin_lock(&console_out_lock);
-		retval = print(NULL, NULL, format, args);
-		spin_unlock(&console_out_lock);
-	}
-	va_end(args);
-
-	return retval;
-}
-
 static void panic(const char *format, ...)
 {
 	va_list args;
@@ -443,7 +413,7 @@ static void panic(const char *format, ...)
 	va_end(args);
 	spin_unlock(&console_out_lock);
 
-	sbi_hart_hang();
-	while (1);
+	while (1)
+		;
 }
 

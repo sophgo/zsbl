@@ -7,7 +7,7 @@
 
 #include <spinlock.h>
 #include <smp.h>
-#include <sbi/riscv_asm.h>
+#include <asm.h>
 
 #define STACK_SIZE 4096
 

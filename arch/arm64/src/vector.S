@@ -57,7 +57,6 @@ park:
 #endif
 	bl	load_data
 	bl	system_init
-	bl	__libc_init_array
 	bl	main
 	bl	_exit
 _end:

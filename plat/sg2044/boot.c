@@ -18,12 +18,12 @@
 #include <assert.h>
 #include <of.h>
 #include <smp.h>
-#include <sbi/riscv_asm.h>
-#include "spinlock.h"
+#include <asm.h>
+#include <spinlock.h>
 #include "board.h"
 #include <libfdt.h>
 #include "ini.h"
-#include "sbi.h"
+#include <sbi.h>
 #include "sg_common.h"
 #include "tp_dtb.h"
 

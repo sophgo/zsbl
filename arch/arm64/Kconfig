@@ -1,3 +1,7 @@
+config ARCH_ARM64
+	bool
+	default y
+
 menu "ARM64 Options"
 
 config RAM_START

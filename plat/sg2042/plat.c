@@ -1,7 +1,6 @@
 #if defined ARCH_ARM64
 #include <stdint.h>
 #include <string.h>
-#include <stdarg.h>
 #include <mmu.h>
 #include <cache.h>
 #include <irq.h>
