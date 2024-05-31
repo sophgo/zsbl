@@ -18,24 +18,33 @@ struct devid_info {
 
 struct iommu_bridge{
 	const char *name;
-	uintptr_t bypass_enable_reg;
+	uintptr_t base;
 	bool bypass;
+	bool prefetch;
 
 	struct devid_info *devid;
 	int dev_num;
 };
+
+static void sg2380_iommu_prefetch_enable(uintptr_t base, bool enable)
+{
+	if (enable)
+		mmio_setbits_32(base + IOMMU_PREFETCH_CFG, PREFETCH_ENABLE);
+	else
+		mmio_clrbits_32(base + IOMMU_PREFETCH_CFG, PREFETCH_ENABLE);
+}
 
 static void sg2380_iommu_set_devid(uintptr_t addr, uint32_t shift, uint32_t devid)
 {
 	mmio_clrsetbits_32(addr, DEVID_MASK << shift, devid << shift);
 }
 
-static void sg2380_iommu_bypass_enable(uintptr_t addr, bool enable)
+static void sg2380_iommu_bypass_enable(uintptr_t base, bool enable)
 {
 	if (enable)
-		mmio_setbits_32(addr, BYPASS_ENABLE);
+		mmio_setbits_32(base + IOMMU_GLOBAL_CFG, BYPASS_ENABLE);
 	else
-		mmio_clrbits_32(addr, BYPASS_ENABLE);
+		mmio_clrbits_32(base + IOMMU_GLOBAL_CFG, BYPASS_ENABLE);
 }
 
 static struct devid_info left_devid_table[] = {
@@ -77,36 +86,41 @@ static struct devid_info ssperi_devid_table[] = {
 static const struct iommu_bridge bridge[IOMMU_BRIDGE_NUM] = {
 	{
 		.name = "left iommu",
-		.bypass_enable_reg = LEFT_IOMMU_BASE + IOMMU_GLOBAL_CFG,
+		.base = LEFT_IOMMU_BASE,
 		.bypass = true,
+		.prefetch = true,
 		.devid = left_devid_table,
 		.dev_num = ARRAY_SIZE(left_devid_table),
 	},
 	{
 		.name = "right iommu",
-		.bypass_enable_reg = RIGHT_IOMMU_BASE + IOMMU_GLOBAL_CFG,
+		.base = RIGHT_IOMMU_BASE,
 		.bypass = true,
+		.prefetch = true,
 		.devid = right_devid_table,
 		.dev_num = ARRAY_SIZE(right_devid_table),
 	},
 	{
 		.name = "gpu iommu",
-		.bypass_enable_reg = GPU_IOMMU_BASE + IOMMU_GLOBAL_CFG,
+		.base = GPU_IOMMU_BASE,
 		.bypass = true,
+		.prefetch = false,
 		.devid = gpu_devid_table,
 		.dev_num = ARRAY_SIZE(gpu_devid_table),
 	},
 	{
 		.name = "PCIe iommu",
-		.bypass_enable_reg = PCIE_IOMMU_BASE + IOMMU_GLOBAL_CFG,
+		.base = PCIE_IOMMU_BASE,
 		.bypass = true,
+		.prefetch = false,
 		.devid = pcie_devid_table,
 		.dev_num = ARRAY_SIZE(pcie_devid_table),
 	},
 	{
 		.name = "ssperi iommu",
-		.bypass_enable_reg = SSPERI_IOMMU_BASE + IOMMU_GLOBAL_CFG,
+		.base = SSPERI_IOMMU_BASE,
 		.bypass = true,
+		.prefetch = false,
 		.devid = ssperi_devid_table,
 		.dev_num = ARRAY_SIZE(ssperi_devid_table),
 	},
@@ -124,10 +138,13 @@ static void sg2380_dump_reg(void)
 		if (bridge[i].bypass)
 			continue;
 
-		value = mmio_read_32(bridge[i].bypass_enable_reg);
+		value = mmio_read_32(bridge[i].base + IOMMU_GLOBAL_CFG);
 		printf("%s bypass %s\n", bridge[i].name, (value & BYPASS_ENABLE) ? "enable" : "disable");
-		printf("device number %d\n", bridge[i].dev_num);
 
+		value = mmio_read_32(bridge[i].base + IOMMU_PREFETCH_CFG);
+		printf("%s prefetch %s\n", bridge[i].name, (value & PREFETCH_ENABLE) ? "enable" : "disable");
+
+		printf("device number %d\n", bridge[i].dev_num);
 		for (j = 0; j < bridge[i].dev_num; j++) {
 			devid = &bridge[i].devid[j];
 			value = mmio_read_32(devid->reg);
@@ -149,8 +166,8 @@ void sg2380_iommu_init(void)
 		if (bridge[i].bypass)
 			continue;
 
-		sg2380_iommu_bypass_enable(bridge[i].bypass_enable_reg,
-					   bridge[i].bypass);
+		sg2380_iommu_bypass_enable(bridge[i].base, bridge[i].bypass);
+		sg2380_iommu_prefetch_enable(bridge[i].base, bridge[i].prefetch);
 
 		for (j = 0; j < bridge[i].dev_num; j++) {
 			devid = &bridge[i].devid[j];
