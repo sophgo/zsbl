@@ -8,8 +8,13 @@
 #include <lib/utils_def.h>
 
 /* iommu wrapper register */
-#define IOMMU_GLOBAL_CFG	0x2000 + 0x0
+#define IOMMU_WRAPPER_OFFSET	0x2000
+
+#define IOMMU_GLOBAL_CFG	IOMMU_WRAPPER_OFFSET + 0x0
 #define BYPASS_ENABLE		BIT(0)
+
+#define IOMMU_PREFETCH_CFG	IOMMU_WRAPPER_OFFSET + 0x14
+#define PREFETCH_ENABLE		BIT(0)
 
 /* ssperi sys top register */
 #define ETH01_AW_DEVID_REG	0x164
