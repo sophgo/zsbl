@@ -23,6 +23,10 @@
 #define STACK_SIZE 4096
 #define DDR_CFG_BASEADDR 0X05000000000
 
+#define CONFIG_SSPERI_SATA
+//#define CONFIG_SSPERI_ETH
+//#define CONFIG_SSPERI_PCIE
+
 // #define CONFIG_TPU_SYS
 
 extern int boot_from_storage(void);
@@ -180,10 +184,24 @@ void sg2380_set_tpu_run(void)
 }
 #endif
 
+static void sg2380_phy_interface_config(void)
+{
+    unsigned int __attribute__((unused)) value;
+
+#ifdef CONFIG_SSPERI_SATA
+    value = mmio_read_32(SSPERI_PHY1_INTF_REG);
+    value = (value & ~(SSPERI_MODE_MASK)) | SSPERI_MODE_SATA;
+    mmio_write_32(SSPERI_PHY1_INTF_REG, value);
+#endif
+
+}
+
+
 int boot(void)
 {
 #if defined(CONFIG_TARGET_PALLADIUM)
 	printf("Sophgo SG2380 zsbl!\n");
+	sg2380_phy_interface_config();
 	sifive_extensiblecache0_init();
 	platform_init();
 	ncore_direct_config();
