@@ -188,10 +188,10 @@ int boot(void)
 	platform_init();
 	ncore_direct_config();
 	printf("ncore init done\n");
-	sg2380_iommu_init();
 	//sg2380_fakeddr_init();
 	sg2380_multimedia_itlvinit();
 	sg2380_ddr_init_asic();
+	sg2380_iommu_init();
 #ifdef CONFIG_TPU_SYS
 	sg2380_set_tpu_run();
 #endif
