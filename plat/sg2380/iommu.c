@@ -218,14 +218,14 @@ static uint64_t alloc_one_page(void)
 	return pa;
 }
 
-static void sg2380_iommu_create_sv48_pt(uint64_t pa, uint64_t size)
+static void sg2380_iommu_create_sv48_pt(uint64_t va,  uint64_t pa, uint64_t size)
 {
 	uint64_t tmp, tmp1, tmp2;
 	pte_t *root, *level1, *level2, *level3;
 	int i, j, k;
-	uint64_t va;
+	uint64_t pa_l;
 
-	va = pa;
+	pa_l = pa;
 	root = (pte_t *)alloc_one_page();
 	for (i = 0; i < PAGE_SIZE / sizeof(pte_t); i++) {
 		root[i] = 0;
@@ -235,7 +235,7 @@ static void sg2380_iommu_create_sv48_pt(uint64_t pa, uint64_t size)
 	root[(va >> VPN3_OFFSET) & VPN3_MASK] = ((uint64_t)level1 >> 2) | 0x1;
 
 	tmp = va;
-	for (i = 0; i < round_up(size, 1 << VPN2_OFFSET) / (1 << VPN2_OFFSET); i++) {
+	for (i = 0; i < round_down(size, 1 << VPN2_OFFSET) / (1 << VPN2_OFFSET); i++) {
 		level2 = (pte_t *)alloc_one_page();
 		level1[(tmp >> VPN2_OFFSET) & VPN2_MASK] = ((uint64_t)level2 >> 2) | 0x1;
 
@@ -246,9 +246,9 @@ static void sg2380_iommu_create_sv48_pt(uint64_t pa, uint64_t size)
 
 			tmp2 = tmp1;
 			for (k = 0; k < PAGE_SIZE / sizeof(pte_t); k++) {
-				level3[(tmp2 >> VPN0_OFFSET) & VPN0_MASK] =
-					(uint64_t)(tmp2 >> 2) | 0xdf;
+				level3[(tmp2 >> VPN0_OFFSET) & VPN0_MASK] = (uint64_t)((pa_l >> 12) << 10) | 0xdf;
 				tmp2 += (1 << VPN0_OFFSET);
+				pa_l += (1 << VPN0_OFFSET);
 			}
 			tmp1 += (1 << VPN1_OFFSET);
 		}
@@ -264,14 +264,14 @@ static void sg2380_iommu_set_dc(uintptr_t dc_addr)
 	mmio_write_64(dc_addr + FSC_OFFSET, ((PGD_ROOT) >> 12) | SATP_MODE_48);
 }
 
-static void sg2380_iommu_direct_map(uint64_t pa, uint64_t size)
+static void sg2380_iommu_map(uint64_t va, uint64_t pa, uint64_t size)
 {
 	int dev_id;
 	uintptr_t addr;
 
 	memset((void *)IOMMU_DDTP_ADDR, 0x0, PAGE_SIZE);
 
-	sg2380_iommu_create_sv48_pt(pa, size);
+	sg2380_iommu_create_sv48_pt(va, pa, size);
 
 	for (dev_id = 1; dev_id < MAX_DEV_NUM; dev_id++) {
 		addr = IOMMU_DDTP_ADDR + dev_id * LEAF_DDT_ENTRY_SIZE;
@@ -295,7 +295,7 @@ void sg2380_iommu_init(void)
 
 	printf("sg2380 iommu init\n");
 #ifdef SG2380_IOMMU_DIRECT_MAP
-	sg2380_iommu_direct_map(0x80000000, 0x40000000);
+	sg2380_iommu_map(0xffc0000000, 0x80000000, 0x40000000);
 #endif
 
 	for(i = 0; i < IOMMU_BRIDGE_NUM; i++)
