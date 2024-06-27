@@ -10,6 +10,9 @@
 
 //#define SG2380_IOMMU_DIRECT_MAP
 #ifdef SG2380_IOMMU_DIRECT_MAP
+#define IOVA_ADDR	0x80000000
+#define PA_ADDR		0x80000000
+#define MAP_SIZE	0x40000000
 #define MAX_DEV_NUM		20
 #define IOMMU_DDTP_ADDR		0x140000000
 #define IOMMU_DDTP_SIZE		0x1000
@@ -99,6 +102,7 @@ static struct devid_info gpu_devid_table[] = {
 	{"dma5_ar", GPU_SYS_BASE + 0x28, 25, 0x1f, TMP_DEVID15},
 	{"dma6_ar", GPU_SYS_BASE + 0x2c, 0, 0x1f, TMP_DEVID16},
 	{"dma7_ar", GPU_SYS_BASE + 0x2c, 5, 0x1f, TMP_DEVID17},
+	{"skybox_ar", GPU_SYS_BASE + 0x3c, 11, 0x1f, TMP_DEVID18},
 
 	{"dma0_aw", GPU_SYS_BASE + 0x30, 0, 0x1f, TMP_DEVID10},
 	{"dma1_aw", GPU_SYS_BASE + 0x30, 5, 0x1f, TMP_DEVID11},
@@ -108,6 +112,7 @@ static struct devid_info gpu_devid_table[] = {
 	{"dma5_aw", GPU_SYS_BASE + 0x30, 25, 0x1f, TMP_DEVID15},
 	{"dma6_aw", GPU_SYS_BASE + 0x34, 0, 0x1f, TMP_DEVID16},
 	{"dma7_aw", GPU_SYS_BASE + 0x34, 5, 0x1f, TMP_DEVID17},
+	{"skybox_aw", GPU_SYS_BASE + 0x3c, 6, 0x1f, TMP_DEVID18},
 };
 
 static struct devid_info pcie_devid_table[] = {
@@ -218,14 +223,14 @@ static uint64_t alloc_one_page(void)
 	return pa;
 }
 
-static void sg2380_iommu_create_sv48_pt(uint64_t pa, uint64_t size)
+static void sg2380_iommu_create_sv48_pt(uint64_t va,  uint64_t pa, uint64_t size)
 {
 	uint64_t tmp, tmp1, tmp2;
 	pte_t *root, *level1, *level2, *level3;
 	int i, j, k;
-	uint64_t va;
+	uint64_t pa_l;
 
-	va = pa;
+	pa_l = pa;
 	root = (pte_t *)alloc_one_page();
 	for (i = 0; i < PAGE_SIZE / sizeof(pte_t); i++) {
 		root[i] = 0;
@@ -246,9 +251,9 @@ static void sg2380_iommu_create_sv48_pt(uint64_t pa, uint64_t size)
 
 			tmp2 = tmp1;
 			for (k = 0; k < PAGE_SIZE / sizeof(pte_t); k++) {
-				level3[(tmp2 >> VPN0_OFFSET) & VPN0_MASK] =
-					(uint64_t)(tmp2 >> 2) | 0xdf;
+				level3[(tmp2 >> VPN0_OFFSET) & VPN0_MASK] = (uint64_t)((pa_l >> 12) << 10) | 0xdf;
 				tmp2 += (1 << VPN0_OFFSET);
+				pa_l += (1 << VPN0_OFFSET);
 			}
 			tmp1 += (1 << VPN1_OFFSET);
 		}
@@ -264,14 +269,14 @@ static void sg2380_iommu_set_dc(uintptr_t dc_addr)
 	mmio_write_64(dc_addr + FSC_OFFSET, ((PGD_ROOT) >> 12) | SATP_MODE_48);
 }
 
-static void sg2380_iommu_direct_map(uint64_t pa, uint64_t size)
+static void sg2380_iommu_map(uint64_t va, uint64_t pa, uint64_t size)
 {
 	int dev_id;
 	uintptr_t addr;
 
 	memset((void *)IOMMU_DDTP_ADDR, 0x0, PAGE_SIZE);
 
-	sg2380_iommu_create_sv48_pt(pa, size);
+	sg2380_iommu_create_sv48_pt(va, pa, size);
 
 	for (dev_id = 1; dev_id < MAX_DEV_NUM; dev_id++) {
 		addr = IOMMU_DDTP_ADDR + dev_id * LEAF_DDT_ENTRY_SIZE;
@@ -295,7 +300,7 @@ void sg2380_iommu_init(void)
 
 	printf("sg2380 iommu init\n");
 #ifdef SG2380_IOMMU_DIRECT_MAP
-	sg2380_iommu_direct_map(0x80000000, 0x40000000);
+	sg2380_iommu_map(IOVA_ADDR, PA_ADDR, MAP_SIZE);
 #endif
 
 	for(i = 0; i < IOMMU_BRIDGE_NUM; i++)
