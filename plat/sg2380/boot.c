@@ -14,6 +14,7 @@
 #include <platform.h>
 #include <memmap.h>
 #include <ncore_boot.h>
+#include <iommu.h>
 #include <sbi/riscv_asm.h>
 #include <driver/ddr/ddr.h>
 #include "sbi.h"
@@ -21,6 +22,10 @@
 
 #define STACK_SIZE 4096
 #define DDR_CFG_BASEADDR 0X05000000000
+
+#define CONFIG_SSPERI_SATA
+//#define CONFIG_SSPERI_ETH
+//#define CONFIG_SSPERI_PCIE
 
 // #define CONFIG_TPU_SYS
 
@@ -77,12 +82,9 @@ int boot_next_img(void)
 	return 0;
 }
 
-#define GENMASK(h, l) \
-	(((~0UL) << (l)) & (~0UL >> (32 - 1 - (h)))) 
-
 static inline uint32_t modified_bits_by_value(uint32_t orig, uint32_t value, uint32_t msb, uint32_t lsb)
 {
-	uint32_t bitmask = GENMASK(msb, lsb);
+	uint32_t bitmask = GENMASK_32(msb, lsb);
 
 	orig &= ~bitmask;
 	return (orig | ((value << lsb) & bitmask));
@@ -182,17 +184,32 @@ void sg2380_set_tpu_run(void)
 }
 #endif
 
+static void sg2380_phy_interface_config(void)
+{
+    unsigned int __attribute__((unused)) value;
+
+#ifdef CONFIG_SSPERI_SATA
+    value = mmio_read_32(SSPERI_PHY1_INTF_REG);
+    value = (value & ~(SSPERI_MODE_MASK)) | SSPERI_MODE_SATA;
+    mmio_write_32(SSPERI_PHY1_INTF_REG, value);
+#endif
+
+}
+
+
 int boot(void)
 {
 #if defined(CONFIG_TARGET_PALLADIUM)
 	printf("Sophgo SG2380 zsbl!\n");
+	sg2380_phy_interface_config();
 	sifive_extensiblecache0_init();
 	platform_init();
 	ncore_direct_config();
 	printf("ncore init done\n");
-	sg2380_fakeddr_init();
+	//sg2380_fakeddr_init();
 	sg2380_multimedia_itlvinit();
-	//sg2380_ddr_init_asic();
+	sg2380_ddr_init_asic();
+	sg2380_iommu_init();
 #ifdef CONFIG_TPU_SYS
 	sg2380_set_tpu_run();
 #endif

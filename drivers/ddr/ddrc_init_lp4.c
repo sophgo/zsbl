@@ -60,12 +60,14 @@ void ddrc_init_lp4(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr)
 	mmio_wr32(base_addr_ctrl + 0x10300, 0x200020); // DWC_ddrctl_map_REGB_DDRC_CH0.DQSOSCRUNTIME
 	mmio_wr32(base_addr_ctrl + 0x10308, 0x1); // DWC_ddrctl_map_REGB_DDRC_CH0.DQSOSCCFG0
 	mmio_wr32(base_addr_ctrl + 0x10380, 0xa8013f14); // DWC_ddrctl_map_REGB_DDRC_CH0.SCHED0
+  
 	rddata = mmio_rd32(base_addr_ctrl + 0x10384);
 	rddata = modified_bits_by_value(rddata, 0b001, 22, 20);
 	mmio_wr32(base_addr_ctrl + 0x10384, rddata);// DWC_ddrctl_map_REGB_DDRC_CH0.SCHED1
 	rddata = mmio_rd32(base_addr_ctrl + 0x1038c);
 	rddata = modified_bits_by_value(rddata, 0x0000, 31, 16);
 	mmio_wr32(base_addr_ctrl + 0x1038c, rddata);// DWC_ddrctl_map_REGB_DDRC_CH0.SCHED3
+
 	mmio_wr32(base_addr_ctrl + 0x10394, 0x10000104); // DWC_ddrctl_map_REGB_DDRC_CH0.SCHED5
 	mmio_wr32(base_addr_ctrl + 0x10500, 0x110111); // DWC_ddrctl_map_REGB_DDRC_CH0.DFILPCFG0
 	mmio_wr32(base_addr_ctrl + 0x10508, 0xa0000000); // DWC_ddrctl_map_REGB_DDRC_CH0.DFIUPD0
@@ -78,8 +80,10 @@ void ddrc_init_lp4(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr)
 	mmio_wr32(base_addr_ctrl + 0x10658, 0xab2eb8fb); // DWC_ddrctl_map_REGB_DDRC_CH0.ECCPOISONPAT0
 	mmio_wr32(base_addr_ctrl + 0x10660, 0x6a); // DWC_ddrctl_map_REGB_DDRC_CH0.ECCPOISONPAT2
 	mmio_wr32(base_addr_ctrl + 0x10984, 0x77); // DWC_ddrctl_map_REGB_DDRC_CH0.LNKECCCTL1
+
 	//mmio_wr32(base_addr_ctrl + 0x10d00, 0x40020002); // DWC_ddrctl_map_REGB_DDRC_CH0.INITTMG0
 	mmio_wr32(base_addr_ctrl + 0x10d00, 0x00020002); // DWC_ddrctl_map_REGB_DDRC_CH0.INITTMG0
+
 	mmio_wr32(base_addr_ctrl + 0x10f00, 0x800060c0); // DWC_ddrctl_map_REGB_DDRC_CH0.PPT2CTRL0
 	//mmio_wr32(base_addr_ctrl + 0x0, 0x6440925a); // DWC_ddrctl_map_REGB_FREQ0_CH0.DRAMSET1TMG0
 	mmio_wr32(base_addr_ctrl + 0x0, 0x6440495a); // DWC_ddrctl_map_REGB_FREQ0_CH0.DRAMSET1TMG0
