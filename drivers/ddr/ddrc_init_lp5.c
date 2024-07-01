@@ -57,6 +57,12 @@ void ddrc_init_lp5(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr)
 	mmio_wr32(base_addr_ctrl + 0x10300, 0xc000c0); // DWC_ddrctl_map_REGB_DDRC_CH0.DQSOSCRUNTIME
 	mmio_wr32(base_addr_ctrl + 0x10308, 0x1); // DWC_ddrctl_map_REGB_DDRC_CH0.DQSOSCCFG0
 	mmio_wr32(base_addr_ctrl + 0x10380, 0xa8013f14); // DWC_ddrctl_map_REGB_DDRC_CH0.SCHED0
+	rddata = mmio_rd32(base_addr_ctrl + 0x10384);
+	rddata = modified_bits_by_value(rddata, 0b001, 22, 20);
+	mmio_wr32(base_addr_ctrl + 0x10384, rddata);// DWC_ddrctl_map_REGB_DDRC_CH0.SCHED1
+	rddata = mmio_rd32(base_addr_ctrl + 0x1038c);
+	rddata = modified_bits_by_value(rddata, 0x0000, 31, 16);
+	mmio_wr32(base_addr_ctrl + 0x1038c, rddata);// DWC_ddrctl_map_REGB_DDRC_CH0.SCHED3
 	mmio_wr32(base_addr_ctrl + 0x10394, 0x10000104); // DWC_ddrctl_map_REGB_DDRC_CH0.SCHED5
 	mmio_wr32(base_addr_ctrl + 0x10400, 0x2000010); // DWC_ddrctl_map_REGB_DDRC_CH0.HWFFCCTL
 	mmio_wr32(base_addr_ctrl + 0x10500, 0x100111); // DWC_ddrctl_map_REGB_DDRC_CH0.DFILPCFG0
