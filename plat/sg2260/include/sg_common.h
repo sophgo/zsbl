@@ -14,10 +14,11 @@ enum {
 	CORE_TPU_SCALAR7,
 };
 
-#define ZSBL_IMAGE_OFFSET	0xa00000
-#define KERNEL_IMAGE_OFFSET	0x3000000
-#define DTB_OFFSET	0x12000000
-#define RAMFS_OFFSET	0x13000000
+#define ZSBL_IMAGE_OFFSET	0x1000000
+#define KERNEL_IMAGE_OFFSET	0x200000
+#define DTB_OFFSET	0x7000000
+#define RAMFS_OFFSET	0xa000000
+#define TPU_FW_SIZE	0x10000000
 
 uint64_t get_work_mode(void);
 uint64_t get_core_type(void);
