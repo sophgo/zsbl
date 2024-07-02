@@ -81,13 +81,18 @@ static int run_init(const char *name,
 	return 0;
 }
 
+extern uintptr_t __metal_init_hart;
+
 void system_init(void)
 {
+	unsigned int hartid = current_hartid();
+
 	timer_init();
 
-	run_init("early",
-		 (module_init_func *)__ld_early_init_start,
-		 (module_init_func *)__ld_early_init_end);
+	if (hartid == __metal_init_hart)
+		run_init("early",
+			(module_init_func *)__ld_early_init_start,
+			(module_init_func *)__ld_early_init_end);
 
 #ifdef CONFIG_PLAT
 	pr_debug("Hello %s\n", CONFIG_PLAT);

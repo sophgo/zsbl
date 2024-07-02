@@ -10,6 +10,11 @@ config RAM_SIZE
 	help
 		RAM size that this program never exceed
 
+config STACK_SIZE
+	hex "STACK Size"
+	help
+		STACK size per core
+
 config ROM_BOOT
 	bool "Boot from ROM"
 	default n
@@ -57,7 +62,7 @@ config THEAD
 	bool "SG2260"
 
 config SIFIVE
-	bool "SG2380"
+	bool "x280"
 
 config THEAD_CMO
 	bool
