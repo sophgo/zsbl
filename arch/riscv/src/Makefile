@@ -16,4 +16,4 @@ obj-n += sbi_safe_console.o
 obj-y += riscv_asm.o
 
 obj-$(CONFIG_THEAD) += t-head/
-obj-$(CONFIG_SIFIVE) += sifive/
+obj-$(CONFIG_SIFIVE) += x280/

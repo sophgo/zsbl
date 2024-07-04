@@ -7,6 +7,16 @@ MEMORY
 
 SECTIONS
 {
+	/* The boot hart sets which hart runs the pre-main initialization routines,
+	 * including copying .data into RAM, zeroing the BSS region, running
+	 * constructors, etc.
+	*/
+	PROVIDE(__metal_boot_hart = 0);
+
+	/* The chicken bit is used by pre-main initialization to enable/disable
+	 * certain core features */
+	PROVIDE(__metal_chicken_bit = 1);
+
 	. = ALIGN(16);
 
 	.text :
@@ -95,6 +105,7 @@ SECTIONS
 		__ld_data_start = .;
 		*(.data);
 		*(.data*);
+		__gp_range_start = .;
 		*(.sdata);
 		*(.sdata*);
 		. = ALIGN(16);
@@ -102,14 +113,15 @@ SECTIONS
 		__ld_program_end = .;
 	} > RAM
 
+	. = ALIGN(16);
 	.bss :
 	{
-		. = ALIGN(16);
 		__ld_bss_start = .;
-		*(.bss);
-		*(.bss*);
 		*(.sbss);
 		*(.sbss*);
+		__gp_range_end = .;
+		*(.bss);
+		*(.bss*);
 		*(COMMON);
 		. = ALIGN(16);
 		__ld_bss_end = .;
@@ -128,13 +140,13 @@ SECTIONS
 		PROVIDE(__rel_dyn_end = .);
 	} > RAM
 
-
-
 	__ld_ram_start = ORIGIN(RAM);
 	__ld_ram_end = ORIGIN(RAM) + LENGTH(RAM);
 	__ld_data_load_start = LOADADDR(.data);
 	__ld_data_load_end = __ld_data_load_start + SIZEOF(.data);
+	__ld_data_size = SIZEOF(.data);
+	__ld_bss_size = SIZEOF(.bss);
 	__ld_stack_top = __ld_ram_end;
+	__ld_stack_size = CONFIG_STACK_SIZE;
+	__global_pointer$ = __gp_range_start + ((__gp_range_end - __gp_range_start) >> 1);\
 }
-
-

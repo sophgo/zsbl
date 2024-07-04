@@ -22,6 +22,11 @@ config PLAT_SG2380
 	bool "SG2380"
 	select SIFIVE
 	select RISCV_CMO
+
+config PLAT_X280
+	bool "X280"
+	select SIFIVE
+	select RISCV_CMO
 endchoice
 
 if PLAT_BM1686
@@ -35,6 +40,7 @@ config PLAT
 	default "SG2042" if PLAT_SG2042
 	default "SG2260" if PLAT_SG2260
 	default "SG2380" if PLAT_SG2380
+	default "x280" if PLAT_X280
 	default "unknown-platform"
 
 choice
