@@ -53,4 +53,9 @@ config SMP_NUM
 		the cpu numbers
 endif
 
+config TPU_SCALAR
+	bool "Wther used for TPU scalar"
+	help
+		set if used for TPU scalar
+
 endmenu
