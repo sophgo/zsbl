@@ -74,7 +74,7 @@ void metal_init(void) {
 		return;
 	}
 	init_done = 1;
-printf("%s: %d\n", __func__, __LINE__);
+
 	/* METAL_SIFIVE_CCACHE1 */
 	sifive_ccache1_init();
 
@@ -84,7 +84,6 @@ printf("%s: %d\n", __func__, __LINE__);
 	struct metal_cpu *cpu;
 	struct metal_interrupt *cpu_intr;
 	struct metal_interrupt *tmr_intr;
-printf("%s: %d\n", __func__, __LINE__);
 	cpu = metal_cpu_get(metal_cpu_get_current_hartid());
 	if (cpu == NULL) {
 		return ;
@@ -93,14 +92,11 @@ printf("%s: %d\n", __func__, __LINE__);
 	if (cpu_intr == NULL) {
 		return ;
 	}
-printf("%s: %d\n", __func__, __LINE__);
 	metal_interrupt_init(cpu_intr);
-printf("%s: %d\n", __func__, __LINE__);
 	tmr_intr = metal_cpu_timer_interrupt_controller(cpu);
 	if (tmr_intr == NULL) {
 		return ;
 	}
-printf("%s: %d\n", __func__, __LINE__);
 	metal_interrupt_init(tmr_intr);
 }
 
@@ -133,27 +129,28 @@ void platform_init(void)
 	unsigned int hartid = current_hartid();
 
 	if (hartid == __metal_init_hart) {
-		printf("%s: %d\n", __func__, __LINE__);
 		/* Run primary initialization (shared peripherals) */
 		metal_init_run();
-		printf("%s: %d\n", __func__, __LINE__);
 		/* Wake up other harts (if any) that were waiting in a WFI loop */
 		__metal_wake_harts();
-		printf("%s: %d\n", __func__, __LINE__);
 	}
 
-	printf("%s: %d %d\n", __func__, hartid, __LINE__);
 	/* Run secondary initialization (per-hart peripherals) */
 	metal_secondary_init_run();
-	printf("%s: %d %d\n", __func__, hartid, __LINE__);
 }
 
 int boot(void)
 {
-	printf("SOPHGO SG2380 X280 ZSBL: %s %s\n", __DATE__, __TIME__);
+	unsigned int hartid = current_hartid();
+
+	if (hartid == __metal_init_hart){
+		printf("SOPHGO SG2380 X280 ZSBL: %s %s\n", __DATE__, __TIME__);
+		printf("hart%u is main core\n", hartid);
+	}
+
 	platform_init();
 
-	printf("%s: %d\n", __func__, __LINE__);
+	printf("hart%u will jump to opensbi\n", hartid);
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(OPENSBI_ADDR, current_hartid(),
 		DEVICETREE_ADDR, (unsigned long)&pld_dynamic_info);
