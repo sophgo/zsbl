@@ -162,6 +162,10 @@ static void sg2380_ddr_setup_init(lpddr_attr *p_lpddr_attr)
 	p_lpddr_attr->lp5_linkecc_en = false;
 	p_lpddr_attr->lp5_inlineecc_en = false;
 	p_lpddr_attr->dbi_en = false;
+	p_lpddr_attr->dm_en = true;
+	p_lpddr_attr->pll_bypass = false;
+	p_lpddr_attr->otsd_latency = false;
+	p_lpddr_attr->dfs_pll_bypass = false;
 	p_lpddr_attr->phy_training = DWC_PHY_SKIP_TRAINING;//Skip Training
 
 	//printf("ddrtype: %d\n", p_lpddr_attr->lpddr_type);

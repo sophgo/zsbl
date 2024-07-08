@@ -109,6 +109,10 @@ typedef struct SubsysHdlr_priv {
 	bool lp5_linkecc_en;
 	bool lp5_inlineecc_en;
 	bool dbi_en;
+	bool dm_en;
+	bool pll_bypass;
+	bool otsd_latency;
+	bool dfs_pll_bypass;
 	uint8_t ecc_region;
 	uint8_t addr_map;
 } lpddr_attr; // fwd SubsysHdlr_t
