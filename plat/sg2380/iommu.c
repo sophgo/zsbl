@@ -45,10 +45,16 @@ struct iommu_bridge{
 	uintptr_t base;
 	bool bypass;
 	bool prefetch;
+	int pds_arqos;
 
 	struct devid_info *devid;
 	int dev_num;
 };
+
+static void sg2380_iommu_set_arqos(uintptr_t base, int arqos)
+{
+	mmio_clrsetbits_32(base + IOMMU_PDS_IF_CFG0, PDS_ARQOS_MASK, arqos);
+}
 
 static void sg2380_iommu_prefetch_enable(uintptr_t base, bool enable)
 {
@@ -145,6 +151,7 @@ static const struct iommu_bridge bridge[IOMMU_BRIDGE_NUM] = {
 		.base = LEFT_IOMMU_BASE,
 		.bypass = true,
 		.prefetch = true,
+		.pds_arqos = 0xe,
 		.devid = left_devid_table,
 		.dev_num = ARRAY_SIZE(left_devid_table),
 	},
@@ -153,6 +160,7 @@ static const struct iommu_bridge bridge[IOMMU_BRIDGE_NUM] = {
 		.base = RIGHT_IOMMU_BASE,
 		.bypass = true,
 		.prefetch = true,
+		.pds_arqos = 0xe,
 		.devid = right_devid_table,
 		.dev_num = ARRAY_SIZE(right_devid_table),
 	},
@@ -161,6 +169,7 @@ static const struct iommu_bridge bridge[IOMMU_BRIDGE_NUM] = {
 		.base = GPU_IOMMU_BASE,
 		.bypass = true,
 		.prefetch = false,
+		.pds_arqos = 0xe,
 		.devid = gpu_devid_table,
 		.dev_num = ARRAY_SIZE(gpu_devid_table),
 	},
@@ -169,6 +178,7 @@ static const struct iommu_bridge bridge[IOMMU_BRIDGE_NUM] = {
 		.base = PCIE_IOMMU_BASE,
 		.bypass = true,
 		.prefetch = false,
+		.pds_arqos = 0xe,
 		.devid = pcie_devid_table,
 		.dev_num = ARRAY_SIZE(pcie_devid_table),
 	},
@@ -177,6 +187,7 @@ static const struct iommu_bridge bridge[IOMMU_BRIDGE_NUM] = {
 		.base = SSPERI_IOMMU_BASE,
 		.bypass = true,
 		.prefetch = false,
+		.pds_arqos = 0xe,
 		.devid = ssperi_devid_table,
 		.dev_num = ARRAY_SIZE(ssperi_devid_table),
 	},
@@ -310,6 +321,7 @@ void sg2380_iommu_init(void)
 
 		sg2380_iommu_bypass_enable(bridge[i].base, bridge[i].bypass);
 		sg2380_iommu_prefetch_enable(bridge[i].base, bridge[i].prefetch);
+		sg2380_iommu_set_arqos(bridge[i].base, bridge[i].pds_arqos);
 
 		for (j = 0; j < bridge[i].dev_num; j++) {
 			devid = &bridge[i].devid[j];
