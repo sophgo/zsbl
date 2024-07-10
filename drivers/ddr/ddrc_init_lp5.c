@@ -191,7 +191,7 @@ void ddrc_init_lp5(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr)
 		mmio_wr32(base_addr_ctrl + 0x1005b8, 0x146);// DWC_ddrctl_map_REGB_FREQ1_CH0.DFIUPDTMG3
 		mmio_wr32(base_addr_ctrl + 0x2005b8, 0x146);// DWC_ddrctl_map_REGB_FREQ2_CH0.DFIUPDTMG3
 		mmio_wr32(base_addr_ctrl + 0x3005b8, 0x146);// DWC_ddrctl_map_REGB_FREQ3_CH0.DFIUPDTMG3
-		mmio_wr32(base_addr_ctrl + 0x600, 0xc2180186);// DWC_ddrctl_map_REGB_FREQ0_CH0.RFSHSET1TMG0
+		mmio_wr32(base_addr_ctrl + 0x600, 0x82300186);// DWC_ddrctl_map_REGB_FREQ0_CH0.RFSHSET1TMG0
 		mmio_wr32(base_addr_ctrl + 0x100600, 0xc2180c32);// DWC_ddrctl_map_REGB_FREQ1_CH0.RFSHSET1TMG0
 		mmio_wr32(base_addr_ctrl + 0x200600, 0xc2180c32);// DWC_ddrctl_map_REGB_FREQ2_CH0.RFSHSET1TMG0
 		mmio_wr32(base_addr_ctrl + 0x300600, 0xc2180c32);// DWC_ddrctl_map_REGB_FREQ3_CH0.RFSHSET1TMG0
