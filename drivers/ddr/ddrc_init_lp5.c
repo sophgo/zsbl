@@ -57,7 +57,7 @@ void ddrc_init_lp5(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr)
 	rddata = mmio_rd32(base_addr_ctrl + 0x10200);//
 	//rddata = {rddata[31:9], 1'b1, rddata[7:6], 6'b101111};// rfshmod0.per_bank_refresh = 0x1;
 	rddata = modified_bits_by_value(rddata, 1, 8, 8);
-	rddata = modified_bits_by_value(rddata, 0b101111, 5, 0);
+	rddata = modified_bits_by_value(rddata, 0b000111, 5, 0);
 	mmio_wr32(base_addr_ctrl + 0x10200, rddata);//
 	//end
 
