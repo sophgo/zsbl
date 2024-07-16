@@ -33,9 +33,7 @@ typedef union _sifive_pl2cache0_configbits {
         uint32_t errInjectOnReadEnable : 1;
         uint32_t dataUceInjectEnable : 1;
         uint32_t dirUceInjectEnable : 1;
-        uint32_t _reserved3 : 3;
-        uint32_t acceptDirtyDataEnable : 1;
-        uint32_t _reserved4 : 7;
+        uint32_t _reserved3 : 11;
     } b;        /**< Structure used for bit access */
     uint32_t w; /**< Structure used for 32bits access */
 } sifive_pl2cache0_configbits;
