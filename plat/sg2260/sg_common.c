@@ -8,7 +8,8 @@
 
 uint64_t get_work_mode(void)
 {
-	return CHIP_WORK_MODE_POD;
+	//return CHIP_WORK_MODE_POD;
+	return CHIP_WORK_MODE_CPU;
 }
 
 uint64_t get_core_type(void)

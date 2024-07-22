@@ -77,7 +77,7 @@ BOOT_FILE boot_file[ID_MAX] = {
 	},
 	[ID_DEVICETREE] = {
 		.id = ID_DEVICETREE,
-		.name = "0:riscv64/sg2260.dtb",
+		.name = "0:riscv64/sg2260-rp-pld.dtb",
 		.addr = DEVICETREE_ADDR,
 	},
 };
@@ -468,7 +468,7 @@ int read_boot_file(void)
 	if (boot_device_register())
 		return -1;
 
-	if ((mmio_read_32(BOOT_SEL_ADDR) & BOOT_FROM_SD_FIRST)
+	if (!(mmio_read_32(BOOT_SEL_ADDR) & BOOT_FROM_SD_FIRST)
 	    && bm_sd_card_detect()) {
 		dev_num = IO_DEVICE_SD;
 		pr_debug("rv boot from sd card\n");
@@ -477,7 +477,7 @@ int read_boot_file(void)
 		pr_debug("rv boot from spi flash\n");
 	}
 	// dev_num = IO_DEVICE_SPIFLASH;
-	build_bootfile_info(dev_num);
+	//build_bootfile_info(dev_num);
 	io_dev = set_current_io_device(dev_num);
 	if (io_dev == NULL) {
 		pr_debug("set current io device failed\n");
@@ -487,7 +487,7 @@ int read_boot_file(void)
 	if (read_all_img(io_dev, dev_num)) {
 		if (dev_num == IO_DEVICE_SD) {
 			dev_num = IO_DEVICE_SPIFLASH;
-			build_bootfile_info(dev_num);
+			//build_bootfile_info(dev_num);
 			io_dev = set_current_io_device(dev_num);
 			if (io_dev == NULL) {
 				pr_debug("set current device to flash failed\n");
@@ -848,9 +848,8 @@ int boot(void)
 	print_banner();
 	print_core_ctrlreg();
 
-#if 0
 	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
-		read_config_file();
+		//read_config_file();
 		if (read_boot_file()) {
 			pr_err("read boot file faile\n");
 			assert(0);
@@ -858,7 +857,6 @@ int boot(void)
 	} else {
 		build_board_info();
 	}
-#endif
 
 #ifdef CONFIG_TPU_SCALAR
 	build_board_info();
