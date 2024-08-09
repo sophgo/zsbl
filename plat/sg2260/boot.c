@@ -67,12 +67,12 @@ BOOT_FILE boot_file[ID_MAX] = {
 	},
 	[ID_KERNEL] = {
 		.id = ID_KERNEL,
-		.name = "0:riscv64/riscv64_Image",
+		.name = "0:riscv64/rp_Image",
 		.addr = KERNEL_ADDR,
 	},
 	[ID_RAMFS] = {
 		.id = ID_RAMFS,
-		.name = "0:riscv64/initrd.img",
+		.name = "0:riscv64/rootfs_rp.cpio",
 		.addr = RAMFS_ADDR,
 	},
 	[ID_DEVICETREE] = {
