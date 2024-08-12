@@ -67,17 +67,17 @@ BOOT_FILE boot_file[ID_MAX] = {
 	},
 	[ID_KERNEL] = {
 		.id = ID_KERNEL,
-		.name = "0:riscv64/rp_Image",
+		.name = "0:riscv64/riscv64_Image",
 		.addr = KERNEL_ADDR,
 	},
 	[ID_RAMFS] = {
 		.id = ID_RAMFS,
-		.name = "0:riscv64/rootfs_rp.cpio",
+		.name = "0:riscv64/initrd.img",
 		.addr = RAMFS_ADDR,
 	},
 	[ID_DEVICETREE] = {
 		.id = ID_DEVICETREE,
-		.name = "0:riscv64/sg2260-rp-pld.dtb",
+		.name = "0:riscv64/sg2260.dtb",
 		.addr = DEVICETREE_ADDR,
 	},
 };
@@ -85,9 +85,9 @@ BOOT_FILE boot_file[ID_MAX] = {
 static char *img_name_sd[] = {
 	"0:riscv64/conf.ini",
 	"0:riscv64/fw_dynamic.bin",
-	"0:riscv64/riscv64_Image",
-	"0:riscv64/initrd.img",
-	"0:riscv64/sg2260.dtb",
+	"0:riscv64/rp_Image",
+	"0:riscv64/rootfs_rp.cpio",
+	"0:riscv64/sg2260-rp-full.dtb",
 };
 
 static char *img_name_spi[] = {
@@ -398,6 +398,8 @@ int build_bootfile_info(int dev_num)
 	if (sg2260_board_info.config_ini.ramfs_addr)
 		boot_file[ID_RAMFS].addr = sg2260_board_info.config_ini.ramfs_addr;
 
+	if (sg2260_board_info.config_ini.dtb_name == NULL)
+		boot_file[ID_DEVICETREE].name = imgs[ID_DEVICETREE];
 
 	if (sg2260_board_info.config_ini.kernel_name == NULL)
 		boot_file[ID_KERNEL].name = imgs[ID_KERNEL];
@@ -477,7 +479,7 @@ int read_boot_file(void)
 		pr_debug("rv boot from spi flash\n");
 	}
 	// dev_num = IO_DEVICE_SPIFLASH;
-	//build_bootfile_info(dev_num);
+	build_bootfile_info(dev_num);
 	io_dev = set_current_io_device(dev_num);
 	if (io_dev == NULL) {
 		pr_debug("set current io device failed\n");
@@ -487,7 +489,7 @@ int read_boot_file(void)
 	if (read_all_img(io_dev, dev_num)) {
 		if (dev_num == IO_DEVICE_SD) {
 			dev_num = IO_DEVICE_SPIFLASH;
-			//build_bootfile_info(dev_num);
+			build_bootfile_info(dev_num);
 			io_dev = set_current_io_device(dev_num);
 			if (io_dev == NULL) {
 				pr_debug("set current device to flash failed\n");
