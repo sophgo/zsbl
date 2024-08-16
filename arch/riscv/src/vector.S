@@ -27,9 +27,12 @@ _start:
 	li	t0, 0x1fea32c
 	csrw	CSR_MHINT, t0
 
+	li      t0, 0x0400000000180
+	csrw    CSR_MHINT2, t0
+
 	/* disable dvm */
 	li      t0, 0x20
-	csrw    CSR_MHINT4, t0	
+	csrw    CSR_MHINT4, t0
 
 	// enable THEADISAEE 	- bit 22
 	// enable CLINTEE 	- bit 17
