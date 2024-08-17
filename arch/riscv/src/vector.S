@@ -17,20 +17,20 @@ _start:
 	csrw	CSR_MHCR, t0
 
 	// enable L2Cache ECC
-	li	t0, 0xe041000b
+	li	t0, 0xe249000b
 	csrw	CSR_MCCR2, t0
 
 	li	t0, 1
 	csrw	CSR_MSMPR, t0
 
 	// disable fence.i fence sfence.vma broadcast
-	li	t0, 0x1fea32c
+	li	t0, 0x3fea32c
 	csrw	CSR_MHINT, t0
 
 	li      t0, 0x0400000000180
 	csrw    CSR_MHINT2, t0
 
-	/* disable dvm */
+	/* disable dvm transaction out of cluster*/
 	li      t0, 0x20
 	csrw    CSR_MHINT4, t0
 
