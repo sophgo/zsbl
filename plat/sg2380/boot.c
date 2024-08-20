@@ -17,6 +17,7 @@
 #include <iommu.h>
 #include <sbi/riscv_asm.h>
 #include <driver/ddr/ddr.h>
+#include <driver/pcie/sg2380_pcie.h>
 #include "sbi.h"
 #include "cli.h"
 
@@ -210,6 +211,7 @@ int boot(void)
 	sg2380_multimedia_itlvinit();
 	sg2380_ddr_init_asic();
 	sg2380_iommu_init();
+	//sg2380_pcie_init();
 #ifdef CONFIG_TPU_SYS
 	sg2380_set_tpu_run();
 #endif
