@@ -1,6 +1,7 @@
 #include <memmap.h>
 #include <stdint.h>
 
+#include <lib/mmio.h>
 #include <framework/module.h>
 #include <framework/common.h>
 
@@ -77,6 +78,12 @@ int uart_getc(void)
 
 int uart_init(void)
 {
+#ifdef CONFIG_TPU_SCALAR
+	int core_id = mmio_read_32(CLINT_MHART_ID);
+	if (core_id != 0) {
+		return 0;
+	}
+#endif
 	unsigned int divisor;
 
 	unsigned int baudrate = UART_BAUDRATE;

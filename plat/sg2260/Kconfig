@@ -1,0 +1,23 @@
+menu "TP Options"
+
+config TPU_SCALAR
+	bool "Setup TPU SCALAR"
+	help
+		Boot TPU SCALAR.
+
+
+if TPU_SCALAR
+
+config TPU_SCALAR_START
+	hex "TPU SCALAR 0 Start Addr"
+	help
+		tp 0 start mem layout.
+
+config  TPU_SCALAR_MEM_OFFSET
+	hex "TPU SCALAR Memory Offset"
+	help
+		tp mem offset.
+
+endif
+
+endmenu

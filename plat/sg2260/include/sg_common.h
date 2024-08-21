@@ -18,7 +18,7 @@ enum {
 #define KERNEL_IMAGE_OFFSET	0x200000
 #define DTB_OFFSET	0x7000000
 #define RAMFS_OFFSET	0xa000000
-#define TPU_FW_SIZE	0x10000000
+#define TP_SYS_OFFSET	0x10000000
 
 uint64_t get_work_mode(void);
 uint64_t get_core_type(void);

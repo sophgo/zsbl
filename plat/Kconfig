@@ -21,6 +21,10 @@ if PLAT_BM1686
 source "plat/bm1686/Kconfig"
 endif
 
+if PLAT_SG2260
+source "plat/sg2260/Kconfig"
+endif
+
 config PLAT
 	string
 	default "BM1686" if PLAT_BM1686
