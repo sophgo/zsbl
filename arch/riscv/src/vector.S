@@ -27,7 +27,7 @@ _start:
 	li	t0, 0x3fea32c
 	csrw	CSR_MHINT, t0
 
-	li      t0, 0x0400000000180
+	li      t0, 0x180
 	csrw    CSR_MHINT2, t0
 
 	/* disable dvm transaction out of cluster*/
