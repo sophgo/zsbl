@@ -25,6 +25,7 @@
 #include "ini.h"
 #include "sbi.h"
 #include "sg_common.h"
+#include "tp_dtb.h"
 #include <thread_safe_printf.h>
 
 #define L1_CACHE_BYTES 64
@@ -134,7 +135,7 @@ struct fw_dynamic_info dynamic_info = {
 uint64_t opensbi_base[10] = {
 	[CORE_TOP_MCU] = 0x0,
 	[CORE_64CORE_RV] = 0x80000000,
-	[CORE_TPU_SCALAR0] = 0x101000000,
+	[CORE_TPU_SCALAR0] = 0x101000000, // unused bellow
 	[CORE_TPU_SCALAR1] = 0x111000000,
 	[CORE_TPU_SCALAR2] = 0x121000000,
 	[CORE_TPU_SCALAR3] = 0x131000000,
@@ -582,245 +583,10 @@ void sg2042_top_reset(uint32_t index)
 }
 
 #ifdef CONFIG_TPU_SCALAR
-int modify_node_reg(void *fdt, char *node_path, int offset)
-{
-	int nodeoffset;
-	const void *nodep;
-	char node_name[32];
-	char *node;
-	uint64_t reg[2] = {0};
-	uint64_t addr;
-	int core_id, len, ret;
-
-	core_id = sg2260_board_info.core_type - CORE_TPU_SCALAR0;
-
-	nodeoffset = fdt_path_offset(fdt, node_path); 
-	if (nodeoffset < 0) {
-		pr_err("Unable to find node: %s\n", node_path);
-		return -1;
-	}
-
-	nodep = fdt_getprop(fdt, nodeoffset, "reg", &len);
-	if (nodep == NULL) {
-		pr_err("Unable to find property: reg\n");
-		return -1;
-	}
-	pr_info("%s offset is %d, prop reg len is %d\n", node_path, nodeoffset, len);
-	pr_info("%s reg start: 0x%lx, len: 0x%lx\n", node_path, fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
-	pr_info("%s name is %s\n", node_path, fdt_get_name(fdt, nodeoffset, NULL));
-
-	addr = fdt64_to_cpu(*(fdt64_t *)nodep) + (core_id * offset);
-	reg[0] = cpu_to_fdt64(addr);
-	reg[1] = *((fdt64_t *)nodep + 1);
-
-	ret = fdt_setprop(fdt, nodeoffset, "reg", reg, len);
-	if (ret != 0) {
-		pr_err("set property: reg failed\n");
-		return -1;
-	}
-
-	node = strrchr(node_path, '/');
-	if (node == NULL) {
-		pr_err("not legal node path: %s\n", node_path);
-		return -1;
-	}
-	node += 1;
-	pr_info("first part of node name is %s\n", node);
-
-	sprintf(node_name, "%s@%lx", node, addr);
-	ret = fdt_set_name(fdt, nodeoffset, node_name);
-	if (ret) {
-		pr_err("Unable to set name: %s\n", node_name);
-		return -1;
-	}
-	pr_info("%s reg start: 0x%lx, len: 0x%lx\n", node_path, fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
-	pr_info("%s name is %s\n", node_path, fdt_get_name(fdt, nodeoffset, NULL));
-
-	return 0;
-}
-
-int modify_node_serial(void *fdt, uint64_t uart_base)
-{
-	int nodeoffset;
-	const void *nodep;
-	char node_name[32];
-	uint64_t reg[2] = {0};
-	int irq, len, ret;
-
-	nodeoffset = fdt_path_offset(fdt, "/soc/serial");
-	if (nodeoffset < 0) {
-		pr_err("Unable to find node: /soc/serial\n");
-		return -1;
-	}
-
-	nodep = fdt_getprop(fdt, nodeoffset, "reg", &len);
-	if (nodep == NULL) {
-		pr_err("Unable to find property: reg\n");
-		return -1;
-	}
-
-	pr_info("/soc/serial offset is %d, prop reg len is %d\n", nodeoffset, len);
-	pr_info("/soc/serial reg start: 0x%lx, len: 0x%lx\n", fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
-	pr_info("/soc/serial name is %s\n", fdt_get_name(fdt, nodeoffset, NULL));
-
-	reg[0] = cpu_to_fdt64(uart_base);
-	reg[1] = cpu_to_fdt64(0x1000);
-
-	ret = fdt_setprop(fdt, nodeoffset, "reg", reg, 16);
-	if (ret != 0) {
-		pr_err("set property: reg failed\n");
-		return -1;
-	}
-
-	nodep = fdt_getprop(fdt, nodeoffset, "interrupts", &len);
-	if (nodep == NULL) {
-		pr_err("Unable to find property: interrupts\n");
-		return -1;
-	}
-	irq = fdt32_to_cpu(*(fdt32_t *)nodep);
-
-	pr_info("/soc/serial offset is %d, prop interrupts len is %d\n", nodeoffset, len);
-	pr_info("/soc/serial interrupts start: 0x%x\n", irq);
-
-	// change uart irq nun from 3 to 2
-	irq = cpu_to_fdt32(irq - 1);
-	ret = fdt_setprop(fdt, nodeoffset, "interrupts", &irq, len);
-	if (ret != 0) {
-		pr_err("set property: interrupts failed\n");
-		return -1;
-	}
-
-	sprintf(node_name, "serial@%lx", uart_base);
-	ret = fdt_set_name(fdt, nodeoffset, node_name);
-	if (ret) {
-		pr_err("Unable to set name: %s\n", node_name);
-		return -1;
-	}
-	pr_info("/soc/serial offset is %d, prop reg len is %d\n", nodeoffset, len);
-	pr_info("/soc/serial name is %s\n", fdt_get_name(fdt, nodeoffset, NULL));
-
-	nodeoffset = fdt_path_offset(fdt, "/aliases");
-	if (nodeoffset < 0) {
-		pr_err("Unable to find node: /aliases\n");
-		return -1;
-	}
-
-	nodep = fdt_getprop(fdt, nodeoffset, "serial0", &len);
-	if (nodep == NULL) {
-		pr_err("Unable to find property: serial0\n");
-		return -1;
-	}
-	pr_info("/aliases offset is %d, prop serial0 len is %d\n", nodeoffset, len);
-	pr_info("old_serial0: %s\n", (char *)nodep);
-
-	sprintf(node_name, "/soc/serial@%lx", uart_base);
-	ret = fdt_setprop_string(fdt, nodeoffset, "serial0", node_name);
-	if (ret != 0) {
-		pr_err("set aliases: serial0 failed\n");
-		return -1;
-	}
-	pr_info("new_serial0: %s\n", (char *)fdt_getprop(fdt, nodeoffset, "serial0", &len));
-
-	return 0;
-}
-
-int modify_node_chosen(void *fdt)
-{
-	int nodeoffset;
-	const void *bootargs;
-	char *new_bootargs;
-	char *substr_start;
-	char ramfs_addr[32];
-	int len, ret;
-
-	nodeoffset = fdt_path_offset(fdt, "/chosen");
-    	if (nodeoffset < 0) {
-        	pr_err("Unable to find node: /chosen\n");
-        	return -1;
-    	}
-
-    	bootargs = fdt_getprop(fdt, nodeoffset, "bootargs", &len);
-    	if (bootargs == NULL) {
-		pr_err("Unable to find property: bootargs\n");
-		return -1;
-    	}
-	pr_info("old_bootargs: %s\n", (char *)bootargs);
-
-    	new_bootargs = (char *)malloc(len);
-    	memcpy(new_bootargs, bootargs, len);
-    	substr_start = strstr(new_bootargs, "initrd=");
-    	if (substr_start == NULL) {
-        	pr_err("Unable to find substring: initrd=\n");
-		free(new_bootargs);
-        	return -1;
-    	}
-	sprintf(ramfs_addr, "0x%lx", boot_file[ID_RAMFS].addr);
-    	memcpy(substr_start + 7, ramfs_addr, strlen(ramfs_addr));
-
-	pr_info("new_bootargs: %s\n", new_bootargs);
-
-	ret = fdt_setprop_string(fdt, nodeoffset, "bootargs", new_bootargs);
-	if (ret) {
-		pr_err("Unable to set property: bootargs\n");
-		free(new_bootargs);
-		return -1;
-	}
-
-	free(new_bootargs);
-	return 0;
-}
-
-int modify_tpu_dtb(void)
-{
-	int core_id = sg2260_board_info.core_type - CORE_TPU_SCALAR0;
-	void *fdt = (void *)boot_file[ID_DEVICETREE].addr;
-	int ret;
-
-	pr_info("modifying tpu dtb, core_id = %d, dtb_addr is 0x%lx\n", core_id, (uint64_t)fdt);
-	pr_info("fdt_totalsize is %d\n", fdt_totalsize(fdt));
-	pr_info("fdt_header_size is %ld\n", fdt_header_size(fdt));
-	pr_info("fdt_version is %d\n", fdt_version(fdt));
-	pr_info("fdt_magic is %#x\n", fdt_magic(fdt));
-
-	ret = fdt_check_header(fdt);
-	if (ret != 0) {
-		pr_err("check dtb header failed, ret = %d\n", ret);
-		return -1;
-	}
-	pr_info("check dtb header success\n");
-
-	ret = modify_node_reg(fdt, "/memory", TPU_FW_SIZE);
-	if (ret != 0) {
-		pr_err("modify memory node failed, ret = %d\n", ret);
-		return -1;
-	}
-	ret = modify_node_reg(fdt, "/soc/clint-mswi", TPU_FW_SIZE);
-	if (ret != 0) {
-		pr_err("modify mswi node failed, ret = %d\n", ret);
-		return -1;
-	}
-	ret = modify_node_reg(fdt, "/soc/interrupt-controller", TPU_FW_SIZE);
-	if (ret != 0) {
-		pr_err("modify plic node failed, ret = %d\n", ret);
-		return -1;
-	}
-	// ret = modify_node_serial(fdt, UART_BASE);
-	// if (ret != 0) {
-	// 	pr_err("modify serial node failed, ret = %d\n", ret);
-	// 	return -1;
-	// }
-	ret = modify_node_chosen(fdt);
-	if (ret != 0) {
-		pr_err("modify chosen node failed, ret = %d\n", ret);
-		return -1;
-	}
-
-	return 0;
-}
-#endif
-
 int calculate_addr(void)
 {
+	int core_id = sg2260_board_info.core_type - CORE_TPU_SCALAR0;
+	sg2260_board_info.opensbi_base[sg2260_board_info.core_type] = CONFIG_TPU_SCALAR_START + core_id * CONFIG_TPU_SCALAR_MEM_OFFSET + 0x1000000;
 	boot_file[ID_OPENSBI].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type];
 	boot_file[ID_KERNEL].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type] + KERNEL_IMAGE_OFFSET;
 	boot_file[ID_DEVICETREE].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type] + DTB_OFFSET;
@@ -828,13 +594,14 @@ int calculate_addr(void)
 
 	dynamic_info.next_addr = boot_file[ID_KERNEL].addr;
 
-	pr_info("set boot_file[ID_OPENSBI].addr to 0x%lx\n", boot_file[ID_OPENSBI].addr);
-	pr_info("set boot_file[ID_KERNEL].addr to 0x%lx\n", boot_file[ID_KERNEL].addr);
-	pr_info("set boot_file[ID_DEVICETREE].addr to 0x%lx\n", boot_file[ID_DEVICETREE].addr);
-	pr_info("set boot_file[ID_RAMFS].addr to 0x%lx\n", boot_file[ID_RAMFS].addr);
+	pr_info("tp: set boot_file[ID_OPENSBI].addr to 0x%lx\n", boot_file[ID_OPENSBI].addr);
+	pr_info("tp: set boot_file[ID_KERNEL].addr to 0x%lx\n", boot_file[ID_KERNEL].addr);
+	pr_info("tp: set boot_file[ID_DEVICETREE].addr to 0x%lx\n", boot_file[ID_DEVICETREE].addr);
+	pr_info("tp: set boot_file[ID_RAMFS].addr to 0x%lx\n", boot_file[ID_RAMFS].addr);
 
 	return 0;
 }
+#endif
 
 uint64_t build_board_info(void)
 {
@@ -850,6 +617,19 @@ int boot(void)
 	print_banner();
 	print_core_ctrlreg();
 
+#ifdef CONFIG_TPU_SCALAR
+	void *fdt;
+	int core_id = sg2260_board_info.core_type - CORE_TPU_SCALAR0;
+
+	build_board_info();
+	calculate_addr();
+	fdt = (void *)boot_file[ID_DEVICETREE].addr;
+
+	if (modify_tpu_dtb(fdt, core_id)) {
+		pr_err("modfiy dtb failed\n");
+		assert(0);
+	}
+#else
 	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
 		//read_config_file();
 		if (read_boot_file()) {
@@ -860,16 +640,6 @@ int boot(void)
 		build_board_info();
 	}
 
-#ifdef CONFIG_TPU_SCALAR
-	build_board_info();
-	calculate_addr();
-	if (sg2260_board_info.core_type != CORE_TPU_SCALAR0) {
-		if (modify_tpu_dtb()) {
-			pr_err("modfiy dtb failed\n");
-			assert(0);
-		}
-	}
-#else
 	if (boot_next_img()) {
 		pr_err("boot next img failed\n");
 		assert(0);

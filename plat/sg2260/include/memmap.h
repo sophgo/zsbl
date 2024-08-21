@@ -9,6 +9,10 @@
 #define BOOT_SEL_ADDR	(TOP_BASE + REG_TOP_CONF_INFO)
 #define BOOT_FROM_SRAM  (1 << 2)
 
+#if defined(CONFIG_TPU_SCALAR)
+#define CLINT_MHART_ID  0x6844001000 // used for identify tp id
+#endif
+
 #define REG_DDR_SIZE    0X54
 #define DDR_SIZE_ADDR   (TOP_BASE + REG_DDR_SIZE)
 #define MP0_STATUS	0x380
@@ -37,7 +41,12 @@
 
 #define SD_RESET_INDEX  28
 
+#if defined(CONFIG_TPU_SCALAR)
+#define UART_BASE	0x7030002000
+#else
 #define UART_BASE	0x7030001000
+#endif
+
 #define UART_REG_WIDTH  32
 #if defined(CONFIG_TARGET_EMULATOR)
 
