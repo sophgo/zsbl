@@ -1,7 +1,8 @@
 #ifndef __MEMMAP_H__
 #define __MEMMAP_H__
 
-#define SYS_CTRL_BASE   0x7030010000
+#define SYS_CTRL_BASE   0x5088100000
+
 #define TOP_BASE        SYS_CTRL_BASE
 #define REG_TOP_CONF_INFO	0x4
 #define BOOT_SEL_ADDR	(TOP_BASE + REG_TOP_CONF_INFO)

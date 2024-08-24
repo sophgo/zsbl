@@ -1,20 +1,24 @@
 #include <stdio.h>
 #include <framework/common.h>
+#include <framework/module.h>
+#include <plat.h>
+#include <platform.h>
+#include <memmap.h>
+#include <lib/mmio.h>
 
 #include <driver/io/io.h>
 #include <driver/sd/sd.h>
 
-static int sd_device_init(void);
 static int sd_device_open(char *name, uint8_t mode);
 static int sd_device_read(BOOT_FILE *boot_file, int id, uint64_t len);
-static int sd_device_get_file_info(BOOT_FILE *boot_file, int id, FILINFO *info);
+static int sd_device_get_file_info(BOOT_FILE *boot_file, int id, FILINFO *info,
+				  int dev_num, uint64_t table_addr);
 static int sd_device_close(void);
 static int sd_device_destroy(void);
 
 static IO_DEV sd_io_device = {
 	.type = IO_DEVICE_SD,
 	.func = {
-		.init = sd_device_init,
 		.open = sd_device_open,
 		.read = sd_device_read,
 		.close = sd_device_close,
@@ -22,11 +26,13 @@ static IO_DEV sd_io_device = {
 		.destroy = sd_device_destroy,
 	},
 };
-static int sd_device_init(void)
+
+int sd_device_init(void)
 {
 	FRESULT f_ret;
-	if (!bm_sd_init(SD_USE_PIO)) {
-		pr_err("sd card init ok\n");
+	if ((!(get_boot_sel() & SKIP_SD)) && bm_sd_card_detect()
+	&& (!bm_sd_init(SD_USE_PIO))) {
+		pr_debug("sd card init ok\n");
 
 		f_ret = f_mount(&sd_io_device.SDC_FS, "0:", 1);
 		if (f_ret == FR_OK) {
@@ -49,6 +55,10 @@ static int sd_device_destroy(void)
 	f_ret = f_unmount("0:");
 	if (f_ret == FR_OK) {
 		pr_debug("unmount sd ok\n");
+
+		__asm__ __volatile__ ("fence.i"::);
+		sg2380_top_reset();
+
 		return 0;
 	}
 
@@ -96,13 +106,15 @@ static int sd_device_close(void)
 	}
 }
 
-static int sd_device_get_file_info(BOOT_FILE *boot_file, int id, FILINFO *info)
+static int sd_device_get_file_info(BOOT_FILE *boot_file, int id, FILINFO *info,
+				  int dev_num, uint64_t table_addr)
 {
 	FRESULT f_ret;
 
-	f_ret = f_stat(boot_file[id].name, info);
+	f_ret = f_stat(boot_file[id].name[dev_num], info);
 	if (f_ret == FR_OK) {
-		pr_info("%s file size is %d\n", boot_file[id].name, info->fsize);
+		pr_info("%s file size is %d\n", boot_file[id].name[dev_num], info->fsize);
+		boot_file[id].len = info->fsize;
 		return 0;
 	} else {
 		pr_err("get file info failed\n");
@@ -119,4 +131,3 @@ int sd_io_device_register(void)
 
 	return 0;
 }
-

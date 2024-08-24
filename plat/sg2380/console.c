@@ -5,7 +5,6 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <driver/pcie/sg2380_pcie.h>
 #include <driver/serial/ns16550.h>
 #include <sbi/sbi_string.h>
 #include <cli.h>
@@ -181,31 +180,6 @@ static void cmd_readmem(void *hint, int argc, char const *argv[])
 
 };
 
-static const char * const cmd_cdma_test_usage =
-"cdma test\n"
-"input error, please input: cdma_test sys_id cdma_id mode\n";
-
-static void cmd_cdma_test(void *hint, int argc, char const *argv[])
-{
-		uint32_t sys_id, cdma_id, mode, length;
-		uint64_t src_addr, dst_addr;
-
-		if (argc > 3) {
-			sys_id = strtoul(argv[1], NULL, 16);
-			cdma_id = strtoul(argv[2], NULL, 16);
-			mode = strtoul(argv[3], NULL, 16);
-			length = strtoul(argv[4], NULL, 16);
-			src_addr = strtoul(argv[5], NULL, 16);
-			dst_addr = strtoul(argv[6], NULL, 16);
-			sg2380_pcie_cdma_test(sys_id, cdma_id, mode, length, src_addr, dst_addr);
-			printf("argc = %d\n", argc);
-
-		} else {
-			printf(cmd_cdma_test_usage);
-		}
-
-};
-
 static void cmd_exit(void *hint, int argc, char const *argv[])
 {
 	console_exit = 1;
@@ -214,7 +188,6 @@ static void cmd_exit(void *hint, int argc, char const *argv[])
 static struct command command_list[] = {
 	{"mr", NULL, NULL, cmd_readmem},
 	{"mw", NULL, NULL, cmd_writemem},
-	{"cdma", NULL, NULL, cmd_cdma_test},
 	{"go", NULL, NULL, cmd_go},
 	{"exit", NULL, NULL, cmd_exit},
 };
@@ -224,7 +197,7 @@ int console_init(void)
 	int i;
 
 
-	console = ecdc_alloc_console(NULL, console_getc, console_putc, 128, 7);
+	console = ecdc_alloc_console(NULL, console_getc, console_putc, 128, 4);
 	if (console == NULL) {
 		printf("create console failed\n");
 		return -1;

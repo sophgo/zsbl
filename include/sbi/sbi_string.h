@@ -10,8 +10,7 @@
 #ifndef __STRING_H__
 #define __STRING_H__
 
-//#include <sbi/sbi_types.h>
-#include <stddef.h>
+#include <sbi/sbi_types.h>
 
 /*
   Provides sbi_strcmp for the completeness of supporting string functions.

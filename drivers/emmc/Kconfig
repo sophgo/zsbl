@@ -1,0 +1,4 @@
+config DRIVER_EMMC
+	bool "EMMC"
+	help
+	bitmain EMMC controller driver

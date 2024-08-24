@@ -1,0 +1,4 @@
+config DRIVER_SPI_NAND
+	bool "DRIVER_SPI_NAND"
+	help
+	SPI_FLASH controller driver

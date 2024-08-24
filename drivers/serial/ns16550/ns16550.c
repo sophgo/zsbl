@@ -3,6 +3,9 @@
 
 #include <framework/module.h>
 #include <framework/common.h>
+#include <lib/mmio.h>
+#include <plat.h>
+#include <timer.h>
 
 #define thr rbr
 #define iir fcr
@@ -54,6 +57,8 @@ struct ns16550_regs {
 #define UART_FCR_RXSR		0x02	/* Receiver soft reset */
 #define UART_FCR_TXSR		0x04	/* Transmitter soft reset */
 
+#define UART_USR		0x7c    /* Status register */
+
 #define UART_MCRVAL (UART_MCR_DTR | UART_MCR_RTS)		/* RTS/DTR */
 #define UART_FCR_DEFVAL	(UART_FCR_FIFO_EN | UART_FCR_RXSR | UART_FCR_TXSR)
 #define UART_LCR_8N1	0x03
@@ -74,13 +79,19 @@ int uart_getc(void)
 
 	return (int)uart->rbr;
 }
+static unsigned int uart_get_pclk(void)
+{
+	return UART_CLOCK;
+}
 
 int uart_init(void)
 {
 	unsigned int divisor;
+	uint32_t timeout;
 
 	unsigned int baudrate = UART_BAUDRATE;
-	unsigned int pclk = UART_PCLK;
+	unsigned int pclk = uart_get_pclk();
+	uint32_t *usr = (uint32_t *)(UART_BASE + UART_USR);
 
 	/* if any interrupt has been enabled, that means this uart controller
 	 * may be initialized by some one before, just use it without
@@ -91,6 +102,17 @@ int uart_init(void)
 	 * type into any character in serial console
 	 */
 	if (uart->ier == 0) {
+		timeout = 100000;
+
+		while (timeout) {
+			if ((*usr & 0x1) != 0x1)
+				break;
+
+			udelay(10);
+
+			timeout--;
+		}
+
 		divisor = pclk / (16 * baudrate);
 
 		uart->lcr = uart->lcr | UART_LCR_DLAB | UART_LCR_8N1;
@@ -109,5 +131,4 @@ int uart_init(void)
 
 	return 0;
 }
-
-early_init(uart_init);
+module_init(uart_init);
