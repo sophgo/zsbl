@@ -78,7 +78,7 @@ BOOT_FILE boot_file[ID_MAX] = {
 	},
 	[ID_DEVICETREE] = {
 		.id = ID_DEVICETREE,
-		.name = "0:riscv64/sg2044.dtb",
+		.name = "0:riscv64/sg2044-evb.dtb",
 		.addr = DEVICETREE_ADDR,
 	},
 };
@@ -86,8 +86,8 @@ BOOT_FILE boot_file[ID_MAX] = {
 static char *img_name_sd[] = {
 	"0:riscv64/conf.ini",
 	"0:riscv64/fw_dynamic.bin",
-	"0:riscv64/rp_Image",
-	"0:riscv64/rootfs_rp.cpio",
+	"0:riscv64/riscv64_Image",
+	"0:riscv64/initrd.img",
 	"0:riscv64/sg2044-evb.dtb",
 };
 
