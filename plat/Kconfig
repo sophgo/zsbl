@@ -12,8 +12,8 @@ config PLAT_BM1686
 config PLAT_SG2042
 	bool "SG2042"
 
-config PLAT_SG2260
-	bool "SG2260"
+config PLAT_SG2044
+	bool "SG2044"
 
 endchoice
 
@@ -21,8 +21,8 @@ if PLAT_BM1686
 source "plat/bm1686/Kconfig"
 endif
 
-if PLAT_SG2260
-source "plat/sg2260/Kconfig"
+if PLAT_SG2044
+source "plat/sg2044/Kconfig"
 endif
 
 config PLAT
@@ -30,7 +30,7 @@ config PLAT
 	default "BM1686" if PLAT_BM1686
 	default "QEMU" if PLAT_QEMU
 	default "SG2042" if PLAT_SG2042
-	default "SG2260" if PLAT_SG2260
+	default "SG2044" if PLAT_SG2044
 	default "unknown-platform"
 
 choice
