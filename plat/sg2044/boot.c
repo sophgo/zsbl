@@ -78,7 +78,7 @@ BOOT_FILE boot_file[ID_MAX] = {
 	},
 	[ID_DEVICETREE] = {
 		.id = ID_DEVICETREE,
-		.name = "0:riscv64/sg2260.dtb",
+		.name = "0:riscv64/sg2044.dtb",
 		.addr = DEVICETREE_ADDR,
 	},
 };
@@ -88,7 +88,7 @@ static char *img_name_sd[] = {
 	"0:riscv64/fw_dynamic.bin",
 	"0:riscv64/rp_Image",
 	"0:riscv64/rootfs_rp.cpio",
-	"0:riscv64/sg2260-rp-full.dtb",
+	"0:riscv64/sg2044-evb.dtb",
 };
 
 static char *img_name_spi[] = {
@@ -96,7 +96,7 @@ static char *img_name_spi[] = {
 	"fw_dynamic.bin",
 	"riscv64_Image",
 	"initrd.img",
-	"sg2260.dtb",
+	"sg2044-evb.dtb",
 };
 
 char **img_name[] = {
@@ -123,7 +123,7 @@ char **dtb_name[] = {
 	[IO_DEVICE_SPIFLASH] = dtb_name_spi,
 };
 
-board_info sg2260_board_info;
+board_info sg2044_board_info;
 struct fw_dynamic_info dynamic_info = {
 	.magic = FW_DYNAMIC_INFO_MAGIC_VALUE,
 	.version = 0,
@@ -241,7 +241,7 @@ int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
 	*eof = 0;
 
 	if (ini_parse_string((const char*)boot_file[conf_file_index].addr,
-			     handler_img, &(sg2260_board_info.config_ini)) < 0)
+			     handler_img, &(sg2044_board_info.config_ini)) < 0)
 		return -1;
 
 	return 0;
@@ -342,73 +342,73 @@ int build_bootfile_info(int dev_num)
 		return -1;
 
 	if (dev_num == IO_DEVICE_SD) {
-		if (sg2260_board_info.config_ini.dtb_name != NULL) {
+		if (sg2044_board_info.config_ini.dtb_name != NULL) {
 			sd_dtb_name = malloc(64);
 			memset(sd_dtb_name, 0, 64);
 			strcat(sd_dtb_name, "0:riscv64/");
-			strcat(sd_dtb_name, sg2260_board_info.config_ini.dtb_name);
+			strcat(sd_dtb_name, sg2044_board_info.config_ini.dtb_name);
 			boot_file[ID_DEVICETREE].name = sd_dtb_name;
 		}
 
-		if (sg2260_board_info.config_ini.kernel_name != NULL) {
+		if (sg2044_board_info.config_ini.kernel_name != NULL) {
 			sd_kernel_name = malloc(64);
 			memset(sd_kernel_name, 0, 64);
 			strcat(sd_kernel_name, "0:riscv64/");
-			strcat(sd_kernel_name, sg2260_board_info.config_ini.kernel_name);
+			strcat(sd_kernel_name, sg2044_board_info.config_ini.kernel_name);
 			boot_file[ID_KERNEL].name = sd_kernel_name;
 		}
 
-		if (sg2260_board_info.config_ini.fw_name != NULL) {
+		if (sg2044_board_info.config_ini.fw_name != NULL) {
 			sd_fw_name = malloc(64);
 			memset(sd_fw_name, 0, 64);
 			strcat(sd_fw_name, "0:riscv64/");
-			strcat(sd_fw_name, sg2260_board_info.config_ini.fw_name);
+			strcat(sd_fw_name, sg2044_board_info.config_ini.fw_name);
 			boot_file[ID_OPENSBI].name = sd_fw_name;
 		}
 
-		if (sg2260_board_info.config_ini.ramfs_name != NULL) {
+		if (sg2044_board_info.config_ini.ramfs_name != NULL) {
 			sd_ramfs_name = malloc(64);
 			memset(sd_ramfs_name, 0, 64);
 			strcat(sd_ramfs_name, "0:riscv64/");
-			strcat(sd_ramfs_name, sg2260_board_info.config_ini.ramfs_name);
+			strcat(sd_ramfs_name, sg2044_board_info.config_ini.ramfs_name);
 			boot_file[ID_RAMFS].name = sd_ramfs_name;
 		}
 	} else if (dev_num == IO_DEVICE_SPIFLASH) {
-		if (sg2260_board_info.config_ini.dtb_name != NULL)
-			boot_file[ID_DEVICETREE].name = sg2260_board_info.config_ini.dtb_name;
+		if (sg2044_board_info.config_ini.dtb_name != NULL)
+			boot_file[ID_DEVICETREE].name = sg2044_board_info.config_ini.dtb_name;
 
-		if (sg2260_board_info.config_ini.kernel_name != NULL)
-			boot_file[ID_KERNEL].name = sg2260_board_info.config_ini.kernel_name;
+		if (sg2044_board_info.config_ini.kernel_name != NULL)
+			boot_file[ID_KERNEL].name = sg2044_board_info.config_ini.kernel_name;
 
-		if (sg2260_board_info.config_ini.fw_name != NULL)
-			boot_file[ID_OPENSBI].name = sg2260_board_info.config_ini.fw_name;
+		if (sg2044_board_info.config_ini.fw_name != NULL)
+			boot_file[ID_OPENSBI].name = sg2044_board_info.config_ini.fw_name;
 
-		if (sg2260_board_info.config_ini.ramfs_name != NULL)
-			boot_file[ID_RAMFS].name = sg2260_board_info.config_ini.ramfs_name;
+		if (sg2044_board_info.config_ini.ramfs_name != NULL)
+			boot_file[ID_RAMFS].name = sg2044_board_info.config_ini.ramfs_name;
 	}
 
-	if (sg2260_board_info.config_ini.dtb_addr)
-		boot_file[ID_DEVICETREE].addr = sg2260_board_info.config_ini.dtb_addr;
+	if (sg2044_board_info.config_ini.dtb_addr)
+		boot_file[ID_DEVICETREE].addr = sg2044_board_info.config_ini.dtb_addr;
 
-	if (sg2260_board_info.config_ini.kernel_addr)
-		boot_file[ID_KERNEL].addr = sg2260_board_info.config_ini.kernel_addr;
+	if (sg2044_board_info.config_ini.kernel_addr)
+		boot_file[ID_KERNEL].addr = sg2044_board_info.config_ini.kernel_addr;
 
-	if (sg2260_board_info.config_ini.fw_addr)
-		boot_file[ID_OPENSBI].addr = sg2260_board_info.config_ini.fw_addr;
+	if (sg2044_board_info.config_ini.fw_addr)
+		boot_file[ID_OPENSBI].addr = sg2044_board_info.config_ini.fw_addr;
 
-	if (sg2260_board_info.config_ini.ramfs_addr)
-		boot_file[ID_RAMFS].addr = sg2260_board_info.config_ini.ramfs_addr;
+	if (sg2044_board_info.config_ini.ramfs_addr)
+		boot_file[ID_RAMFS].addr = sg2044_board_info.config_ini.ramfs_addr;
 
-	if (sg2260_board_info.config_ini.dtb_name == NULL)
+	if (sg2044_board_info.config_ini.dtb_name == NULL)
 		boot_file[ID_DEVICETREE].name = imgs[ID_DEVICETREE];
 
-	if (sg2260_board_info.config_ini.kernel_name == NULL)
+	if (sg2044_board_info.config_ini.kernel_name == NULL)
 		boot_file[ID_KERNEL].name = imgs[ID_KERNEL];
 
-	if (sg2260_board_info.config_ini.fw_name == NULL)
+	if (sg2044_board_info.config_ini.fw_name == NULL)
 		boot_file[ID_OPENSBI].name = imgs[ID_OPENSBI];
 
-	if (sg2260_board_info.config_ini.ramfs_name == NULL)
+	if (sg2044_board_info.config_ini.ramfs_name == NULL)
 		boot_file[ID_RAMFS].name = imgs[ID_RAMFS];
 
 	return 0;
@@ -564,7 +564,7 @@ void print_core_ctrlreg()
 
 int print_banner(void)
 {
-	pr_info("\n\nSOPHGO ZSBL\nsg2260:v%s\n\n", ZSBL_VERSION);
+	pr_info("\n\nSOPHGO ZSBL\nSG2044:v%s\n\n", ZSBL_VERSION);
 	return 0;
 }
 
@@ -585,12 +585,12 @@ void sg2042_top_reset(uint32_t index)
 #ifdef CONFIG_TPU_SCALAR
 int calculate_addr(void)
 {
-	int core_id = sg2260_board_info.core_type - CORE_TPU_SCALAR0;
-	sg2260_board_info.opensbi_base[sg2260_board_info.core_type] = CONFIG_TPU_SCALAR_START + core_id * CONFIG_TPU_SCALAR_MEM_OFFSET + 0x1000000;
-	boot_file[ID_OPENSBI].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type];
-	boot_file[ID_KERNEL].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type] + KERNEL_IMAGE_OFFSET;
-	boot_file[ID_DEVICETREE].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type] + DTB_OFFSET;
-	boot_file[ID_RAMFS].addr = sg2260_board_info.opensbi_base[sg2260_board_info.core_type] + RAMFS_OFFSET;
+	int core_id = sg2044_board_info.core_type - CORE_TPU_SCALAR0;
+	sg2044_board_info.opensbi_base[sg2044_board_info.core_type] = CONFIG_TPU_SCALAR_START + core_id * CONFIG_TPU_SCALAR_MEM_OFFSET + 0x1000000;
+	boot_file[ID_OPENSBI].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type];
+	boot_file[ID_KERNEL].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type] + KERNEL_IMAGE_OFFSET;
+	boot_file[ID_DEVICETREE].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type] + DTB_OFFSET;
+	boot_file[ID_RAMFS].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type] + RAMFS_OFFSET;
 
 	dynamic_info.next_addr = boot_file[ID_KERNEL].addr;
 
@@ -605,9 +605,9 @@ int calculate_addr(void)
 
 uint64_t build_board_info(void)
 {
-	sg2260_board_info.opensbi_base = opensbi_base;
-	sg2260_board_info.core_type = get_core_type();
-	pr_info("core_type is %ld\n", sg2260_board_info.core_type);
+	sg2044_board_info.opensbi_base = opensbi_base;
+	sg2044_board_info.core_type = get_core_type();
+	pr_info("core_type is %ld\n", sg2044_board_info.core_type);
 
 	return 0;
 }
@@ -619,7 +619,7 @@ int boot(void)
 
 #ifdef CONFIG_TPU_SCALAR
 	void *fdt;
-	int core_id = sg2260_board_info.core_type - CORE_TPU_SCALAR0;
+	int core_id = sg2044_board_info.core_type - CORE_TPU_SCALAR0;
 
 	build_board_info();
 	calculate_addr();
