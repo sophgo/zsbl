@@ -24,6 +24,8 @@
 #define SSPERI_MODE_SATA	0x1
 #define SSPERI_MODE_ETH		0x2
 
+#define ETH_TYPE_MASK		(0x3 << 3)
+
 #define BOOT_SOURCE_FLAG_ADDR	0x0
 #define BOOT_SOURCE_FLAG_SIZE	0x0
 #define OTP_SW_INFO_ADDR	0x0
