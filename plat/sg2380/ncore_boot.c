@@ -11,7 +11,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083000108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083000140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083000144,0x00000001); //correctable error status
-	mmio_write_32(0x5083000150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300017c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083000190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083000194,0x00004000); //event timeout threshold
@@ -32,7 +31,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083000b1c,0x40000000);
 	mmio_write_32(0x5083000b2c,0x40000000);
 	mmio_write_32(0x5083000b3c,0x40000000);
-	mmio_write_32(0x5083000c00,0x00000804); //Credit
+	mmio_write_32(0x5083000c00,0x00020804); //Credit
 	mmio_write_32(0x5083000c04,0x00000804); //Credit
 	mmio_write_32(0x5083000c08,0x00000804); //Credit
 	mmio_write_32(0x5083000c0c,0x00000804); //Credit
@@ -49,7 +48,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083001108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083001140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083001144,0x00000001); //correctable error status
-	mmio_write_32(0x5083001150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300117c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083001190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083001194,0x00004000); //event timeout threshold
@@ -70,7 +68,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083001b1c,0x40000000);
 	mmio_write_32(0x5083001b2c,0x40000000);
 	mmio_write_32(0x5083001b3c,0x40000000);
-	mmio_write_32(0x5083001c00,0x00000804); //Credit
+	mmio_write_32(0x5083001c00,0x00020804); //Credit
 	mmio_write_32(0x5083001c04,0x00000804); //Credit
 	mmio_write_32(0x5083001c08,0x00000804); //Credit
 	mmio_write_32(0x5083001c0c,0x00000804); //Credit
@@ -87,7 +85,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083002108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083002140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083002144,0x00000001); //correctable error status
-	mmio_write_32(0x5083002150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300217c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083002190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083002194,0x00004000); //event timeout threshold
@@ -108,7 +105,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083002b1c,0x40000000);
 	mmio_write_32(0x5083002b2c,0x40000000);
 	mmio_write_32(0x5083002b3c,0x40000000);
-	mmio_write_32(0x5083002c00,0x00000804); //Credit
+	mmio_write_32(0x5083002c00,0x00020804); //Credit
 	mmio_write_32(0x5083002c04,0x00000804); //Credit
 	mmio_write_32(0x5083002c08,0x00000804); //Credit
 	mmio_write_32(0x5083002c0c,0x00000804); //Credit
@@ -125,7 +122,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083003108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083003140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083003144,0x00000001); //correctable error status
-	mmio_write_32(0x5083003150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300317c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083003190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083003194,0x00004000); //event timeout threshold
@@ -146,7 +142,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083003b1c,0x40000000);
 	mmio_write_32(0x5083003b2c,0x40000000);
 	mmio_write_32(0x5083003b3c,0x40000000);
-	mmio_write_32(0x5083003c00,0x00000804); //Credit
+	mmio_write_32(0x5083003c00,0x00020804); //Credit
 	mmio_write_32(0x5083003c04,0x00000804); //Credit
 	mmio_write_32(0x5083003c08,0x00000804); //Credit
 	mmio_write_32(0x5083003c0c,0x00000804); //Credit
@@ -154,7 +150,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083003c14,0x00000804); //Credit
 	mmio_write_32(0x5083003c18,0x00000804); //Credit
 	mmio_write_32(0x5083003c1c,0x00000804); //Credit
-	//GPU_0_acelite_io_aiu		base address:0x508300_4000
+	//GPU_0_acelite_io_aiu		  base address:0x508300_4000
 	mmio_write_32(0x5083004000,0x80004004); //id
 	mmio_write_32(0x5083004004,0x80000004); //fab id
 	mmio_write_32(0x5083004040,0x000a0000); //coattach
@@ -163,7 +159,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083004108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083004140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083004144,0x00000001); //correctable error status
-	mmio_write_32(0x5083004150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300417c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083004190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083004194,0x00004000); //event timeout threshold
@@ -184,7 +179,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083004b1c,0x40000000);
 	mmio_write_32(0x5083004b2c,0x40000000);
 	mmio_write_32(0x5083004b3c,0x40000000);
-	mmio_write_32(0x5083004c00,0x00000a05); //Credit
+	mmio_write_32(0x5083004c00,0x00020a05); //Credit
 	mmio_write_32(0x5083004c04,0x00000a05); //Credit
 	mmio_write_32(0x5083004c08,0x00000a05); //Credit
 	mmio_write_32(0x5083004c0c,0x00000a05); //Credit
@@ -201,7 +196,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083005108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083005140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083005144,0x00000001); //correctable error status
-	mmio_write_32(0x5083005150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300517c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083005190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083005194,0x00004000); //event timeout threshold
@@ -222,7 +216,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083005b1c,0x40000000);
 	mmio_write_32(0x5083005b2c,0x40000000);
 	mmio_write_32(0x5083005b3c,0x40000000);
-	mmio_write_32(0x5083005c00,0x00000a05); //Credit
+	mmio_write_32(0x5083005c00,0x00020a05); //Credit
 	mmio_write_32(0x5083005c04,0x00000a05); //Credit
 	mmio_write_32(0x5083005c08,0x00000a05); //Credit
 	mmio_write_32(0x5083005c0c,0x00000a05); //Credit
@@ -230,7 +224,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083005c14,0x00000a05); //Credit
 	mmio_write_32(0x5083005c18,0x00000a05); //Credit
 	mmio_write_32(0x5083005c1c,0x00000a05); //Credit
-	//USB_PERI_0_acelite_io_aiu		base address:0x508300_6000
+	//USB_PERI_0_acelite_io_aiu		 base address:0x508300_6000
 	mmio_write_32(0x5083006000,0x80006006); //id
 	mmio_write_32(0x5083006004,0x80000006); //fab id
 	mmio_write_32(0x5083006040,0x000a0000); //coattach
@@ -239,7 +233,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083006108,0x00000001); //uncorrectable error state enable
 	mmio_write_32(0x5083006140,0x00000803); //correctable error control 
 	mmio_write_32(0x5083006144,0x00000001); //correctable error status
-	mmio_write_32(0x5083006150,0x000003ff); //correctable error status alias
 	mmio_write_32(0x508300617c,0x00000001); //correctable error resiliency threshold
 	mmio_write_32(0x5083006190,0x00004000); //timeout threshold
 	mmio_write_32(0x5083006194,0x00004000); //event timeout threshold
@@ -260,7 +253,7 @@ void ncore_direct_config()
 	mmio_write_32(0x5083006b1c,0x40000000);
 	mmio_write_32(0x5083006b2c,0x40000000);
 	mmio_write_32(0x5083006b3c,0x40000000);
-	mmio_write_32(0x5083006c00,0x00000a05); //Credit
+	mmio_write_32(0x5083006c00,0x00020a05); //Credit
 	mmio_write_32(0x5083006c04,0x00000a05); //Credit
 	mmio_write_32(0x5083006c08,0x00000a05); //Credit
 	mmio_write_32(0x5083006c0c,0x00000a05); //Credit
@@ -273,13 +266,12 @@ void ncore_direct_config()
 	mmio_write_32(0x5083007004,0x80000007); //fab id
 	mmio_write_32(0x5083007100,0x00000803);
 	mmio_write_32(0x5083007104,0x00000001);
-	mmio_write_32(0x5083007110,0x000003ff);
 	mmio_write_32(0x5083007140,0x0000003f);
 	mmio_write_32(0x5083007144,0x0000003f);
 	mmio_write_32(0x5083007148,0x00000001);
 	mmio_write_32(0x5083007190,0x00004000);
 	mmio_write_32(0x5083007194,0x00004000);
-	mmio_write_32(0x5083007200,0x001e0010); //QOS
+	mmio_write_32(0x5083007200,0x001e0010);
 	mmio_write_32(0x50830073a0,0x00000000);
 	mmio_write_32(0x50830073a4,0x00000000);
 	mmio_write_32(0x50830073a8,0x00000000);
@@ -301,7 +293,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083008004,0x80000008); //fab id
 	mmio_write_32(0x5083008100,0x00000803);
 	mmio_write_32(0x5083008104,0x00000001);
-	mmio_write_32(0x5083008110,0x000003ff);
 	mmio_write_32(0x5083008140,0x0000003f);
 	mmio_write_32(0x5083008144,0x0000003f);
 	mmio_write_32(0x5083008148,0x00000001);
@@ -329,7 +320,6 @@ void ncore_direct_config()
 	mmio_write_32(0x5083009004,0x80000009); //fab id
 	mmio_write_32(0x5083009100,0x00000803);
 	mmio_write_32(0x5083009104,0x00000001);
-	mmio_write_32(0x5083009110,0x000003ff);
 	mmio_write_32(0x5083009140,0x0000003f);
 	mmio_write_32(0x5083009144,0x0000003f);
 	mmio_write_32(0x5083009148,0x00000001);
@@ -357,7 +347,6 @@ void ncore_direct_config()
 	mmio_write_32(0x508300a004,0x8000000a); //fab id
 	mmio_write_32(0x508300a100,0x00000803);
 	mmio_write_32(0x508300a104,0x00000001);
-	mmio_write_32(0x508300a110,0x000003ff);
 	mmio_write_32(0x508300a140,0x0000003f);
 	mmio_write_32(0x508300a144,0x0000003f);
 	mmio_write_32(0x508300a148,0x00000001);
@@ -385,7 +374,6 @@ void ncore_direct_config()
 	mmio_write_32(0x508300b004,0x8000000b); //fab id
 	mmio_write_32(0x508300b100,0x00000803);
 	mmio_write_32(0x508300b104,0x00000001);
-	mmio_write_32(0x508300b110,0x000003ff);
 	mmio_write_32(0x508300b140,0x0000003f);
 	mmio_write_32(0x508300b144,0x0000003f);
 	mmio_write_32(0x508300b148,0x00000001);
@@ -408,12 +396,11 @@ void ncore_direct_config()
 	mmio_write_32(0x508300bc14,0x00000000); //Credit
 	mmio_write_32(0x508300bc18,0x00000000); //Credit
 	mmio_write_32(0x508300bc1c,0x00000000); //Credit
-	//dce5				base address:0x508300_c000
+	//dce5					base address:0x508300_c000
 	mmio_write_32(0x508300c000,0x8000500c); //id
 	mmio_write_32(0x508300c004,0x8000000c); //fab id
 	mmio_write_32(0x508300c100,0x00000803);
 	mmio_write_32(0x508300c104,0x00000001);
-	mmio_write_32(0x508300c110,0x000003ff);
 	mmio_write_32(0x508300c140,0x0000003f);
 	mmio_write_32(0x508300c144,0x0000003f);
 	mmio_write_32(0x508300c148,0x00000001);
@@ -441,7 +428,6 @@ void ncore_direct_config()
 	mmio_write_32(0x508300d004,0x8000000d); //fab id
 	mmio_write_32(0x508300d100,0x00000803);
 	mmio_write_32(0x508300d104,0x00000001);
-	mmio_write_32(0x508300d110,0x000003ff);
 	mmio_write_32(0x508300d140,0x0000003f);
 	mmio_write_32(0x508300d144,0x0000003f);
 	mmio_write_32(0x508300d148,0x00000001);
@@ -469,7 +455,6 @@ void ncore_direct_config()
 	mmio_write_32(0x508300e004,0x8000000e); //fab id
 	mmio_write_32(0x508300e100,0x00000803);
 	mmio_write_32(0x508300e104,0x00000001);
-	mmio_write_32(0x508300e110,0x000003ff);
 	mmio_write_32(0x508300e140,0x0000003f);
 	mmio_write_32(0x508300e144,0x0000003f);
 	mmio_write_32(0x508300e148,0x00000001);
@@ -652,4 +637,3 @@ void ncore_direct_config()
 	mmio_write_32(0x5083018180,0x00000001);
 	mmio_write_32(0x5083018190,0x00004000);
 }
-
