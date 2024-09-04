@@ -24,8 +24,6 @@
 #define SSPERI_MODE_SATA	0x1
 #define SSPERI_MODE_ETH		0x2
 
-#define ETH_TYPE_MASK		(0x3 << 3)
-
 #define BOOT_SOURCE_FLAG_ADDR	0x0
 #define BOOT_SOURCE_FLAG_SIZE	0x0
 #define OTP_SW_INFO_ADDR	0x0
@@ -74,7 +72,7 @@
 
 /* GP_REG11 0: unexpected watchdog reset; 1: intentionally reset */
 #define SYS_RESET	(TOP_BASE + 0x1EC)
-#define MULTI_CORE_FLAG (TOP_BASE + 0x1C0) // GP_REG0
+#define MULTI_CORE_FLAG (TOP_BASE + 0x80) // GP_REG0
 
 #define CLK_ENABLE_BASE	TOP_CLK_BASE
 
