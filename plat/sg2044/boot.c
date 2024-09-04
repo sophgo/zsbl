@@ -104,18 +104,23 @@ char **img_name[] = {
 	[IO_DEVICE_SPIFLASH] = img_name_spi,
 };
 
+
 static char *dtb_name_sd[] = {
-	"0:riscv64/mango-sophgo-x8evb.dtb",
-	"0:riscv64/mango-milkv-pioneer.dtb",
-	"0:riscv64/mango-sophgo-pisces.dtb",
-	"0:riscv64/mango-sophgo-x4evb.dtb",
+	"0:riscv64/sg2044r-evb.dtb",
+	"0:riscv64/bm1690-cdm-rp.dtb",
+	"0:riscv64/sg2044-evb.dtb",
+	"0:riscv64/bm1690-evb.dtb",
+	"NA",
+	"0:riscv64/bm1690-cdm-rp.dtb",
 };
 
 static char *dtb_name_spi[] = {
-	"mango-sophgo-x8evb.dtb",
-	"mango-milkv-pioneer.dtb",
-	"mango-sophgo-pisces.dtb",
-	"mango-sophgo-x4evb.dtb",
+	"sg2044r-evb.dtb",
+	"bm1690-cdm-rp.dtb",
+	"sg2044-evb.dtb",
+	"bm1690-evb.dtb",
+	"NA",
+	"bm1690-cdm-rp.dtb",
 };
 
 char **dtb_name[] = {
@@ -253,14 +258,12 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 	uint32_t reg = 0;
 	char** dtbs = get_bootfile_list(dev_num, dtb_name);
 
-	if (boot_file[ID_DEVICETREE].name == NULL) {
-		reg = mmio_read_32(BOARD_TYPE_REG);
-		if (reg >= 0x02 && reg <= 0x05) {
-			boot_file[ID_DEVICETREE].name = dtbs[reg - 0x02];
-		} else {
-			pr_err("can not find dtb\n");
-			return -1;
-		}
+	reg = mmio_read_32(TOP_GP_REG31);
+	if (reg >= 0x0 && reg <= 0x07) {
+		boot_file[ID_DEVICETREE].name = dtbs[reg];
+	} else {
+		pr_err("can not find dtb\n");
+		return -1;
 	}
 
 	if (io_dev->func.init()) {

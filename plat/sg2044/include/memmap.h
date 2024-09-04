@@ -33,6 +33,7 @@
 #define TOP_GP_REG8     (TOP_BASE + 0x1e0)
 #define TOP_GP_REG9     (TOP_BASE + 0x1e4)
 #define TOP_GP_REG10    (TOP_BASE + 0x1e8)
+#define TOP_GP_REG31    (TOP_BASE + 0x23c)
 
 #define SDIO_BASE	0x703000B000
 #define SPIFLASH_1_BASE	0X7002180000
