@@ -589,7 +589,7 @@ void sg2042_top_reset(uint32_t index)
 int calculate_addr(void)
 {
 	int core_id = sg2044_board_info.core_type - CORE_TPU_SCALAR0;
-	sg2044_board_info.opensbi_base[sg2044_board_info.core_type] = CONFIG_TPU_SCALAR_START + core_id * CONFIG_TPU_SCALAR_MEM_OFFSET + 0x1000000;
+	sg2044_board_info.opensbi_base[sg2044_board_info.core_type] = (uint64_t)CONFIG_TPU_SCALAR_START + core_id * (uint64_t)CONFIG_TPU_SCALAR_MEM_OFFSET + 0x1000000UL;
 	boot_file[ID_OPENSBI].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type];
 	boot_file[ID_KERNEL].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type] + KERNEL_IMAGE_OFFSET;
 	boot_file[ID_DEVICETREE].addr = sg2044_board_info.opensbi_base[sg2044_board_info.core_type] + DTB_OFFSET;
@@ -622,11 +622,12 @@ int boot(void)
 
 #ifdef CONFIG_TPU_SCALAR
 	void *fdt;
-	int core_id = sg2044_board_info.core_type - CORE_TPU_SCALAR0;
+	int core_id;
 
 	build_board_info();
 	calculate_addr();
 	fdt = (void *)boot_file[ID_DEVICETREE].addr;
+	core_id = sg2044_board_info.core_type - CORE_TPU_SCALAR0;
 
 	if (modify_tpu_dtb(fdt, core_id)) {
 		pr_err("modfiy dtb failed\n");
