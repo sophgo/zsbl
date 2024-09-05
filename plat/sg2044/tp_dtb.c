@@ -66,7 +66,7 @@ static int modify_node_reg(void *fdt, char *node_path, uint64_t offset)
         pr_err("Unable to set name: %s\n", node_name);
         return -1;
     }
-    pr_info("%s reg start: 0x%lx, len: 0x%lx\n", node_path, fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
+    nodep = fdt_getprop(fdt, nodeoffset, "reg", &len);
     pr_info("%s name is %s\n", node_path, fdt_get_name(fdt, nodeoffset, NULL));
 
     return 0;
@@ -388,17 +388,18 @@ static int modify_node_chosen(void *fdt, bool modify_stdout)
     }
     pr_info("old_bootargs: %s\n", (char *)bootargs);
 
-    substr_start = strstr(bootargs, "initrd=");
+    substr_start = strstr(bootargs, "initrd=") + strlen("initrd=");
     ramfs_addr = strtoul(substr_start, &end_ptr, 16);
     if (ramfs_addr == 0 && end_ptr == substr_start)
     {
-        pr_err("Unable to parsr initrd\n");
+        pr_err("Unable to parse initrd\n");
         return -1;
     }
 
-    ramfs_addr += CONFIG_TPU_SCALAR_MEM_OFFSET * core_id;
+    ramfs_addr += (uint64_t)CONFIG_TPU_SCALAR_MEM_OFFSET * core_id;
     sprintf(ramfs_addr_str, "0x%lx", ramfs_addr);
     new_bootargs = (char *)malloc(strlen(bootargs) + 1 - (end_ptr - substr_start) + strlen(ramfs_addr_str));
+    memset(new_bootargs, 0, strlen(bootargs) + 1 - (end_ptr - substr_start) + strlen(ramfs_addr_str));
     strncpy(new_bootargs, bootargs, (const char *)substr_start - (const char *)bootargs);
     strncpy(new_bootargs + ((const char *)substr_start - (const char *)bootargs), ramfs_addr_str, strlen(ramfs_addr_str));
     strcat(new_bootargs, end_ptr);
@@ -422,11 +423,11 @@ static int modify_node_chosen(void *fdt, bool modify_stdout)
             return -1;
         }
     }
-    ret = fdt_delprop(fdt, nodeoffset, "stdout-path");
-    if (ret)
-    {
-        pr_info("fdt_delprop stdout-path ret:%d\n", ret);
-    }
+    // ret = fdt_delprop(fdt, nodeoffset, "stdout-path");
+    // if (ret)
+    // {
+    //     pr_info("fdt_delprop stdout-path ret:%d\n", ret);
+    // }
 
     return 0;
 }
@@ -495,7 +496,6 @@ int modify_tpu_dtb(void *fdt, int id)
         pr_err("modify chosen node failed, ret = %d\n", ret);
         return -1;
     }
-    ret = modify_node_chosen(fdt, false);
 
     return 0;
 }
