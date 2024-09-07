@@ -131,10 +131,10 @@ char **dtb_name[] = {
 board_info sg2044_board_info;
 struct fw_dynamic_info dynamic_info = {
 	.magic = FW_DYNAMIC_INFO_MAGIC_VALUE,
-	.version = 0,
+	.version = FW_DYNAMIC_INFO_VERSION_2,
 	.next_addr = KERNEL_ADDR,
 	.next_mode = FW_DYNAMIC_INFO_NEXT_MODE_S,
-	.boot_hart = 0xffffffffffffffff,
+	.boot_hart = 0,
 };
 
 uint64_t opensbi_base[10] = {
@@ -277,7 +277,7 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
 			if (ID_RAMFS) {
-				pr_warn("ramfs open fail, ignore it!\n");
+				pr_warn("%s open fail, ignore it!\n", boot_file[i].name);
 				continue;
 			}
 
@@ -640,6 +640,8 @@ int boot(void)
 			pr_err("read boot file faile\n");
 			assert(0);
 		}
+	} else if (get_work_mode() == CHIP_WORK_MODE_PCIE) {
+		thread_safe_printf("boot file have been load by sram, go!\n");
 	} else {
 		build_board_info();
 	}
@@ -651,7 +653,8 @@ int boot(void)
 #endif
 
 	__asm__ __volatile__ ("fence.i"::);
-	thread_safe_printf("main core sbi jump to 0x%lx, dynamic info:%p\n", boot_file[ID_OPENSBI].addr, &dynamic_info);
+	thread_safe_printf("main core %u sbi jump to 0x%lx, dynamic info:%p\n",
+			    current_hartid(), boot_file[ID_OPENSBI].addr, &dynamic_info);
 	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
 		boot_file[ID_DEVICETREE].addr, (unsigned long)&dynamic_info);
 
