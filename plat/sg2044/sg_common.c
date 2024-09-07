@@ -8,8 +8,13 @@
 
 uint64_t get_work_mode(void)
 {
-	//return CHIP_WORK_MODE_POD;
-	return CHIP_WORK_MODE_CPU;
+	uint32_t bootsel;
+
+	bootsel = mmio_read_32(BOOT_SEL_ADDR);
+	if (bootsel & BOOT_FROM_SRAM)
+		return CHIP_WORK_MODE_PCIE;
+	else
+		return CHIP_WORK_MODE_CPU;
 }
 
 uint64_t get_core_type(void)
