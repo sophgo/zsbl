@@ -131,10 +131,10 @@ char **dtb_name[] = {
 board_info sg2044_board_info;
 struct fw_dynamic_info dynamic_info = {
 	.magic = FW_DYNAMIC_INFO_MAGIC_VALUE,
-	.version = FW_DYNAMIC_INFO_VERSION_2,
+	.version = 0,
 	.next_addr = KERNEL_ADDR,
 	.next_mode = FW_DYNAMIC_INFO_NEXT_MODE_S,
-	.boot_hart = 0,
+	.boot_hart = 0xffffffffffffffff,
 };
 
 uint64_t opensbi_base[10] = {
