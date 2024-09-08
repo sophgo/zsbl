@@ -102,44 +102,7 @@ static int delete_node_serial(void *fdt)
     ret = fdt_delprop(fdt, nodeoffset, "serial0");
     if (ret)
     {
-        pr_info("fdt_delprop serial0 ret:%d\n", ret);
-    }
-
-    return ret;
-}
-
-#if 0
-static int delete_node_vtty(void *fdt)
-{
-    int nodeoffset;
-    int endoffset = 0;
-    int ret = 0;
-
-    nodeoffset = fdt_path_offset(fdt, "/soc/vtty");
-    if (nodeoffset < 0)
-    {
-        pr_err("Unable to find node: /soc/vtty\n");
-        return -1;
-    }
-
-    endoffset = fdt_del_node(fdt, nodeoffset);
-    if (endoffset < 0)
-    {
-        pr_err("Unable to find node: /soc/vtty\n");
-        return -1;
-    }
-
-    nodeoffset = fdt_path_offset(fdt, "/aliases");
-    if (nodeoffset < 0)
-    {
-        pr_err("Unable to find node: /aliases\n");
-        return -1;
-    }
-
-    ret = fdt_delprop(fdt, nodeoffset, "vtty0");
-    if (ret)
-    {
-        pr_info("fdt_delprop vtty0 ret:%d\n", ret);
+        pr_err("fdt_delprop serial0 ret:%d\n", ret);
     }
 
     return ret;
@@ -265,6 +228,43 @@ static int modify_node_vtty(void *fdt)
     pr_info("new_vtty0: %s\n", (char *)fdt_getprop(fdt, nodeoffset, "vtty0", &len));
 
     return 0;
+}
+
+#if 0
+static int delete_node_vtty(void *fdt)
+{
+    int nodeoffset;
+    int endoffset = 0;
+    int ret = 0;
+
+    nodeoffset = fdt_path_offset(fdt, "/soc/vtty");
+    if (nodeoffset < 0)
+    {
+        pr_err("Unable to find node: /soc/vtty\n");
+        return -1;
+    }
+
+    endoffset = fdt_del_node(fdt, nodeoffset);
+    if (endoffset < 0)
+    {
+        pr_err("Unable to find node: /soc/vtty\n");
+        return -1;
+    }
+
+    nodeoffset = fdt_path_offset(fdt, "/aliases");
+    if (nodeoffset < 0)
+    {
+        pr_err("Unable to find node: /aliases\n");
+        return -1;
+    }
+
+    ret = fdt_delprop(fdt, nodeoffset, "vtty0");
+    if (ret)
+    {
+        pr_info("fdt_delprop vtty0 ret:%d\n", ret);
+    }
+
+    return ret;
 }
 
 static int modify_node_serial(void *fdt, uint64_t uart_base)
@@ -423,11 +423,6 @@ static int modify_node_chosen(void *fdt, bool modify_stdout)
             return -1;
         }
     }
-    // ret = fdt_delprop(fdt, nodeoffset, "stdout-path");
-    // if (ret)
-    // {
-    //     pr_info("fdt_delprop stdout-path ret:%d\n", ret);
-    // }
 
     return 0;
 }
@@ -477,20 +472,18 @@ int modify_tpu_dtb(void *fdt, int id)
         return -1;
     }
 
-#if 0
-	ret = modify_node_vtty(fdt);
-	if (ret != 0) {
-		pr_err("modify vtty node failed, ret = %d\n", ret);
-		return -1;
-	}
-#endif
-
     if (core_id != 0)
     {
         delete_node_serial(fdt);
     }
 
-    ret = modify_node_chosen(fdt, false);
+	ret = modify_node_vtty(fdt);
+	if (ret != 0) {
+		pr_err("modify vtty node failed, ret = %d\n", ret);
+		return -1;
+	}
+
+    ret = modify_node_chosen(fdt, true);
     if (ret != 0)
     {
         pr_err("modify chosen node failed, ret = %d\n", ret);
