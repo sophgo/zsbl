@@ -1,48 +1,115 @@
-#define DEBUG
 #include <stdio.h>
-#include <timer.h>
-#include <lib/mmio.h>
 #include <string.h>
+#include <assert.h>
+#include <lib/mmio.h>
+#include <sbi/riscv_asm.h>
+#include <sbi.h>
 #include <framework/module.h>
 #include <framework/common.h>
-#include <lib/libc/errno.h>
-#include <smp.h>
 #include <sifive_extensiblecache0.h>
 #include <sifive_buserror0.h>
 #include <sifive_pl2cache0.h>
 #include <sifive_hwpf1.h>
-#include <platform.h>
+#include <driver/sd/sd.h>
+#include <driver/io/io_sd.h>
+#include <driver/io/io_flash.h>
+#include <driver/io/io.h>
+#include <driver/spi-flash/mango_spif.h>
 #include <memmap.h>
-#include <ncore_boot.h>
-#include <iommu.h>
-#include <sbi/riscv_asm.h>
+#include <smp.h>
+#include <ini.h>
+#include <board.h>
+#include <libfdt.h>
+#include <timer.h>
+#include <sg2380_ncore.h>
+#include <sg2380_misc.h>
 #include <driver/ddr/ddr.h>
-#include <driver/pcie/sg2380_pcie.h>
-#include "sbi.h"
-#include "cli.h"
+#include <iommu.h>
 
-#define STACK_SIZE 4096
-#define DDR_CFG_BASEADDR 0X05000000000
+#ifdef CONFIG_TARGET_FPGA
+#define is_boot_from_sd_first(void) true
+#else
+#define is_boot_from_sd_first(void) (mmio_read_32(BOOT_SEL) & BOOT_FROM_SD_FIRST)
+#endif
 
-//#define CONFIG_SSPERI_SATA
-//#define CONFIG_SSPERI_ETH
-//#define CONFIG_SSPERI_PCIE
+enum {
+	ID_CONFINI = 0,
+	ID_OPENSBI,
+	ID_KERNEL,
+	ID_RAMFS,
+	ID_DEVICETREE,
+	ID_MAX,
+};
 
-/* When the phy mode of the SSPERI system is Ethernet,
- * there are a total of four Ethernet interfaces, two of
- * which are fixed to 10G, and the other two can be selected
- * as two 25G interfaces, two 10G interfaces, or one 10G interface
- * and one 25G interface.
- */
-#define CONFIG_ETH_BOTH_25G
-//#define CONFIG_ETH_BOTH_10G
-//#define CONFIG_ETH_25G_AND_10G
+board_info sg2380_board_info;
+uint8_t conf_file[1024] = {0};
+static BOOT_FILE boot_file[ID_MAX] = {
+	[ID_CONFINI] = {
+		.id = ID_CONFINI,
+		.name = "0:riscv64/conf.ini",
+		.addr = (uint64_t)conf_file,
+	},
+	[ID_OPENSBI] = {
+	     .id = ID_OPENSBI,
+	     .name = "0:riscv64/fw_dynamic.bin",
+	     .addr = OPENSBI_ADDR,
+	},
+	[ID_KERNEL] = {
+	     .id = ID_KERNEL,
+	     .name = "0:riscv64/riscv64_Image",
+	     .addr = KERNEL_ADDR,
+	},
+	[ID_RAMFS] = {
+	     .id = ID_RAMFS,
+	     .name = "0:riscv64/initrd.img",
+	     .addr = RAMFS_ADDR,
+	},
+	[ID_DEVICETREE] = {
+		.id = ID_DEVICETREE,
+		.name = "0:riscv64/sg2380-pld.dtb",
+		.addr = DEVICETREE_ADDR,
+	},
+};
 
-// #define CONFIG_TPU_SYS
+static char *img_name_sd[] = {
+	"0:riscv64/conf.ini",
+	"0:riscv64/fw_dynamic.bin",
+	"0:riscv64/riscv64_Image",
+	"0:riscv64/initrd.img",
+	"0:riscv64/sg2380-pld.dtb",
+};
 
-extern int boot_from_storage(void);
+static char *img_name_spi[] = {
+	"conf.ini",
+	"fw_dynamic.bin",
+	"riscv64_Image",
+	"initrd.img",
+	"sg2380-pld.dtb",
+};
 
-struct fw_dynamic_info pld_dynamic_info = {
+static char **img_name[] = {
+	[IO_DEVICE_SD] = img_name_sd,
+	[IO_DEVICE_SPIFLASH] = img_name_spi,
+};
+
+static char *dtb_name_sd[] = {
+	"0:riscv64/sg2380-pld.dtb",
+	"0:riscv64/sg2380-fpga.dtb",
+	"0:riscv64/sg2380-sophgo-evb.dtb",
+};
+
+static char *dtb_name_spi[] = {
+	"sg2380-pld.dtb",
+	"sg2380-fpga.dtb",
+	"sg2380-sophgo-evb.dtb",
+};
+
+static char __attribute__((unused)) **dtb_name[] = {
+	[IO_DEVICE_SD] = dtb_name_sd,
+	[IO_DEVICE_SPIFLASH] = dtb_name_spi,
+};
+
+static struct fw_dynamic_info dynamic_info = {
 	.magic = FW_DYNAMIC_INFO_MAGIC_VALUE,
 	.version = 0,
 	.next_addr = KERNEL_ADDR,
@@ -50,36 +117,376 @@ struct fw_dynamic_info pld_dynamic_info = {
 	.boot_hart = 0xffffffffffffffff,
 };
 
+static inline char **get_bootfile_list(int dev_num, char **bootfile[])
+{
+	if (dev_num < IO_DEVICE_MAX)
+		return bootfile[dev_num];
+
+	return NULL;
+}
+
+static int boot_device_register(void)
+{
+	if (sd_io_device_register() || flash_io_device_register())
+		return -1;
+
+	return 0;
+}
+
+static int build_bootfile_info(int dev_num, BOOT_FILE *boot_file, int file_num)
+{
+	char *sd_dtb_name = NULL;
+	char *sd_kernel_name = NULL;
+	char *sd_fw_name = NULL;
+	char *sd_ramfs_name = NULL;
+
+	char** imgs = get_bootfile_list(dev_num, img_name);
+
+	if (!imgs)
+		return -1;
+
+	if (dev_num == IO_DEVICE_SD) {
+		if (sg2380_board_info.config_ini.dtb_name != NULL) {
+			sd_dtb_name = malloc(64);
+			memset(sd_dtb_name, 0, 64);
+			strcat(sd_dtb_name, "0:riscv64/");
+			strcat(sd_dtb_name, sg2380_board_info.config_ini.dtb_name);
+			boot_file[ID_DEVICETREE].name = sd_dtb_name;
+		}
+
+		if (sg2380_board_info.config_ini.kernel_name != NULL) {
+			sd_kernel_name = malloc(64);
+			memset(sd_kernel_name, 0, 64);
+			strcat(sd_kernel_name, "0:riscv64/");
+			strcat(sd_kernel_name, sg2380_board_info.config_ini.kernel_name);
+			boot_file[ID_KERNEL].name = sd_kernel_name;
+		}
+
+		if (sg2380_board_info.config_ini.fw_name != NULL) {
+			sd_fw_name = malloc(64);
+			memset(sd_fw_name, 0, 64);
+			strcat(sd_fw_name, "0:riscv64/");
+			strcat(sd_fw_name, sg2380_board_info.config_ini.fw_name);
+			boot_file[ID_OPENSBI].name = sd_fw_name;
+		}
+
+		if (sg2380_board_info.config_ini.ramfs_name != NULL) {
+			sd_ramfs_name = malloc(64);
+			memset(sd_ramfs_name, 0, 64);
+			strcat(sd_ramfs_name, "0:riscv64/");
+			strcat(sd_ramfs_name, sg2380_board_info.config_ini.ramfs_name);
+			boot_file[ID_RAMFS].name = sd_ramfs_name;
+		}
+	} else if (dev_num == IO_DEVICE_SPIFLASH) {
+		if (sg2380_board_info.config_ini.dtb_name != NULL)
+			boot_file[ID_DEVICETREE].name = sg2380_board_info.config_ini.dtb_name;
+
+		if (sg2380_board_info.config_ini.kernel_name != NULL)
+			boot_file[ID_KERNEL].name = sg2380_board_info.config_ini.kernel_name;
+
+		if (sg2380_board_info.config_ini.fw_name != NULL)
+			boot_file[ID_OPENSBI].name = sg2380_board_info.config_ini.fw_name;
+
+		if (sg2380_board_info.config_ini.ramfs_name != NULL)
+			boot_file[ID_RAMFS].name = sg2380_board_info.config_ini.ramfs_name;
+	}
+
+	if (sg2380_board_info.config_ini.dtb_addr)
+		boot_file[ID_DEVICETREE].addr = sg2380_board_info.config_ini.dtb_addr;
+
+	if (sg2380_board_info.config_ini.kernel_addr)
+		boot_file[ID_KERNEL].addr = sg2380_board_info.config_ini.kernel_addr;
+
+	if (sg2380_board_info.config_ini.fw_addr)
+		boot_file[ID_OPENSBI].addr = sg2380_board_info.config_ini.fw_addr;
+
+	if (sg2380_board_info.config_ini.ramfs_addr)
+		boot_file[ID_RAMFS].addr = sg2380_board_info.config_ini.ramfs_addr;
+
+
+	if (sg2380_board_info.config_ini.kernel_name == NULL)
+		boot_file[ID_KERNEL].name = imgs[ID_KERNEL];
+
+	if (sg2380_board_info.config_ini.fw_name == NULL)
+		boot_file[ID_OPENSBI].name = imgs[ID_OPENSBI];
+
+	if ((strcmp(boot_file[ID_KERNEL].name, "0:riscv64/u-boot.bin") == 0)
+		|| (strcmp(boot_file[ID_KERNEL].name, "u-boot.bin") == 0)
+		|| (strcmp(boot_file[ID_KERNEL].name, "0:riscv64/SG2380.fd") == 0)
+		|| (strcmp(boot_file[ID_KERNEL].name, "SG2380.fd") == 0))
+		boot_file[ID_RAMFS].name = NULL;
+	else if (sg2380_board_info.config_ini.ramfs_name == NULL)
+		boot_file[ID_RAMFS].name = imgs[ID_RAMFS];
+
+	return 0;
+}
+
+static int handler_img(void* user, const char* section, const char* name,
+				   const char* value)
+{
+	config_ini *pconfig = (config_ini *)user;
+
+	#define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
+
+	if (MATCH("devicetree", "name"))
+		pconfig->dtb_name = strdup(value);
+	else if (MATCH("devicetree", "addr"))
+		pconfig->dtb_addr = strtoul(value, NULL, 16);
+	else if (MATCH("kernel", "name"))
+		pconfig->kernel_name = strdup(value);
+	else if (MATCH("kernel", "addr"))
+		pconfig->kernel_addr = strtoul(value, NULL, 16);
+	else if (MATCH("firmware", "name"))
+		pconfig->fw_name = strdup(value);
+	else if (MATCH("firmware", "addr"))
+		pconfig->fw_addr = strtoul(value, NULL, 16);
+	else if (MATCH("ramfs", "name")) {
+		if (value && strlen(value))
+			pconfig->ramfs_name = strdup(value);
+	}
+	else if (MATCH("ramfs", "addr"))
+		pconfig->ramfs_addr = strtoul(value, NULL, 16);
+	else
+		return 0;
+
+	return -1;
+}
+
+static int read_conf_and_parse(IO_DEV *io_dev,  int conf_file_index, int dev_num)
+{
+	FILINFO info;
+	const char *header = "[sophgo-config]";
+	const char *tail = "[eof]";
+	char *eof;
+
+	if (dev_num == IO_DEVICE_SD) {
+		if (io_dev->func.open(boot_file[conf_file_index].name, FA_READ))
+			return -1;
+
+		if (io_dev->func.get_file_info(boot_file, conf_file_index, &info)) {
+			pr_err("get %s info failed\n", boot_file[conf_file_index].name);
+			return -1;
+		}
+		boot_file[conf_file_index].len = info.fsize;
+		if (io_dev->func.read(boot_file, conf_file_index, info.fsize)) {
+			pr_err("read %s failed\n", boot_file[conf_file_index].name);
+			return -1;
+		}
+
+		if (io_dev->func.close()) {
+			pr_err("close %s failed\n", boot_file[conf_file_index].name);
+			return -1;
+		}
+
+		__asm__ __volatile__ ("fence.i"::);
+	} else if (dev_num == IO_DEVICE_SPIFLASH) {
+		bm_spi_init(FLASH0_BASE);
+		bm_spi_flash_read((uint8_t *)boot_file[conf_file_index].addr, 0, sizeof(conf_file) - 1);
+		// back to DMMR mode
+		mmio_write_32(FLASH0_BASE + REG_SPI_DMMR, 1);
+	}
+
+	boot_file[ID_DEVICETREE].name = NULL;
+
+	if (strncmp(header, (const char *)boot_file[conf_file_index].addr, strlen(header))) {
+		pr_err("conf.ini should start with \"%s\"\n", header);
+		return -1;
+	}
+
+	eof = strstr((const char *)boot_file[conf_file_index].addr, tail);
+
+	if (!eof) {
+		pr_err("conf.ini should terminated by \"%s\"\n", tail);
+		return -1;
+	}
+
+	*eof = 0;
+
+	if (ini_parse_string((const char*)boot_file[conf_file_index].addr,
+			     handler_img, &(sg2380_board_info.config_ini)) < 0)
+		return -1;
+
+	return 0;
+}
+
+static int read_all_img(IO_DEV *io_dev, BOOT_FILE *boot_file, int file_num)
+{
+	FILINFO info;
+
+	if (io_dev->func.init()) {
+		pr_err("init %s device failed\n",
+		       io_dev->type == IO_DEVICE_SD ? "sd" : "flash");
+		goto umount_dev;
+	}
+
+	for (int i = 1; i < file_num; i++) {
+		if (boot_file[i].name == NULL)
+			continue;
+
+		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
+			pr_err("open %s failed\n", boot_file[i].name);
+			goto close_file;
+		}
+
+		if (io_dev->func.get_file_info(boot_file, i, &info)) {
+			pr_err("get %s info failed\n", boot_file[i].name);
+			goto close_file;
+		}
+
+		/* skip empty file */
+		if (info.fsize == 0) {
+			pr_warn("%s file length zero, skip it!\n",
+				boot_file[i].name);
+			continue;
+		}
+
+		boot_file[i].len = info.fsize;
+
+		if (io_dev->func.read(boot_file, i, info.fsize)) {
+			pr_err("read %s failed\n", boot_file[i].name);
+			goto close_file;
+		}
+
+		if (io_dev->func.close()) {
+			pr_err("close %s failed\n", boot_file[i].name);
+			goto umount_dev;
+		}
+
+		__asm__ __volatile__("fence.i" ::);
+	}
+
+	io_dev->func.destroy();
+
+	return 0;
+
+close_file:
+	io_dev->func.close();
+umount_dev:
+	io_dev->func.destroy();
+
+	return -1;
+}
+
+static int __attribute__((unused)) read_config_file(void)
+{
+	IO_DEV *io_dev;
+	int dev_num;
+	int ret = 0;
+
+	if (boot_device_register())
+		return -1;
+
+	if (bm_sd_card_detect())
+		dev_num = IO_DEVICE_SD;
+	else
+		dev_num = IO_DEVICE_SPIFLASH;
+
+	io_dev = set_current_io_device(dev_num);
+	if (io_dev == NULL) {
+		pr_debug("set current io device failed\n");
+		return -1;
+	}
+
+	io_dev->func.init();
+	ret = read_conf_and_parse(io_dev, ID_CONFINI, dev_num);
+	if (ret != 0) {
+		if (dev_num == IO_DEVICE_SD) {
+			io_dev->func.destroy();
+			dev_num = IO_DEVICE_SPIFLASH;
+			io_dev = set_current_io_device(dev_num);
+			if (io_dev == NULL) {
+				pr_debug("set current io device failed\n");
+				return -1;
+			}
+			io_dev->func.init();
+			ret = read_conf_and_parse(io_dev, ID_CONFINI, dev_num);
+			if (ret != 0) {
+				pr_err("have no conf.ini file\n");
+			} else {
+				pr_debug("read config from spi flash\n");
+			}
+		}
+
+	} else {
+		pr_debug("read config from %s\n", dev_num == IO_DEVICE_SD ? "sd": "flash");
+	}
+
+	io_dev->func.destroy();
+
+	return 0;
+}
+
+static int __attribute__((unused)) read_boot_file(BOOT_FILE *boot_file, int file_num)
+{
+	IO_DEV *io_dev;
+	int dev_num;
+
+	if (boot_device_register())
+		return -1;
+
+	if (is_boot_from_sd_first() && bm_sd_card_detect()) {
+		dev_num = IO_DEVICE_SD;
+		pr_debug("rv boot from sd card\n");
+	} else {
+		dev_num = IO_DEVICE_SPIFLASH;
+		pr_debug("rv boot from spi flash\n");
+	}
+
+	build_bootfile_info(dev_num, boot_file, file_num);
+	io_dev = set_current_io_device(dev_num);
+	if (io_dev == NULL) {
+		pr_debug("set current io device failed\n");
+		return -1;
+	}
+
+	if (read_all_img(io_dev, boot_file, file_num)) {
+		if (dev_num == IO_DEVICE_SD) {
+			dev_num = IO_DEVICE_SPIFLASH;
+			build_bootfile_info(dev_num, boot_file, file_num);
+			io_dev = set_current_io_device(dev_num);
+			if (io_dev == NULL) {
+				pr_debug(
+					"set current device to flash failed\n");
+				return -1;
+			}
+
+			if (read_all_img(io_dev, boot_file, file_num)) {
+				pr_debug("%s read file failed\n",
+					 dev_num == IO_DEVICE_SD ? "sd" :
+								   "flash");
+				return -1;
+			}
+
+			pr_debug("%s read file ok\n",
+				 dev_num == IO_DEVICE_SD ? "sd" : "flash");
+		} else {
+			pr_debug("%s read file failed\n",
+				 dev_num == IO_DEVICE_SD ? "sd" : "flash");
+			return -1;
+		}
+	} else {
+		pr_debug("%s read file ok\n",
+			 dev_num == IO_DEVICE_SD ? "sd" : "flash");
+	}
+
+	return 0;
+}
+
+#define STACK_SIZE 4096
+
 typedef struct {
 	uint8_t stack[STACK_SIZE];
 } core_stack;
-
 static core_stack secondary_core_stack[CONFIG_SMP_NUM];
-
-void platform_init(void)
-{
-	struct metal_cpu *cpu;
-	cpu = metal_cpu_get(csr_read(CSR_MHARTID));
-
-	struct metal_buserror *beu = metal_cpu_get_buserror(cpu);
-	if (beu != NULL) {
-		metal_buserror_init(beu);
-	}
-	metal_buserror_init(); 
-	sifive_pl2cache0_init();
-	sifive_hwpf1_init();
-}
 
 static void secondary_core_fun(void *priv)
 {
-	platform_init();
 	__asm__ __volatile__ ("fence.i"::);
-
-	jump_to(OPENSBI_ADDR, current_hartid(),
-			DEVICETREE_ADDR, (long)&pld_dynamic_info);
+	jump_to(boot_file[ID_OPENSBI].addr, current_hartid(),
+		boot_file[ID_DEVICETREE].addr, (unsigned long)&dynamic_info);
 }
 
-int boot_next_img(void)
+static int boot_next_img(void)
 {
 	unsigned int hartid = current_hartid();
 
@@ -93,213 +500,44 @@ int boot_next_img(void)
 	return 0;
 }
 
-static inline uint32_t modified_bits_by_value(uint32_t orig, uint32_t value, uint32_t msb, uint32_t lsb)
+static int boot(void)
 {
-	uint32_t bitmask = GENMASK_32(msb, lsb);
+	printf("sophgo SG2380 zsbl!\n");
 
-	orig &= ~bitmask;
-	return (orig | ((value << lsb) & bitmask));
-}
-
-static void dwc_ddrctl_cinit_seq_pwr_on_rst(uint64_t base_ddr_subsys_reg)
-{
-	uint32_t rddata;
-
-	// step1: gate aclk core_ddrc_clk
-	rddata = mmio_read_32(base_ddr_subsys_reg + 0x0); //bit 0-5 -> gate clk
-	rddata = modified_bits_by_value(rddata, 0, 6, 0);
-	mmio_write_32(base_ddr_subsys_reg + 0x0, rddata);
-
-	// assert core_ddrc_rstn, areset_n
-	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4);
-	rddata = modified_bits_by_value(rddata, 0, 5, 0);
-	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
-
-	// assert preset
-	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4);
-	rddata = modified_bits_by_value(rddata, 0, 7, 6);
-	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
-
-	//start clk
-	rddata = mmio_read_32(base_ddr_subsys_reg + 0x0);
-	rddata = modified_bits_by_value(rddata, 0x7f, 6, 0);
-	mmio_write_32(base_ddr_subsys_reg + 0x0, rddata);
-
-	//de-assert preset
-	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4);
-	rddata = modified_bits_by_value(rddata, 0b11, 7, 6);
-	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
-
-	mdelay(1);
-
-	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4); //bit 5 -> soft-reset
-	rddata = modified_bits_by_value(rddata, 0x3f, 5, 0);
-	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
-
-}
-
-void sg2380_fakeddr_init(void)
-{
-	for (int i = 0; i < 8; i++) {
-		dwc_ddrctl_cinit_seq_pwr_on_rst(DDR_CFG_BASEADDR + i * 0x4000000 + 0x02800000);
-		mmio_write_32(DDR_CFG_BASEADDR + i * 0x4000000 + 0x028000d0, 0x0fffffe8);
-		mmio_write_32(DDR_CFG_BASEADDR + i * 0x4000000 + 0x028000d4, 0x0fffffe8);
-	}
-
-}
-
-void _reg_write_mask(uintptr_t addr, uint32_t mask, uint32_t data)
-{
-	uint32_t value;
-
-	value = mmio_read_32(addr) & ~mask;
-	value |= (data & mask);
-	mmio_write_32(addr, value);
-}
-
-void sg2380_multimedia_itlvinit(void)
-{
-	_reg_write_mask(0x5082520000, 0x63, 0x3);
-	_reg_write_mask(0x5082520004, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520008, 0x63, 0x3);
-	_reg_write_mask(0x508252000c, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520010, 0x63, 0x3);
-	_reg_write_mask(0x5082520014, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520018, 0x63, 0x3);
-	_reg_write_mask(0x508252001c, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520020, 0x63, 0x3);
-	_reg_write_mask(0x5082520024, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520028, 0x63, 0x3);
-	_reg_write_mask(0x508252002c, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520030, 0x63, 0x3);
-	_reg_write_mask(0x5082520034, 0x7fffffff, 0x7fffffff);
-	_reg_write_mask(0x5082520038, 0x63, 0x3);
-	_reg_write_mask(0x508252003c, 0x7fffffff, 0x7fffffff);
-	printf("itlv init done...\n");
-}
-
-#ifdef CONFIG_TPU_SYS
-void sg2380_set_tpu_run(void)
-{
-	// release ec_sys reset
-	mmio_write_32(0x5088103000, mmio_read_32(0x5088103000) | (1 << 18));
-	printf("calling x280...\n");
-	// set x280 rvba
-	for (int i = 0; i < 4; i++) {
-		mmio_write_32(0x50bf000000 + 0x168 + 0x8 * i, i * 0x1800000);
-		mmio_write_32(0x50bf000000 + 0x16c + 0x8 * i, 0x1);
-	}
-	// reset x280
-	mmio_write_32(0x50bf000124, mmio_read_32(0x50bf000124) & ~0x1f);
-	mmio_write_32(0x50bf000124, mmio_read_32(0x50bf000124) | 0x1f);
-}
-#endif
-
-static void sg2380_phy_interface_config(void)
-{
-    unsigned int __attribute__((unused)) value;
-
-#ifdef CONFIG_SSPERI_SATA
-    value = mmio_read_32(SSPERI_PHY1_INTF_REG);
-    value = (value & ~(SSPERI_MODE_MASK)) | SSPERI_MODE_SATA;
-    mmio_write_32(SSPERI_PHY1_INTF_REG, value);
-#endif
-
-#ifdef CONFIG_SSPERI_ETH
-    value = mmio_read_32(SSPERI_PHY1_INTF_REG);
-    value = (value & ~(SSPERI_MODE_MASK)) | SSPERI_MODE_ETH;
-    mmio_write_32(SSPERI_PHY1_INTF_REG, value);
-#endif
-
-}
-
-static void sg2380_eth_type_config()
-{
-	uint32_t value;
-
-#ifdef CONFIG_ETH_BOTH_25G
-	value = mmio_read_32(SSPERI_PHY1_INTF_REG);
-	value = (value & ~(ETH_TYPE_MASK)) | 0b00;
-	printf("eth: both 25g\n");
-#endif
-
-#ifdef CONFIG_ETH_BOTH_10G
-	value = mmio_read_32(SSPERI_PHY1_INTF_REG);
-	value = (value & ~(ETH_TYPE_MASK)) | 0b11;
-	printf("eth: both 10g\n");
-#endif
-
-#ifdef CONFIG_ETH_25G_AND_10G
-	value = mmio_read_32(SSPERI_PHY1_INTF_REG);
-	value = (value & ~(ETH_TYPE_MASK)) | 0b01;
-	printf("eth: one 10g and one 25g\n");
-#endif
-}
-
-
-static void sg2380_eth_mul_channel_intr_enable(void)
-{
-	uint32_t val;
-
-	val = 0xffffffff;
-	mmio_write_32(SSPERI_SYS_TOP + 0x11c, val);
-
-	val = mmio_read_32(SSPERI_SYS_TOP + 0x124);
-	val &= ~(1 << 2 | 1 << 13);
-	val |= 0xffff0000;
-	mmio_write_32(SSPERI_SYS_TOP + 0x124, val);
-
-	val = mmio_read_32(SSPERI_SYS_TOP + 0x12c);
-	val &= ~(1 << 18);
-	val |= 0xffff;
-	mmio_write_32(SSPERI_SYS_TOP + 0x12c, val);
-
-	val = 0xffffffff;
-	mmio_write_32(SSPERI_SYS_TOP + 0x134, val);
-
-	val = mmio_read_32(SSPERI_SYS_TOP + 0x13c);
-	val &= ~(1 << 2 | 1 << 13);
-	val |= 0xffff0000;
-	mmio_write_32(SSPERI_SYS_TOP + 0x13c, val);
-
-	val = mmio_read_32(SSPERI_SYS_TOP + 0x144);
-	val &= ~(1 << 18);
-	val |= 0xffff;
-	mmio_write_32(SSPERI_SYS_TOP + 0x144, val);
-
-	printf("eth: enable muli irq and disable mac_sbd_irq\n");
-}
-
-int boot(void)
-{
-#if defined(CONFIG_TARGET_PALLADIUM)
-	printf("Sophgo SG2380 zsbl!\n");
-	printf("Firmware compile time:%s %s\n", __DATE__, __TIME__);
-	sg2380_phy_interface_config();
-	sg2380_eth_mul_channel_intr_enable();
-	sg2380_eth_type_config();
+	sg2380_platform_init();
 	sifive_extensiblecache0_init();
-	platform_init();
-	ncore_direct_config();
-	printf("ncore init done\n");
-	//sg2380_fakeddr_init();
-	sg2380_multimedia_itlvinit();
-	sg2380_ddr_init_asic();
+
+	sg2380_ncore_init();
+	sg2380_ddr_init();
+#ifndef CONFIG_TARGET_FPGA
 	sg2380_iommu_init();
+	sg2380_multimedia_itlvinit();
+	sg2380_ssperi_phy_config(SSPERI_MODE_PCIe);
 	//sg2380_pcie_init();
+	sg2380_eth_type_config(SSPERI_ETH_BOTH_25G);
+	sg2380_eth_mul_channel_intr_enable();
 #ifdef CONFIG_TPU_SYS
-	sg2380_set_tpu_run();
+	sg2380_set_tpu_run(0x200000000);
 #endif
-	cli_loop(0);
-	if (boot_next_img())
+#endif
+
+#ifndef CONFIG_TARGET_PALLADIUM
+	read_config_file();
+	sg2380_top_reset(SD_RESET_INDEX);
+	if (read_boot_file(boot_file, ID_MAX)) {
+		pr_err("read boot file faile\n");
+		assert(0);
+	}
+#endif
+	if (boot_next_img()) {
 		pr_err("boot next img failed\n");
+		assert(0);
+	}
 
 	__asm__ __volatile__ ("fence.i"::);
 	jump_to(OPENSBI_ADDR, current_hartid(),
-		DEVICETREE_ADDR, (unsigned long)&pld_dynamic_info);
-#else
-	boot_from_storage();
-#endif
+		DEVICETREE_ADDR, (unsigned long)&dynamic_info);
+
 	return 0;
 }
 plat_init(boot);

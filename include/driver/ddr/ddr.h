@@ -117,7 +117,7 @@ typedef struct SubsysHdlr_priv {
 	uint8_t addr_map;
 } lpddr_attr; // fwd SubsysHdlr_t
 
-void sg2380_ddr_init_asic();
+void sg2380_ddr_init(void);
 void ddrc_init_lp4(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr);
 void ddrc_init_lp5(uint64_t base_addr_ctrl, lpddr_attr *p_lpddr_attr);
 
