@@ -1,5 +1,6 @@
 #include <memmap.h>
 #include <stdint.h>
+#include <platform.h>
 
 #include <framework/module.h>
 #include <framework/common.h>

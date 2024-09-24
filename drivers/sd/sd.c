@@ -12,9 +12,7 @@
 #include <memmap.h>
 #include <lib/mmio.h>
 #include <timer.h>
-
-#define SDCARD_INIT_FREQ	(200 * 1000)
-#define SDCARD_TRAN_FREQ	(25 * 1000 * 1000)
+#include <platform.h>
 
 void flush_dcache_range(unsigned long start, unsigned long stop);
 static void bm_sd_hw_init(void);
@@ -48,7 +46,7 @@ static bm_sd_params_t bm_params = {
 
 int bm_get_sd_clock(void)
 {
-	return 100*1000*1000;
+	return SD_CLOCK;
 }
 
 static int bm_sd_send_cmd_with_data(struct mmc_cmd *cmd)
@@ -663,7 +661,7 @@ timeout:
 		return -1;
 }
 
-static void bm_sd_phy_init(void)
+static void __attribute__((unused)) bm_sd_phy_init(void)
 {
 	uintptr_t base = SDIO_BASE;
 	int loop = 100;
@@ -735,8 +733,9 @@ int bm_sd_init(uint32_t flags)
 	printf("SD initializing %dHz (transfer frequency at %dHz)\n", bm_params.clk_rate, SDCARD_TRAN_FREQ);
 
 	bm_params.flags = flags;
-
+#ifndef CONFIG_TARGET_FPGA
 	bm_sd_phy_init();
+#endif
 
 	ret = mmc_init(&bm_sd_ops, SDCARD_TRAN_FREQ, bm_params.bus_width,
 		       bm_params.flags, &sd_info);

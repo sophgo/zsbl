@@ -9,6 +9,7 @@
 #include <platform.h>
 #include <driver/ddr/bitwise_ops.h>
 #include <driver/ddr/ddr.h>
+#include <memmap.h>
 
 lpddr_attr g_lpddr_attr;
 
@@ -620,9 +621,9 @@ void ddr_init(lpddr_attr *p_lpddr_attr, uint8_t ddr_sys_index)
 	mmio_wr32(base_addr_ctrl + 0x10208, 0x0); // DWC_ddrctl_map_REGB_DDRC_CH0.RFSHCTL0
 }
 
-void sg2380_ddr_init_asic()
+static void __attribute__((unused)) sg2380_ddr_init_asic(void)
 {
-	printf("-[%s]-\n", __func__);
+	pr_info("SG2380 asic ddr init\n");
 
 	sg2380_ddr_setup_init(&g_lpddr_attr);
 
@@ -632,4 +633,72 @@ void sg2380_ddr_init_asic()
 		ddr_init(&g_lpddr_attr, i);
 
 	printf("*************sg2380_ddr_init_complete*************\n");
+}
+
+static void dwc_ddrctl_cinit_seq_pwr_on_rst_pld(uint64_t base_ddr_subsys_reg)
+{
+	uint32_t rddata;
+
+	// step1: gate aclk core_ddrc_clk
+	rddata = mmio_read_32(base_ddr_subsys_reg + 0x0); //bit 0-5 -> gate clk
+	rddata = modified_bits_by_value(rddata, 0, 6, 0);
+	mmio_write_32(base_ddr_subsys_reg + 0x0, rddata);
+
+	// assert core_ddrc_rstn, areset_n
+	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4);
+	rddata = modified_bits_by_value(rddata, 0, 5, 0);
+	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
+
+	// assert preset
+	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4);
+	rddata = modified_bits_by_value(rddata, 0, 7, 6);
+	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
+
+	//start clk
+	rddata = mmio_read_32(base_ddr_subsys_reg + 0x0);
+	rddata = modified_bits_by_value(rddata, 0x7f, 6, 0);
+	mmio_write_32(base_ddr_subsys_reg + 0x0, rddata);
+
+	//de-assert preset
+	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4);
+	rddata = modified_bits_by_value(rddata, 0b11, 7, 6);
+	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
+
+	mdelay(1);
+
+	rddata = mmio_read_32(base_ddr_subsys_reg + 0x4); //bit 5 -> soft-reset
+	rddata = modified_bits_by_value(rddata, 0x3f, 5, 0);
+	mmio_write_32(base_ddr_subsys_reg + 0x4, rddata);
+}
+
+static void __attribute__((unused)) sg2380_ddr_init_pld(void)
+{
+	int i;
+
+	pr_info("SG2380 pld ddr init\n");
+
+	for (i = 0; i < 8; i++) {
+		dwc_ddrctl_cinit_seq_pwr_on_rst_pld(DDR_CFG_BASEADDR + i * 0x4000000 + 0x02800000);
+		mmio_write_32(DDR_CFG_BASEADDR + i * 0x4000000 + 0x028000d0, 0x0fffffe8);
+		mmio_write_32(DDR_CFG_BASEADDR + i * 0x4000000 + 0x028000d4, 0x0fffffe8);
+	}
+}
+
+static void __attribute__((unused)) sg2380_ddr_init_fpga(void)
+{
+	pr_info("SG2380 fpga ddr init\n");
+
+	mmio_write_32(0x50028000d0, 0x1);
+	mmio_write_32(0x50028000d4, 0x1);
+}
+
+void sg2380_ddr_init(void)
+{
+#if defined(CONFIG_TARGET_PALLADIUM) && defined(SG2380_PLD_DDR_FAKE)
+	sg2380_ddr_init_pld();
+#elif defined(CONFIG_TARGET_FPGA)
+	sg2380_ddr_init_fpga();
+#else
+	sg2380_ddr_init_asic();
+#endif
 }

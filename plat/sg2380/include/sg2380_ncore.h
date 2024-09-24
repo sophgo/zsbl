@@ -3,6 +3,6 @@
 #ifndef __NCORE_BOOT_H__
 #define __NCORE_BOOT_H__
 
-void ncore_direct_config();
+void sg2380_ncore_init(void);
 
 #endif
