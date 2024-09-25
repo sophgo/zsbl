@@ -5,7 +5,6 @@ obj-y += sifive_pl2cache.o
 obj-y += sifive_hwpf.o
 obj-y += cpu.o
 obj-y += inline.o
-obj-y += soc_mode_load_img.o
 obj-y += sg2380_ncore.o
 obj-y += sg2380_misc.o
 obj-y += console.o
