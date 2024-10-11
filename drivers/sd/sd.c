@@ -48,7 +48,7 @@ static bm_sd_params_t bm_params = {
 
 int bm_get_sd_clock(void)
 {
-	return 100*1000*1000;
+	return 400*1000*1000;
 }
 
 static int bm_sd_send_cmd_with_data(struct mmc_cmd *cmd)
@@ -283,12 +283,12 @@ void bm_sd_set_clk(int clk)
 	if (bm_params.clk_rate <= clk) {
 		div = 0;
 	} else {
-		for (div = 0x1; div < 0xFF; div++) {
+		for (div = 0x1; div < 0x3FF; div++) {
 			if (bm_params.clk_rate / (2 * div) <= clk)
 				break;
 		}
 	}
-	assert(div <= 0xFF);
+	assert(div <= 0x3FF);
 
 	base = bm_params.reg_base;
 	if (mmio_read_16(base + SDHCI_HOST_CONTROL2) & (1 << 15)) {
@@ -298,7 +298,8 @@ void bm_sd_set_clk(int clk)
 		mmio_write_16(base + SDHCI_CLK_CTRL,
 			      mmio_read_16(base + SDHCI_CLK_CTRL) & ~0x9); // disable INTERNAL_CLK_EN and PLL_ENABLE
 		mmio_write_16(base + SDHCI_CLK_CTRL,
-			      (mmio_read_16(base + SDHCI_CLK_CTRL) & 0xDF) | div << 8); // set clk div
+				(mmio_read_16(base + SDHCI_CLK_CTRL) & 0x3F) | ((div & 0xFF) << 8) |
+				(((div >> 8) & 0x3) << 6)); // set 10bits clk div
 		mmio_write_16(base + SDHCI_CLK_CTRL,
 			      mmio_read_16(base + SDHCI_CLK_CTRL) | 0x1); // set INTERNAL_CLK_EN
 
@@ -336,12 +337,12 @@ void bm_sd_change_clk(int clk)
 	if (bm_params.clk_rate <= clk) {
 		div = 0;
 	} else {
-		for (div = 0x1; div < 0xFF; div++) {
+		for (div = 0x1; div < 0x3FF; div++) {
 			if (bm_params.clk_rate / (2 * div) <= clk)
 				break;
 		}
 	}
-	assert(div <= 0xFF);
+	assert(div <= 0x3FF);
 
 	base = bm_params.reg_base;
 
@@ -358,7 +359,8 @@ void bm_sd_change_clk(int clk)
 	} else {
 		//verbose("Set SDCLK by driver. div=0x%x(%d)\n", div, div);
 		mmio_write_16(base + SDHCI_CLK_CTRL,
-			      (mmio_read_16(base + SDHCI_CLK_CTRL) & 0xDF) | div << 8); // set clk div
+				(mmio_read_16(base + SDHCI_CLK_CTRL) & 0x3F) | ((div & 0xFF) << 8) |
+				(((div >> 8) & 0x3) << 6)); // set 10bits clk div
 		mmio_write_16(base + SDHCI_CLK_CTRL,
 			      mmio_read_16(base + SDHCI_CLK_CTRL) & ~(0x1 << 5)); // CLK_GEN_SELECT
 	}
