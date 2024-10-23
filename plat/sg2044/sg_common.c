@@ -26,3 +26,12 @@ uint64_t get_core_type(void)
 	return CORE_64CORE_RV;
 #endif
 }
+
+void disable_mac_rxdelay(void)
+{
+	uint32_t misc_conf;
+
+	misc_conf = mmio_read_32(REG_TOP_MISC_CONTROL_ADDR);
+	misc_conf |= RGMII0_DISABLE_INTERNAL_DELAY;
+	mmio_write_32(REG_TOP_MISC_CONTROL_ADDR, misc_conf);
+}
