@@ -31,6 +31,7 @@ enum cpu_board_type {
 #define RAMFS_OFFSET	0xa000000
 #define TP_SYS_OFFSET	0x10000000
 
+void disable_mac_rxdelay(void);
 uint64_t get_work_mode(void);
 uint64_t get_core_type(void);
 

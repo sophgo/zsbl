@@ -620,6 +620,8 @@ int boot(void)
 	print_banner();
 	print_core_ctrlreg();
 
+	disable_mac_rxdelay();
+
 #ifdef CONFIG_TPU_SCALAR
 	void *fdt;
 	int core_id;

@@ -13,6 +13,10 @@
 #define CLINT_MHART_ID  0x6844001000 // used for identify tp id
 #endif
 
+#define REG_TOP_MISC_CONTROL		0x8
+#define REG_TOP_MISC_CONTROL_ADDR	(TOP_BASE + REG_TOP_MISC_CONTROL)
+#define RGMII0_DISABLE_INTERNAL_DELAY	(1 << 16)
+
 #define REG_DDR_SIZE    0X54
 #define DDR_SIZE_ADDR   (TOP_BASE + REG_DDR_SIZE)
 #define MP0_STATUS	0x380
