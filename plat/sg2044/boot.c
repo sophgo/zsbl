@@ -258,12 +258,14 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 	uint32_t reg = 0;
 	char** dtbs = get_bootfile_list(dev_num, dtb_name);
 
-	reg = mmio_read_32(TOP_GP_REG31);
-	if (reg >= 0x0 && reg <= 0x07) {
-		boot_file[ID_DEVICETREE].name = dtbs[reg];
-	} else {
-		pr_err("can not find dtb\n");
-		return -1;
+	if (boot_file[ID_DEVICETREE].name == NULL) {
+		reg = mmio_read_32(TOP_GP_REG31);
+		if (reg >= 0x0 && reg <= 0x07) {
+			boot_file[ID_DEVICETREE].name = dtbs[reg];
+		} else {
+			pr_err("can not find dtb\n");
+			return -1;
+		}
 	}
 
 	if (io_dev->func.init()) {
@@ -635,7 +637,8 @@ int boot(void)
 	}
 #else
 	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
-		//read_config_file();
+		read_config_file();
+
 		if (read_boot_file()) {
 			pr_err("read boot file faile\n");
 			assert(0);
