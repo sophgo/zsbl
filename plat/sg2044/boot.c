@@ -86,16 +86,16 @@ BOOT_FILE boot_file[ID_MAX] = {
 static char *img_name_sd[] = {
 	"0:riscv64/conf.ini",
 	"0:riscv64/fw_dynamic.bin",
-	"0:riscv64/riscv64_Image",
-	"0:riscv64/initrd.img",
+	"0:riscv64/SG2044.fd",
+	NULL,
 	"0:riscv64/sg2044-evb.dtb",
 };
 
 static char *img_name_spi[] = {
 	"conf.ini",
 	"fw_dynamic.bin",
-	"riscv64_Image",
-	"initrd.img",
+	"SG2044.fd",
+	NULL,
 	"sg2044-evb.dtb",
 };
 
@@ -276,7 +276,7 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 			continue;
 
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
-			if (ID_RAMFS) {
+			if (i == ID_RAMFS) {
 				pr_warn("%s open fail, ignore it!\n", boot_file[i].name);
 				continue;
 			}
