@@ -637,7 +637,7 @@ int boot(void)
 	}
 #else
 	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
-		//read_config_file();
+		read_config_file();
 		if (read_boot_file()) {
 			pr_err("read boot file faile\n");
 			assert(0);
