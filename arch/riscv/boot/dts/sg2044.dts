@@ -1,0 +1,51 @@
+/dts-v1/;
+
+/ {
+	soc {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		uart0: serial@7030000000 {
+			compatible = "snps,dw-apb-uart";
+			reg = <0x00000070 0x30000000 0x00000000 0x00001000>;
+			clock-frequency = <500000000>;
+			current-speed = <115200>;
+			reg-shift = <2>;
+			reg-io-width = <4>;
+		 };
+
+		uart1: serial@7030001000 {
+			compatible = "snps,dw-apb-uart";
+			reg = <0x00000070 0x30001000 0x00000000 0x00001000>;
+			clock-frequency = <500000000>;
+			current-speed = <115200>;
+			reg-shift = <2>;
+			reg-io-width = <4>;
+ 		};
+
+		emmc: bm-emmc@703000A000 {
+			compatible = "sophgo,sg2044-dwcmshc";
+			reg = <0x70 0x3000A000 0x0 0x1000>;
+			bus-width = <4>;
+		};
+
+		sd: bm-sd@703000B000 {
+			compatible = "sophgo,sg2044-dwcmshc";
+			reg = <0x70 0x3000B000 0x0 0x2000>;
+			bus-width = <4>;
+		};
+
+		spifmc0: flash-controller@7001000000 {
+			compatible = "sophgo,spifmc";
+			reg = <0x70 0x01000000 0x0 0x4000000>;
+			clock-frequency = <100000000>;
+			sophgo-boot = <0x00000000 0x00600000>;
+		};
+
+		spifmc1: flash-controller@7005000000 {
+			compatible = "sophgo,spifmc";
+			reg = <0x70 0x05000000 0x0 0x4000000>;
+			clock-frequency = <100000000>;
+			sophgo-config;
+		};
+	};
+};

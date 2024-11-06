@@ -47,14 +47,33 @@ config ARCH_TIMER_FREQ
 endif
 
 config SUPPORT_SMP
-	bool "Wther support multiple core"
+	bool "Whether Support Multiple Core"
 	default n
 
 if SUPPORT_SMP
 config SMP_NUM
-	int "smp num"
+	int "SMP Number"
 	help
 		the cpu numbers
+endif
+
+config TPU_SCALAR
+	bool "Whether Used for TPU Scalar"
+	help
+		set if used for TPU scalar
+
+config SUPPORT_BUILTIN_DTB
+	bool "Support Builtin DTB"
+	help
+		Support builtin DTB
+
+if SUPPORT_BUILTIN_DTB
+
+config BUILTIN_DTB
+	string "Builtin DTB"
+	help
+		File name of builtin DTB, DTBs find in arch/riscv/boot/dtb. Replace FOO.dts with FOO.dtb
+
 endif
 
 endmenu

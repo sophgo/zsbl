@@ -416,6 +416,7 @@ LINUXINCLUDE    := \
 		-I$(srctree)/include/lib/fat32 \
 		-I$(srctree)/include/lib/fdt \
 		-I$(srctree)/include/lib/libc \
+		-I$(objtree)/arch/$(SRCARCH)/boot/dts \
 		--include=autoconf.h
 
 
@@ -832,7 +833,7 @@ prepare0: archprepare zsblrelease
 	$(Q)$(MAKE) $(build)=.
 
 # All the preparing..
-prepare: prepare0 prepare-objtool
+prepare: prepare0 prepare-objtool dtbs
 
 PHONY += prepare-objtool
 prepare-objtool: $(objtool_target)
@@ -913,6 +914,28 @@ distclean: mrproper
 		-o -name '*.bak' -o -name '#*#' -o -name '*%' \
 		-o -name 'core' \) \
 		-type f -print | xargs rm -f
+
+# ---------------------------------------------------------------------------
+# Devicetree files
+
+ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/boot/dts/),)
+dtstree := arch/$(SRCARCH)/boot/dts
+endif
+
+ifneq ($(dtstree),)
+
+include $(dtstree)/Makefile
+
+%.dtb: %.dts
+	@echo "  DC      $@"
+	@mkdir -p $(dir $@)
+	@dtc $^ > $@
+
+dtb-real-y = $(foreach dtb, $(dtb-y), $(objtree)/$(dtstree)/$(dtb))
+
+dtbs: $(dtb-real-y)
+
+endif
 
 # Brief documentation of the typical targets used
 # ---------------------------------------------------------------------------
