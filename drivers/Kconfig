@@ -7,4 +7,6 @@ source "drivers/sd/Kconfig"
 source "drivers/spi-flash/Kconfig"
 source "drivers/io/Kconfig"
 
+source "drivers/base/Kconfig"
+
 endmenu
