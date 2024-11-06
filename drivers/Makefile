@@ -6,4 +6,5 @@ obj-$(CONFIG_DRIVER_SPI_FLASH) += spi-flash/
 obj-$(CONFIG_DRIVER_IO) += io/
 
 obj-$(CONFIG_DRIVER_DEVICE_MODEL) += base/
+obj-$(CONFIG_DRIVER_PLATFORM) += platform/
 

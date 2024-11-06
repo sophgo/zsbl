@@ -1,0 +1,8 @@
+config DRIVER_PLATFORM
+	bool "Support Platform Device Model"
+	depends on SUPPORT_BUILTIN_DTB
+	default	n
+	help
+		Support platform device driver model.
+		Support device probe by builtin device tree
+		Customer should set builtin device tree proper
