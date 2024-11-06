@@ -1,0 +1,6 @@
+config DRIVER_BLOCK_DEVICE
+	bool "Support Block Device Model"
+	select DRIVER_DEVICE_MODEL
+	default	n
+	help
+		Support block device driver model.

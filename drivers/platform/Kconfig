@@ -1,6 +1,7 @@
 config DRIVER_PLATFORM
 	bool "Support Platform Device Model"
 	depends on SUPPORT_BUILTIN_DTB
+	select DRIVER_DEVICE_MODEL
 	default	n
 	help
 		Support platform device driver model.
