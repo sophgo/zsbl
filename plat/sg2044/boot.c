@@ -625,6 +625,7 @@ int boot(void)
 	void *fdt;
 	int core_id;
 
+	csr_write(CSR_SENVCFG, 0x70);
 	build_board_info();
 	calculate_addr();
 	fdt = (void *)boot_file[ID_DEVICETREE].addr;

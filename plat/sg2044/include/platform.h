@@ -48,6 +48,7 @@
 #define CSR_MCOUNTERWEN  0x7c9
 #define CSR_MCPUID       0xfc0
 #define CSR_MSMPR        0x7f3
+#define CSR_SENVCFG      0x10a
 
 #define SBI_EXT_VENDOR_SG2040_SET_PMU            0x09000001
 #define SBI_EXT_VENDOR_SG2040_BOOT_OTHER_CORE    0x09000003
