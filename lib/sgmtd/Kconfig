@@ -1,0 +1,8 @@
+config SOPHGO_MTD_BOOT_DEVICE_FRAMEWORK
+	bool "Support SOPHGO MTD Boot Device Framework"
+	select DRIVER_DEVICE_MODEL
+	depends on DRIVER_MTD
+	default	n
+	help
+		SOPHGO SPI flash(including SPI NOR flash or SPI NAND flash) boot device framework.
+		It iterates all MTD devices who have sophgo-boot property in its device blob node.

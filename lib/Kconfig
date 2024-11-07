@@ -2,5 +2,6 @@ menu "Libraries"
 
 source "lib/sgfat/Kconfig"
 source "lib/sgcfg/Kconfig"
+source "lib/sgmtd/Kconfig"
 
 endmenu
