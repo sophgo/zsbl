@@ -53,12 +53,12 @@ enum {
 	ID_MAX,
 };
 
-uint8_t conf_file[1024] = {0};
+uint8_t conf_file[2048] = {0};
 BOOT_FILE boot_file[ID_MAX] = {
 	[ID_CONFINI] = {
 		.id = ID_CONFINI,
 		.name = "0:riscv64/conf.ini",
-		.addr = (uint64_t)conf_file,
+		.addr = CONFINI_ADDR,
 	},
 	[ID_OPENSBI] = {
 		.id = ID_OPENSBI,
@@ -270,12 +270,12 @@ int read_all_img(IO_DEV *io_dev, int dev_num)
 		goto umount_dev;
 	}
 
-	for (int i = 1; i < ID_MAX; i++) {
+	for (int i = 0; i < ID_MAX; i++) {
 		if (boot_file[i].name == NULL)
 			continue;
 
 		if (io_dev->func.open(boot_file[i].name, FA_READ)) {
-			if (i == ID_RAMFS) {
+			if (i == ID_RAMFS || i == ID_CONFINI) {
 				pr_warn("%s open fail, ignore it!\n", boot_file[i].name);
 				continue;
 			}
