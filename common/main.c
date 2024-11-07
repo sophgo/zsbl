@@ -6,8 +6,9 @@
 #include <timer.h>
 #include <arch.h>
 
+int plat_main(void);
+
 int __attribute__((weak)) main(void)
 {
-
-	return 0;
+	return plat_main();
 }

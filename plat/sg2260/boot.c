@@ -581,7 +581,7 @@ uint64_t pod_mode_build_board_info(void)
 	return 0;
 }
 
-int boot(void)
+int plat_main(void)
 {
 	print_banner();
 
@@ -610,4 +610,3 @@ int boot(void)
 
 	return 0;
 }
-plat_init(boot);
