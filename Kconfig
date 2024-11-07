@@ -1,4 +1,4 @@
-mainmenu "TPU Firmware"
+mainmenu "SOPHGO Zero Stage Boot Loader"
 
 source "arch/Kconfig"
 source "plat/Kconfig"
