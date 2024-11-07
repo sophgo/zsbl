@@ -32,7 +32,7 @@ static int run_test(const char *name,
 	return 0;
 }
 
-int firmware_start(void)
+int main(void)
 {
 
 	run_test("testcase",

@@ -3,15 +3,11 @@
 #include <errno.h>
 #include <stdbool.h>
 #include <string.h>
-
 #include <timer.h>
-
 #include <arch.h>
 
-int firmware_start(void);
-
-int main(void)
+int __attribute__((weak)) main(void)
 {
-	firmware_start();
+
 	return 0;
 }
