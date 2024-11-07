@@ -584,7 +584,7 @@ endif # KBUILD_EXTMOD
 # command line.
 # This allow a user to issue only 'make' to build a kernel including modules
 # Defaults to vmlinux, but the arch makefile usually adds further targets
-all: $(TARGET).elf $(TARGET).bin $(TARGET).dis $(TARGET).h lib$(TARGET).a
+all: $(TARGET).elf $(TARGET).bin $(TARGET).dis
 
 CFLAGS_GCOV	:= -fprofile-arcs -ftest-coverage \
 	$(call cc-option,-fno-tree-loop-im) \
@@ -786,10 +786,6 @@ $(TARGET).elf: $(vmlinux-deps)
 		-Wl,-Map,$(basename $@).map \
 		-o $@
 
-lib$(TARGET).a: $(KBUILD_VMLINUX_OBJS) $(KBUILD_VMLINUX_LIBS)
-	$(Q)echo "  AR      $@"
-	$(Q)$(LD) -r -o $@ --whole-archive $^ --no-whole-archive
-
 $(TARGET).bin: $(TARGET).elf
 	$(Q)echo "  CP      $@"
 	$(Q)$(OBJCOPY) -O binary $< $@
@@ -798,10 +794,6 @@ $(TARGET).dis: $(TARGET).elf
 	$(Q)echo "  DS      $@"
 	$(Q)$(READELF) -e $< > $@
 	$(Q)$(OBJDUMP) -D $< >> $@
-
-$(TARGET).h: $(TARGET).bin
-	$(Q)echo "  GH      $@"
-	$(Q)$(BASH) $(srctree)/scripts/bin2head $< $@ firmware_binary_array
 
 targets := $(TARGET).elf
 
