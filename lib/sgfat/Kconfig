@@ -1,0 +1,14 @@
+config SOPHGO_FAT_BOOT_DEVICE_FRAMEWORK
+	bool "Support SOPHGO FAT32 Boot Device Framework"
+	select DRIVER_DEVICE_MODEL
+	depends on DRIVER_BLOCK_DEVICE
+	default	n
+	help
+		Support SOPHGO FAT32 Boot Device Framework. Requirements:
+		1. Block device with a partition table
+		2. Partition table should be in MBR format, GPT is not support yet
+		3. The first partition should be FAT32 format.
+		This framework trys to find all block devices(iterate block device list), bind an FAT32
+		file system on it. When load function called, it always loads files from the first
+		partition of this block device.
+

@@ -1,0 +1,5 @@
+menu "Libraries"
+
+source "lib/sgfat/Kconfig"
+
+endmenu
