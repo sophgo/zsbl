@@ -1,0 +1,6 @@
+config DRIVER_MTD
+	bool "Support Memory Technology Device Model"
+	select DRIVER_DEVICE_MODEL
+	default	n
+	help
+		Support memory technology device driver model.
