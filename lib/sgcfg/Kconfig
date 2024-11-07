@@ -1,0 +1,9 @@
+config SOPHGO_CONFIG_BOOT_DEVICE_FRAMEWORK
+	bool "Support SOPHGO Config Boot Device Framework"
+	select DRIVER_DEVICE_MODEL
+	depends on DRIVER_MTD
+	default	n
+	help
+		Support SOPHGO config boot device framework. We may store conf.ini file into
+		a seperate flash. This config file contain information apply to a board or
+		a specific chip. It stores from the begining of the flash.
