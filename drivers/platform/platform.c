@@ -128,12 +128,14 @@ int platform_list_drivers(void)
 }
 
 /* parse dtb */
-void platform_init(void)
+int platform_init(void)
 {
 	pr_debug("platform subsystem driver init\n");
 }
 
-int bind_driver(struct platform_device *pdev, struct platform_driver *pdrv)
+subsys_init(platform_init);
+
+static int bind_driver(struct platform_device *pdev, struct platform_driver *pdrv)
 {
 	int i;
 
@@ -236,7 +238,7 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	return pdev;
 }
 
-int platform_probe(void)
+static int platform_probe(void)
 {
 	int offset;
 	int plen;
@@ -277,6 +279,8 @@ int platform_probe(void)
 
 	return i;
 }
+
+subsys_probe(platform_probe);
 
 const struct of_device_id *platform_get_match_id(struct platform_device *pdev)
 {

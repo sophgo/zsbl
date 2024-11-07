@@ -9,6 +9,7 @@ MEMORY
 SECTIONS
 {
 	. = ALIGN(16);
+
 	.text :
 	{
 		__ld_program_start = .;
@@ -36,9 +37,17 @@ SECTIONS
 		KEEP (*(.plat_init));
 		__ld_plat_init_end = .;
 
+		__ld_subsys_init_start = .;
+		KEEP (*(.subsys_init));
+		__ld_subsys_init_end = .;
+
 		__ld_module_init_start = .;
 		KEEP (*(.module_init));
 		__ld_module_init_end = .;
+
+		__ld_subsys_probe_start = .;
+		KEEP (*(.subsys_probe));
+		__ld_subsys_probe_end = .;
 
 		__ld_test_case_start = .;
 		KEEP (*(.test_case));
@@ -53,7 +62,7 @@ SECTIONS
 	} > ROM
 
 	. = ALIGN(16);
-	.preinit_array     :
+	.preinit_array :
 	{
 		PROVIDE_HIDDEN (__preinit_array_start = .);
 		KEEP (*(.preinit_array*));

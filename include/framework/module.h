@@ -23,6 +23,16 @@ typedef int (*module_init_func)(void);
 	__attribute__((section(".plat_init"), used))		\
 	__module_init_ ##fn = (fn)
 
+#define subsys_init(fn)						\
+	static const module_init_func				\
+	__attribute__((section(".subsys_init"), used))		\
+	__module_init_ ##fn = (fn)
+
+#define subsys_probe(fn)					\
+	static const module_init_func				\
+	__attribute__((section(".subsys_probe"), used))		\
+	__module_init_ ##fn = (fn)
+
 #define test_case(fn)						\
 	static const module_init_func				\
 	__attribute__((section(".test_case"), used))		\
