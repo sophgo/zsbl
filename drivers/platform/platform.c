@@ -7,6 +7,7 @@
 #include <driver/platform.h>
 #include <lib/container_of.h>
 #include <framework/common.h>
+#include <framework/module.h>
 
 static LIST_HEAD(device_list);
 
@@ -131,6 +132,7 @@ int platform_list_drivers(void)
 int platform_init(void)
 {
 	pr_debug("platform subsystem driver init\n");
+	return 0;
 }
 
 subsys_init(platform_init);
@@ -242,7 +244,6 @@ static int platform_probe(void)
 {
 	int offset;
 	int plen;
-	int i;
 	struct platform_device *pdev;
 	const struct fdt_property *prop;
 	void *dtb = dtb_get_base();
@@ -251,7 +252,6 @@ static int platform_probe(void)
 
 	offset = 0;
 
-	i = 0;
 	while (true) {
 		offset = fdt_next_node(dtb, offset, NULL);
 		if (offset < 0)
@@ -277,7 +277,7 @@ static int platform_probe(void)
 
 	platform_list_devices();
 
-	return i;
+	return 0;
 }
 
 subsys_probe(platform_probe);

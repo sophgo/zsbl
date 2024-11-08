@@ -7,6 +7,7 @@
 #include <libfdt.h>
 
 #include <framework/common.h>
+#include <framework/module.h>
 #include <lib/container_of.h>
 #include <driver/platform.h>
 #include <driver/bootdev.h>
@@ -115,3 +116,5 @@ int sgmtd_init(void)
 
 	return err;
 }
+
+late_init(sgmtd_init);

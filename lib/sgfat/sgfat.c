@@ -8,6 +8,7 @@
 #include <errno.h>
 
 #include <framework/common.h>
+#include <framework/module.h>
 #include <driver/blkdev.h>
 #include <driver/bootdev.h>
 
@@ -88,3 +89,5 @@ int sgfat_init(void)
 
 	return err;
 }
+
+late_init(sgfat_init);

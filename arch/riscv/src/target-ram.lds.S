@@ -7,10 +7,9 @@ MEMORY
 
 SECTIONS
 {
-	. = ALIGN(16);
-
 	.text :
 	{
+		. = ALIGN(16);
 		PROVIDE(_fw_start = .);
 		__ld_program_start = .;
 		KEEP (*(.vector));
@@ -22,9 +21,9 @@ SECTIONS
 		. = ALIGN(16);
 	} > RAM
 
-	. = ALIGN(16);
 	.rodata :
 	{
+		. = ALIGN(16);
 		__ld_early_init_start = .;
 		KEEP (*(.early_init));
 		__ld_early_init_end = .;
@@ -49,6 +48,10 @@ SECTIONS
 		KEEP (*(.subsys_probe));
 		__ld_subsys_probe_end = .;
 
+		__ld_late_init_start = .;
+		KEEP (*(.late_init));
+		__ld_late_init_end = .;
+
 		__ld_test_case_start = .;
 		KEEP (*(.test_case));
 		__ld_test_case_end = .;
@@ -61,18 +64,18 @@ SECTIONS
 		. = ALIGN(16);
 	} > RAM
 
-	. = ALIGN(16);
 	.preinit_array :
 	{
+		. = ALIGN(16);
 		PROVIDE_HIDDEN (__preinit_array_start = .);
 		KEEP (*(.preinit_array*));
 		PROVIDE_HIDDEN (__preinit_array_end = .);
 		. = ALIGN(16);
 	} > RAM
 
-	. = ALIGN(16);
 	.init_array :
 	{
+		. = ALIGN(16);
 		PROVIDE_HIDDEN (__init_array_start = .);
 		KEEP (*(SORT(.init_array.*)));
 		KEEP (*(.init_array*));
@@ -80,9 +83,9 @@ SECTIONS
 		. = ALIGN(16);
 	} > RAM
 
-	. = ALIGN(16);
 	.fini_array :
 	{
+		. = ALIGN(16);
 		PROVIDE_HIDDEN (__fini_array_start = .);
 		KEEP (*(SORT(.fini_array.*)));
 		KEEP (*(.fini_array*));
@@ -90,16 +93,16 @@ SECTIONS
 		. = ALIGN(16);
 	} > RAM
 
-	. = ALIGN(16);
 	.note :
 	{
+		. = ALIGN(16);
 		*(.note.*);
 		. = ALIGN(16);
 	} > RAM
 
-	. = ALIGN(16);
 	.data :
 	{
+		. = ALIGN(16);
 		__ld_data_start = .;
 		*(.data);
 		*(.data*);
@@ -110,9 +113,9 @@ SECTIONS
 		__ld_program_end = .;
 	} > RAM
 
-	. = ALIGN(16);
 	.bss :
 	{
+		. = ALIGN(16);
 		__ld_bss_start = .;
 		*(.bss);
 		*(.bss*);

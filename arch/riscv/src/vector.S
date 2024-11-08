@@ -55,9 +55,13 @@ _start:
 	add     sp,  zero, zero
 
 _try_lottery:
+#if 0
 	la	a0, smp_boot_spin_lock
 	li	t1, 1
 	amoadd.w	a0, t1, (a0)
+#else
+	csrr	a0, CSR_MHARTID
+#endif
 	bnez	a0, _wait_relocate_copy_done
 
 	/* Save load address */

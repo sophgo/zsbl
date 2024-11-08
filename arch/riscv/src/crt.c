@@ -23,7 +23,10 @@ extern unsigned long exception_handler[0];
 extern unsigned long __ld_early_init_start[0], __ld_early_init_end[0];
 extern unsigned long __ld_arch_init_start[0], __ld_arch_init_end[0];
 extern unsigned long __ld_plat_init_start[0], __ld_plat_init_end[0];
+extern unsigned long __ld_subsys_init_start[0], __ld_subsys_init_end[0];
 extern unsigned long __ld_module_init_start[0], __ld_module_init_end[0];
+extern unsigned long __ld_subsys_probe_start[0], __ld_subsys_probe_end[0];
+extern unsigned long __ld_late_init_start[0], __ld_late_init_end[0];
 
 void load_data(void)
 {
@@ -105,9 +108,21 @@ void system_init(void)
 		 (module_init_func *)__ld_plat_init_start,
 		 (module_init_func *)__ld_plat_init_end);
 
+	run_init("subsystem",
+		 (module_init_func *)__ld_subsys_init_start,
+		 (module_init_func *)__ld_subsys_init_end);
+
 	run_init("module",
 		 (module_init_func *)__ld_module_init_start,
 		 (module_init_func *)__ld_module_init_end);
+
+	run_init("subsystem probe",
+		 (module_init_func *)__ld_subsys_probe_start,
+		 (module_init_func *)__ld_subsys_probe_end);
+
+	run_init("late",
+		 (module_init_func *)__ld_late_init_start,
+		 (module_init_func *)__ld_late_init_end);
 }
 
 static unsigned long heap_start;

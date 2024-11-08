@@ -37,8 +37,6 @@ struct platform_driver {
 	const struct of_device_id *of_match_table;
 };
 
-void platform_init(void);
-int platform_probe(void);
 int platform_driver_register(struct platform_driver *pdrv);
 int platform_list_drivers(void);
 int platform_list_devices(void);

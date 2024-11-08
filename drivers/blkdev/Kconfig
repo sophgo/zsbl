@@ -1,6 +1,16 @@
-config DRIVER_BLOCK_DEVICE
+menuconfig DRIVER_BLOCK_DEVICE
 	bool "Support Block Device Model"
 	select DRIVER_DEVICE_MODEL
 	default	n
 	help
 		Support block device driver model.
+
+if DRIVER_BLOCK_DEVICE
+
+config DRIVER_BLOCK_DEVICE_SDHCI_DWC
+	bool "Designware SDHCI"
+	default n
+	help
+		Designware SDHCI device driver.
+endif
+
