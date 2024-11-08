@@ -62,9 +62,6 @@ static int blkdev_test(void)
 	}
 
 	return err;
-
-
-	return 0;
 }
 
 test_case(blkdev_test);

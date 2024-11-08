@@ -12,26 +12,11 @@
 #include <driver/sd/mmc.h>
 #include "ff.h"			/* Obtains integer types */
 #include "diskio.h"		/* Declarations of disk functions */
-/* Definitions of physical drive number for each drive */
-// #define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
-#define DEV_MMC		0	/* Example: Map MMC/SD card to physical drive 1 */
-// #define DEV_USB		2	/* Example: Map USB MSD to physical drive 2 */
 
+#if 0
 #define IO_BUFFER_SIZE	4096
 
-static uint8_t __attribute__((aligned(512))) temp_buf[4096];
-
-static int MMC_disk_status(void)
-{
-	return 0;
-}
-
-static int MMC_disk_initialize(void)
-{
-	assert((FF_MIN_SS == FF_MAX_SS) &&
-		(FF_MIN_SS == MMC_BLOCK_SIZE));
-	return 0;
-}
+static uint8_t __attribute__((aligned(512))) temp_buf[IO_BUFFER_SIZE];
 
 static int MMC_disk_read(BYTE *buff,	DWORD sector,	UINT count)
 {
@@ -61,8 +46,43 @@ static int MMC_disk_read(BYTE *buff,	DWORD sector,	UINT count)
 	}
 	return count;
 }
+#endif
 
+#include <lib/fatio_dev.h>
+#include <framework/common.h>
+#include <errno.h>
 
+struct fatio_dev *fatio_list[FF_VOLUMES];
+
+int fatio_register(struct fatio_dev *fdev)
+{
+	int i;
+
+	/* read and write ops are mandatory */
+	if (!fdev->ops || !fdev->ops->read || !fdev->ops->write) {
+		pr_err("ops: 0x%lx, read: 0x%lx, write: 0x%lx\n",
+				(unsigned long)fdev->ops, (unsigned long)fdev->ops->read,
+				(unsigned long)fdev->ops->write);
+		pr_err("read/write operations are mandatory\n");
+		return -EINVAL;
+	}
+
+	for (i = 0; ARRAY_SIZE(fatio_list); ++i) {
+		if (fatio_list[i] == NULL)
+			break;
+	}
+
+	if (i == ARRAY_SIZE(fatio_list)) {
+		pr_err("no space left in fatio_list");
+		return -ENOMEM;
+	}
+
+	fdev->id = i;
+
+	fatio_list[i] = fdev;
+
+	return 0;
+}
 
 
 /*-----------------------------------------------------------------------*/
@@ -73,19 +93,23 @@ DSTATUS disk_status (
 	BYTE pdrv		/* Physical drive nmuber to identify the drive */
 )
 {
-	DSTATUS stat;
-	int result;
+	struct fatio_ops *fops;
+	struct fatio_dev *fdev;
 
-	switch (pdrv) {
-	case DEV_MMC :
-		result = MMC_disk_status();
+	if (pdrv >= ARRAY_SIZE(fatio_list))
+		return STA_NODISK;
 
-		// translate the reslut code here
-		stat = result;
+	fdev = fatio_list[pdrv];
 
-		return stat;
-	}
-	return STA_NOINIT;
+	if (!fdev)
+		return STA_NODISK;
+
+	fops = fdev->ops;
+
+	if (!fops->status)
+		return 0;
+
+	return fops->status(fdev);
 }
 
 
@@ -98,19 +122,23 @@ DSTATUS disk_initialize (
 	BYTE pdrv				/* Physical drive nmuber to identify the drive */
 )
 {
-	DSTATUS stat;
-	int result;
+	struct fatio_ops *fops;
+	struct fatio_dev *fdev;
 
-	switch (pdrv) {
-	case DEV_MMC :
-		result = MMC_disk_initialize();
+	if (pdrv >= ARRAY_SIZE(fatio_list))
+		return STA_NODISK;
 
-		// translate the reslut code here
-		stat = result;
+	fdev = fatio_list[pdrv];
 
-		return stat;
-	}
-	return STA_NOINIT;
+	if (!fdev)
+		return STA_NODISK;
+
+	fops = fdev->ops;
+
+	if (!fops->init)
+		return 0;
+
+	return fops->init(fdev);
 }
 
 
@@ -126,25 +154,27 @@ DRESULT disk_read (
 	UINT count		/* Number of sectors to read */
 )
 {
-	DRESULT res;
-	int result;
+	struct fatio_ops *fops;
+	struct fatio_dev *fdev;
+	unsigned long offset, size;
 
-	switch (pdrv) {
-	case DEV_MMC :
-		// translate the arguments here
+	if (pdrv >= ARRAY_SIZE(fatio_list))
+		return STA_NODISK;
 
-		result = MMC_disk_read(buff, sector, count);
+	fdev = fatio_list[pdrv];
 
-		// translate the reslut code here
-		if (result == count)
-			res = RES_OK;
-		else
-			res = RES_ERROR;
+	if (!fdev)
+		return STA_NODISK;
 
-		return res;
-	}
+	fops = fdev->ops;
 
-	return RES_PARERR;
+	offset = sector * FF_MAX_SS;
+	size = count * FF_MAX_SS;
+
+	if (fops->read(fdev, offset, size, buff) == size)
+		return RES_OK;
+
+	return RES_ERROR;
 }
 
 
@@ -154,11 +184,6 @@ DRESULT disk_read (
 /*-----------------------------------------------------------------------*/
 
 #if FF_FS_READONLY == 0
-static int MMC_disk_write(const BYTE *buff,	DWORD sector,	UINT count)
-{
-	return RES_WRPRT;
-}
-
 
 DRESULT disk_write (
 	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
@@ -167,26 +192,27 @@ DRESULT disk_write (
 	UINT count			/* Number of sectors to write */
 )
 {
-	DRESULT res;
-	int result;
+	struct fatio_ops *fops;
+	struct fatio_dev *fdev;
+	unsigned long offset, size;
 
-	switch (pdrv) {
-	case DEV_MMC :
-		// translate the arguments here
+	if (pdrv >= ARRAY_SIZE(fatio_list))
+		return STA_NODISK;
 
-		result = MMC_disk_write(buff, sector, count);
+	fdev = fatio_list[pdrv];
 
-		// translate the reslut code here
+	if (!fdev)
+		return STA_NODISK;
 
-		if (result == count)
-			res = RES_OK;
-		else
-			res = RES_ERROR;
+	fops = fdev->ops;
 
-		return res;
-	}
+	offset = sector * FF_MAX_SS;
+	size = count * FF_MAX_SS;
 
-	return RES_PARERR;
+	if (fops->write(fdev, offset, size, buff) == size)
+		return RES_OK;
+
+	return RES_ERROR;
 }
 
 #endif
@@ -202,18 +228,25 @@ DRESULT disk_ioctl (
 	void *buff		/* Buffer to send/receive control data */
 )
 {
-	DRESULT res;
-	int result;
+	struct fatio_ops *fops;
+	struct fatio_dev *fdev;
 
-	switch (pdrv) {
-	case DEV_MMC :
+	if (pdrv >= ARRAY_SIZE(fatio_list))
+		return STA_NODISK;
 
-		// Process of the command for the MMC/SD card
-		res = result = 0;
+	fdev = fatio_list[pdrv];
 
-		return res;
-	}
+	if (!fdev)
+		return STA_NODISK;
 
-	return RES_PARERR;
+	fops = fdev->ops;
+
+	if (!fops->ioctl)
+		return RES_ERROR;
+
+	if (fops->ioctl(fdev, cmd, buff))
+		return RES_ERROR;
+
+	return RES_OK;
 }
 

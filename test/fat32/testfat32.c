@@ -1,84 +1,127 @@
 #include <stdio.h>
 #include <timer.h>
 #include <string.h>
+#include <assert.h>
+#include <errno.h>
+
 #include <framework/module.h>
 #include <framework/common.h>
-#include <lib/libc/errno.h>
-#include <driver/sd/sd.h>
+#include <framework/debug.h>
+#include <lib/fatio_dev.h>
+#include <driver/blkdev.h>
 
 #include <ff.h>
 
-static FATFS SDC_FS;
-FRESULT f_ret;
-FIL fp;
+struct fatio {
+	struct blkdev *blkdev;
+	struct fatio_dev fdev;
+	FATFS fatfs;
+};
 
-int sd_device_init()
+static struct fatio fatio_list[16];
+
+static long read(struct fatio_dev *fdev, unsigned long offset, unsigned long size, void *buf)
 {
-	if (bm_sd_card_detect()) {
-                pr_info("sd card insert\n");
-        } else {
-                pr_info("sd card not insert, please insert sd to continue sd test\n");
-                return -1;
-        }
+	struct fatio *fatio;
+	struct blkdev *blkdev;
 
-        if (!bm_sd_init(SD_USE_PIO)) {
-                pr_info("sd card init ok\n");
-		return 0;
-        } else {
-		return -1;
-	}
+	fatio = (struct fatio *)fdev->data;
+	blkdev = fatio->blkdev;
+
+	return blkdev_read(blkdev, offset, size, buf);
 }
-int read_boot_file()
+
+static long write(struct fatio_dev *fdev, unsigned long offset, unsigned long size, void *buf)
 {
-	unsigned int rd_num;
-	FRESULT ret;
+	struct fatio *fatio;
+	struct blkdev *blkdev;
+
+	fatio = (struct fatio *)fdev->data;
+	blkdev = fatio->blkdev;
+
+
+	return blkdev_write(blkdev, offset, size, buf);
+}
+
+static struct fatio_ops ops = {
+	.read = read,
+	.write = write,
+};
+
+static int device_init()
+{
+	int err = 0, i = 0;
+	struct blkdev *blkdev;
+
+	pr_info("Block Device Test\n");
+
+	for (blkdev = blkdev_first(); blkdev; blkdev = blkdev_next(blkdev)) {
+		pr_info("Register device %s as FAT32 IO device\n", blkdev->device.name);
+
+		fatio_list[i].blkdev = blkdev;
+		fatio_list[i].fdev.ops = &ops;
+		fatio_list[i].fdev.data = &fatio_list[i];
+
+		++i;
+
+		err |= fatio_register(&fatio_list[i].fdev);
+
+		if (err) {
+			pr_err("cannot register fatio device for block device %s\n", blkdev->device.name);
+			continue;
+		}
+	}
+
+	return err;
+}
+
+static long load(int fd, const char *file)
+{
+	unsigned int size;
+	void *buf;
+	char fatfs_name[128];
+	char fatfs_devid[128];
+
 	FILINFO fileinfo;
-	uint8_t buf[64] = {0};
+	FIL fp;
 
-	ret = f_stat("0:fip.bin", &fileinfo);
-	if (ret == FR_OK) {
-		printf("file size is %d\n", fileinfo.fsize);
-	}
+	struct fatio *fatio;
+	struct fatio_dev *fdev;
 
-	ret = f_read(&fp, buf, fileinfo.fsize, &rd_num);
-	if (ret == FR_OK) {
-		pr_info("read %d bytes, %s\n", rd_num, buf);
-	} else {
-		pr_info("read failed %d\n", ret);
-	}
+	fatio = &fatio_list[fd];
+	fdev = &fatio->fdev;
 
+	sprintf(fatfs_devid, "%d:", fdev->id);
+	sprintf(fatfs_name, "%d:%s", fdev->id, file);
+
+	pr_info("device: %s | %s", fatio->blkdev->device.name, fatfs_name);
+
+	assert(f_mount(&fatio->fatfs, fatfs_devid, 1) == 0);
+	assert(f_open(&fp, fatfs_name, FA_READ) == 0);
+	assert(f_stat(fatfs_name, &fileinfo) == 0);
+
+	buf = malloc(fileinfo.fsize);
+	assert(buf);
+
+	assert(f_read(&fp, buf, fileinfo.fsize, &size));
+
+	/* dump 1st sector */
+	dump_hex(buf, 512);
+
+	f_close(&fp);
+	f_unmount(fatfs_devid);
 	return 0;
 }
 static int testfat32(void)
 {
-	int ret;
-	ret = sd_device_init();
-	if (ret == -1) {
-		pr_info("sd init failed\n");
-		goto end;
-	}
+	int i;
 
-	f_ret = f_mount(&SDC_FS, "0:", 1);
-	if (f_ret == FR_OK) {
-		f_ret = f_open(&fp, "0:fip.bin", FA_READ);
-		if (f_ret == FR_OK) {
-			pr_info("boot from SD\n");
-			read_boot_file();
-			f_close(&fp);
-		} else {
-			pr_info("fip not found on SD\n");
-		}
-		f_unmount("0:");
-	} else {
-		pr_info("mount failed\n");
-	}
+	assert(device_init() == 0);
 
-end:
-	while (1) {
-		pr_info("Hello BM1686 A53 System\n");
-		mdelay(1000);
-	}
-
+	for (i = 0; i < ARRAY_SIZE(fatio_list); ++i)
+		if (fatio_list[i].blkdev)
+			load(i, "riscv64/zsbl.bin");
+	
 	return 0;
 }
 
