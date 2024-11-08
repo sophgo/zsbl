@@ -3,7 +3,6 @@ menu "Device Drivers"
 source "drivers/serial/Kconfig"
 source "drivers/irqchip/Kconfig"
 source "drivers/efuse/Kconfig"
-source "drivers/sd/Kconfig"
 source "drivers/spi-flash/Kconfig"
 source "drivers/io/Kconfig"
 
