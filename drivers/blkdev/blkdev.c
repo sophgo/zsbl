@@ -109,13 +109,11 @@ int blkdev_open(struct blkdev *blkdev)
 
 long blkdev_read(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {
-	/* FIXME: support unaligned access */
 	return blkdev->ops->read(blkdev, offset, size, buf);
 }
 
 long blkdev_write(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {
-	/* FIXME: support unaligned access */
 	return blkdev->ops->write(blkdev, offset, size, buf);
 }
 

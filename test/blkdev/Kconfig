@@ -1,0 +1,5 @@
+config TEST_BLKDEV
+	bool "Block Device Test"
+	help
+	Block device test case, iterate all block devices, this case just show data in given offset.
+	Customer should check it by hand.

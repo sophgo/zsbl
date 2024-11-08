@@ -488,12 +488,20 @@ static int bm_sd_prepare(int lba, uintptr_t buf, size_t size)
 
 	if (size >= MMC_BLOCK_SIZE) {
 		// CMD17, 18, 24, 25
+#if 0
 		assert(((load_addr & MMC_BLOCK_MASK) == 0) && ((size % MMC_BLOCK_SIZE) == 0));
+#else
+		assert((size % MMC_BLOCK_SIZE) == 0);
+#endif
 		block_size = MMC_BLOCK_SIZE;
 		block_cnt = size / MMC_BLOCK_SIZE;
 	} else {
 		// ACMD51
+#if 0
 		assert(((load_addr & 8) == 0) && ((size % 8) == 0));
+#else
+		assert((size % 8) == 0);
+#endif
 		block_size = 8;
 		block_cnt = size / 8;
 	}
@@ -742,3 +750,109 @@ int bm_sd_init(uint32_t flags)
 		printf("SD initialization failed %d\n", ret);
 	return ret;
 }
+
+/* register to device model */
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+
+#include <driver/platform.h>
+#include <driver/blkdev.h>
+#include <framework/common.h>
+#include <framework/module.h>
+
+static int open(struct blkdev *blkdev)
+{
+	pr_info("%s open\n", blkdev->device.name);
+	return 0;
+}
+
+static long read(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
+{
+	pr_info("%s read, offset %lu, size %lu\n", blkdev->device.name, offset, size);
+
+	return mmc_read_blocks(offset / 512, (uintptr_t)buf, size);
+}
+
+static long write(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
+{
+	pr_info("%s write, offset %lu, size %lu\n", blkdev->device.name, offset, size);
+
+	return mmc_write_blocks(offset / 512, (uintptr_t)buf, size);
+}
+
+static int close(struct blkdev *blkdev)
+{
+	pr_info("%s close\n", blkdev->device.name);
+	return 0;
+}
+
+static struct blkops blkops = {
+	.open = open,
+	.read = read,
+	.write = write,
+	.close = close,
+};
+
+static int probe(struct platform_device *pdev)
+{
+	const struct of_device_id *match_id;
+	struct blkdev *blkdev;
+
+	match_id = platform_get_match_id(pdev);
+
+	pr_info("compatible: %s\n", match_id->compatible);
+	pr_info("data: %lu\n", (unsigned long)match_id->data);
+	pr_info("register base: 0x%lx\n", pdev->reg_base);
+	pr_info("register size: 0x%lx\n", pdev->reg_size);
+
+	bm_params.reg_base = pdev->reg_base;
+
+	if (bm_sd_card_detect()) {
+                pr_info("sd card insert\n");
+        } else {
+                pr_info("sd card not insert, please insert sd to continue sd test\n");
+		return -ENODEV;
+        }
+
+        if (bm_sd_init(SD_USE_PIO))
+		return -EIO;
+
+	pr_info("sd card init ok\n");
+
+	blkdev = blkdev_alloc();
+	if (!blkdev)
+		return -ENOMEM;
+
+	/* FIXME: block size and total size */
+	blkdev->block_size = 512;
+	blkdev->total_size = 1UL * 1024 * 1024 * 1024;
+	blkdev->ops = &blkops;
+
+	strcpy(blkdev->suffix, "sd");
+
+	return blkdev_register(blkdev);
+}
+
+static struct of_device_id match_table[] = {
+	{
+		.compatible = "sophgo,sg2044-dwcmshc",
+		.data = (void *)NULL,
+	},
+	{},
+};
+
+static struct platform_driver driver = {
+	.driver.name = "mmc",
+	.probe = probe,
+	.of_match_table = match_table,
+};
+
+static int sd_init(void)
+{
+	platform_driver_register(&driver);
+	return 0;
+}
+
+module_init(sd_init);
+

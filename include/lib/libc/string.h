@@ -18,5 +18,7 @@ size_t strnlen(const char *s, size_t maxlen);
 char *strdup(const char *s);
 char *strstr(const char *haystack, const char *needle);
 char *strcat(char *dest, const char *src);
+char *strcpy(char *dest, const char *src);
+char *strncpy(char *dest, const char *src, size_t count);
 
 #endif

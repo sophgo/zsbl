@@ -53,8 +53,6 @@ size_t strnlen(const char *str, size_t count)
 	return ret;
 }
 
-
-
 char *strcpy(char *dest, const char *src)
 {
 	char *ret = dest;
