@@ -25,6 +25,8 @@ int stdout_ready(void);
 #define pr_warn(fmt, ...)	printf(fmt, ##__VA_ARGS__)
 #define pr_err(fmt, ...)	printf(fmt, ##__VA_ARGS__)
 
+#define pr_line()		do { pr_info("%s: %d (%s)\n", __func__, __LINE__, __FILE__); } while (0)
+
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define ROUND_UP(x, align)	(((x) + ((align) - 1)) & ~((align) - 1))
 
