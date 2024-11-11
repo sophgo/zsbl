@@ -229,6 +229,7 @@ mul_core_wake_up:
 	j	secondary_core_poll
 #endif
 
+	.balign	4
 _trap_handler:
 	/* Re-use current SP as exception stack */
 	add	sp, sp, -(TRAP_REGS_SIZE)
