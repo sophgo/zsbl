@@ -53,7 +53,7 @@ static int device_init()
 	int err = 0, i = 0;
 	struct blkdev *blkdev;
 
-	pr_info("Block Device Test\n");
+	pr_info("Fat32 Device Test\n");
 
 	for (blkdev = blkdev_first(); blkdev; blkdev = blkdev_next(blkdev)) {
 		pr_info("Register device %s as FAT32 IO device\n", blkdev->device.name);
@@ -62,14 +62,9 @@ static int device_init()
 		fatio_list[i].fdev.ops = &ops;
 		fatio_list[i].fdev.data = &fatio_list[i];
 
+		assert(fatio_register(&fatio_list[i].fdev) == 0);
+
 		++i;
-
-		err |= fatio_register(&fatio_list[i].fdev);
-
-		if (err) {
-			pr_err("cannot register fatio device for block device %s\n", blkdev->device.name);
-			continue;
-		}
 	}
 
 	return err;
@@ -94,7 +89,7 @@ static long load(int fd, const char *file)
 	sprintf(fatfs_devid, "%d:", fdev->id);
 	sprintf(fatfs_name, "%d:%s", fdev->id, file);
 
-	pr_info("device: %s | %s", fatio->blkdev->device.name, fatfs_name);
+	pr_info("device: %s | %s\n", fatio->blkdev->device.name, fatfs_name);
 
 	assert(f_mount(&fatio->fatfs, fatfs_devid, 1) == 0);
 	assert(f_open(&fp, fatfs_name, FA_READ) == 0);
@@ -103,7 +98,7 @@ static long load(int fd, const char *file)
 	buf = malloc(fileinfo.fsize);
 	assert(buf);
 
-	assert(f_read(&fp, buf, fileinfo.fsize, &size));
+	assert(f_read(&fp, buf, fileinfo.fsize, &size) == 0);
 
 	/* dump 1st sector */
 	dump_hex(buf, 512);
