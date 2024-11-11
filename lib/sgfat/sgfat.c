@@ -15,6 +15,8 @@
 #include <lib/fatio_dev.h>
 #include <ff.h>
 
+const char *prefix = "riscv64";
+
 struct sgfat {
 	struct bootdev *bootdev;
 	struct blkdev *blkdev;
@@ -98,7 +100,7 @@ static long load(struct bootdev *bootdev, const char *file, void *buf)
 	blkdev = sgfat->blkdev;
 
 	sprintf(fatfs_devid, "%d:", fdev->id);
-	sprintf(fatfs_name, "%d:%s", fdev->id, file);
+	sprintf(fatfs_name, "%d:%s/%s", fdev->id, prefix, file);
 
 	pr_info("device: %s | %s\n", blkdev->device.name, fatfs_name);
 

@@ -15,12 +15,14 @@
 static int test(void)
 {
 	void *buf = (void *)KERNEL_ADDR;
+	const char *file = "zsbl.bin";
 
 	assert(buf);
 
 	pr_info("Test Boot Devices\n");
 
-	bdm_load("riscv64/zsbl.bin", buf);
+	pr_info("Loading %s\n", file);
+	bdm_load(file, buf);
 
 	dump_hex(buf, 512);
 
