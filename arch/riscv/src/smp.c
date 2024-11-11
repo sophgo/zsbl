@@ -18,6 +18,8 @@ void release_other_core(long jump_addr)
 void jump_to(long jump_addr, long hartid, long dtb_addr, long dynamic_info_addr)
 {
 	jump_fun fun = (jump_fun)jump_addr;
+
+	asm volatile ("fence.i");
 	fun(hartid, dtb_addr, dynamic_info_addr);
 }
 

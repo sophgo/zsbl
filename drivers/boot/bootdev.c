@@ -2,6 +2,8 @@
 #include <string.h>
 #include <errno.h>
 
+#include <cache.h>
+
 #include <driver/bootdev.h>
 #include <framework/common.h>
 #include <lib/container_of.h>
@@ -89,7 +91,17 @@ void *bootdev_get_user_data(struct bootdev *bootdev)
 
 long bootdev_load(struct bootdev *bootdev, const char *file, void *buf)
 {
-	return bootdev->ops->load(bootdev, file, buf);
+	long err;
+
+	err = bootdev->ops->load(bootdev, file, buf);
+
+	if (err <= 0)
+		return err;
+
+	/* zsbl may load executables for none coherent coprocessors, so flush data cache any way */
+	flush_dcache_range((unsigned long)buf, ((unsigned long)buf) + err);
+
+	return err;
 }
 
 long bootdev_get_file_size(struct bootdev *bootdev, const char *file)
@@ -189,17 +201,17 @@ long bdm_load(const char *file, void *buf)
 
 	for (bootdev = bootdev_first(); bootdev; bootdev = bootdev_next(bootdev)) {
 
-		pr_debug("loading %s from %s\n", file, bootdev->device.name);
+		pr_info("Load %s", file);
 
 		err = bootdev_load(bootdev, file, buf);
 		if (err > 0) {
-			pr_debug("load %s from %s success\n", file, bootdev->device.name);
+			pr_info(" from %s (%ld bytes)\n", bootdev->device.name, err);
 			return err;
 		}
 		pr_debug("load %s from %s failed, try next boot device\n", file, bootdev->device.name);
 	}
 
-	pr_err("can not load %s from any boot devices\n", file);
+	pr_err("\nCan not load %s from any boot devices\n", file);
 
 	return -EIO;
 }

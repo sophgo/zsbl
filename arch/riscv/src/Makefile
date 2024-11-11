@@ -12,5 +12,6 @@ obj-y += atomic.o
 obj-y += cache.o
 obj-y += locks.o
 obj-y += trap.o
+obj-$(CONFIG_RISCV_CMO) += cache.o
 
 obj-$(CONFIG_SUPPORT_BUILTIN_DTB) += dtb.o builtin_dtb.o

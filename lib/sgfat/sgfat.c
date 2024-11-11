@@ -37,17 +37,15 @@ static long get_file_size(struct bootdev *bootdev, const char *file)
 
 	struct sgfat *sgfat;
 	struct fatio_dev *fdev;
-	struct blkdev *blkdev;
 
 	sgfat = bootdev->data;
 
 	fdev = sgfat->fdev;
-	blkdev = sgfat->blkdev;
 
 	sprintf(fatfs_devid, "%d:", fdev->id);
 	sprintf(fatfs_name, "%d:%s", fdev->id, file);
 
-	pr_info("device: %s | %s\n", blkdev->device.name, fatfs_name);
+	pr_debug("device: %s | %s\n", sgfat->blkdev->device.name, fatfs_name);
 
 	err = f_mount(&sgfat->fatfs, fatfs_devid, 1);
 
@@ -92,17 +90,15 @@ static long load(struct bootdev *bootdev, const char *file, void *buf)
 
 	struct sgfat *sgfat;
 	struct fatio_dev *fdev;
-	struct blkdev *blkdev;
 
 	sgfat = bootdev->data;
 
 	fdev = sgfat->fdev;
-	blkdev = sgfat->blkdev;
 
 	sprintf(fatfs_devid, "%d:", fdev->id);
 	sprintf(fatfs_name, "%d:%s/%s", fdev->id, prefix, file);
 
-	pr_info("device: %s | %s\n", blkdev->device.name, fatfs_name);
+	pr_debug("device: %s | %s\n", sgfat->blkdev->device.name, fatfs_name);
 
 	err = f_mount(&sgfat->fatfs, fatfs_devid, 1);
 

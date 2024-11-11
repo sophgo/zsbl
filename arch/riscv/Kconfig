@@ -76,4 +76,11 @@ config BUILTIN_DTB
 
 endif
 
+config RISCV_CMO
+	bool "RISC-V CMO"
+	default n
+	help
+		Support RISC-V stdandard cache maintance operations. If not set, platform may need implement
+		cache maintance operations of itself.
+
 endmenu

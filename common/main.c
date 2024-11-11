@@ -23,7 +23,7 @@ int plat_main(void);
 int __attribute__((weak)) main(void)
 {
 	/* show baner */
-	pr_info("\n\nSOPHGO ZSBL v%s ""\n", ZSBL_VERSION);
+	pr_info("\n\nSOPHGO ZSBL v%s %s\n", ZSBL_VERSION, CONFIG_PLAT);
 
 	return plat_main();
 }
