@@ -4,7 +4,6 @@ source "drivers/serial/Kconfig"
 source "drivers/irqchip/Kconfig"
 source "drivers/efuse/Kconfig"
 source "drivers/spi-flash/Kconfig"
-source "drivers/io/Kconfig"
 
 source "drivers/base/Kconfig"
 source "drivers/platform/Kconfig"
