@@ -761,37 +761,19 @@ int bm_sd_init(uint32_t flags)
 #include <framework/common.h>
 #include <framework/module.h>
 
-static int open(struct blkdev *blkdev)
-{
-	pr_info("%s open\n", blkdev->device.name);
-	return 0;
-}
-
 static long read(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {
-	pr_info("%s read, offset %lu, size %lu\n", blkdev->device.name, offset, size);
-
 	return mmc_read_blocks(offset / 512, (uintptr_t)buf, size);
 }
 
 static long write(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {
-	pr_info("%s write, offset %lu, size %lu\n", blkdev->device.name, offset, size);
-
 	return mmc_write_blocks(offset / 512, (uintptr_t)buf, size);
 }
 
-static int close(struct blkdev *blkdev)
-{
-	pr_info("%s close\n", blkdev->device.name);
-	return 0;
-}
-
 static struct blkops blkops = {
-	.open = open,
 	.read = read,
 	.write = write,
-	.close = close,
 };
 
 static int probe(struct platform_device *pdev)

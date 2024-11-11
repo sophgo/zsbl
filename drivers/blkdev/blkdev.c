@@ -102,11 +102,6 @@ void *blkdev_get_user_data(struct blkdev *blkdev)
 	return blkdev->data;
 }
 
-int blkdev_open(struct blkdev *blkdev)
-{
-	return blkdev->ops->open(blkdev);
-}
-
 long blkdev_read(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {
 	return blkdev->ops->read(blkdev, offset, size, buf);
@@ -115,11 +110,6 @@ long blkdev_read(struct blkdev *blkdev, unsigned long offset, unsigned long size
 long blkdev_write(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {
 	return blkdev->ops->write(blkdev, offset, size, buf);
-}
-
-int blkdev_close(struct blkdev *blkdev)
-{
-	return blkdev->ops->close(blkdev);
 }
 
 int blkdev_register(struct blkdev *blkdev)
@@ -139,9 +129,6 @@ int blkdev_register(struct blkdev *blkdev)
 		pr_err("no read//write operations\n");
 		return -EINVAL;
 	}
-
-	if (!blkdev->ops->open || !blkdev->ops->close)
-		pr_warn("no open//close operations\n");
 
 	blkdev->tmp_buf = malloc(blkdev->block_size);
 	if (!blkdev->tmp_buf) {
