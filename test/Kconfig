@@ -14,5 +14,6 @@ source "test/fat32/Kconfig"
 source "test/spi-flash/Kconfig"
 source "test/riscv_exception/Kconfig"
 source "test/blkdev/Kconfig"
+source "test/bootdev/Kconfig"
 endif
 

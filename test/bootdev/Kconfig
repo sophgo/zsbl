@@ -1,0 +1,5 @@
+config TEST_BOOTDEV
+	bool "Boot Device"
+	select DRIVER_BOOTDEV
+	help
+	Boot device testcase

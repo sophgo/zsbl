@@ -48,9 +48,11 @@ static int MMC_disk_read(BYTE *buff,	DWORD sector,	UINT count)
 }
 #endif
 
+#include <errno.h>
+#include <stdlib.h>
+
 #include <lib/fatio_dev.h>
 #include <framework/common.h>
-#include <errno.h>
 
 struct fatio_dev *fatio_list[FF_VOLUMES];
 
@@ -84,6 +86,15 @@ int fatio_register(struct fatio_dev *fdev)
 	return 0;
 }
 
+struct fatio_dev *fatio_alloc(void)
+{
+	struct fatio_dev *fdev = malloc(sizeof(struct fatio_dev));
+
+	if (fdev)
+		memset(fdev, 0, sizeof(sizeof(struct fatio_dev)));
+
+	return fdev;
+}
 
 /*-----------------------------------------------------------------------*/
 /* Get Drive Status                                                      */

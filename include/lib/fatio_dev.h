@@ -18,5 +18,6 @@ struct fatio_dev {
 };
 
 int fatio_register(struct fatio_dev *fdev);
+struct fatio_dev *fatio_alloc(void);
 
 #endif
