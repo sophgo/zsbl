@@ -307,6 +307,10 @@ static int print(char **out, size_t *out_len, const char *format, va_list args)
 					format += 2;
 					pc += printi(out, out_len, tmp, 16, 0,
 						     width, flags, 'A');
+				} else if (*(format + 2) == 'd') {
+					format += 2;
+					pc += printi(out, out_len, tmp, 10, 1,
+						     width, flags, '0');
 				} else {
 					format += 1;
 					pc += printi(out, out_len, tmp, 10, 1,
@@ -332,6 +336,11 @@ static int print(char **out, size_t *out_len, const char *format, va_list args)
 						out, out_len,
 						va_arg(args, unsigned long), 16,
 						0, width, flags, 'A');
+				} else if (*(format + 1) == 'd') {
+					format += 1;
+					pc += printi(out, out_len,
+						     va_arg(args, long), 10, 1,
+						     width, flags, '0');
 				} else {
 					pc += printi(out, out_len,
 						     va_arg(args, long), 10, 1,
