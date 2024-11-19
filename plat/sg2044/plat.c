@@ -6,7 +6,15 @@
 #include <driver/bootdev.h>
 #include <sbi.h>
 #include <smp.h>
-#include <board.h>
+
+#include "config.h"
+
+#define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
+
+#define OPENSBI_OFFSET		0x00000000
+#define KERNEL_OFFSET		0x00200000
+#define DEVICETREE_OFFSET	0x08000000
+#define RAMFS_OFFSET		0x0b000000
 
 static void print_core_ctrlreg(void)
 {
@@ -51,7 +59,6 @@ static int get_work_mode(void)
 	else
 		return CHIP_WORK_MODE_CPU;
 }
-
 
 static long load(struct boot_file *file)
 {
@@ -108,12 +115,7 @@ static void load_images(struct config *cfg)
 	load(&cfg->ramfs);
 }
 
-static struct config cfg = {
-	.sbi = {"fw_dynamic.bin", 0x80000000},
-	.kernel = {"SG2044.fd", 0x80200000},
-	.dtb = {"sg2044-evb.dtb", 0x88000000},
-	.ramfs = {"initrd", 0},
-};
+static struct config cfg;
 
 static void show_boot_file(const char *name, struct boot_file *p)
 {
@@ -132,10 +134,38 @@ static void show_config(struct config *cfg)
 	show_boot_file("Ramfs", &cfg->ramfs);
 }
 
+/* #define USE_LINUX_BOOT */
+
+extern unsigned long __ld_program_start[0];
+
+static void config_init(struct config *cfg)
+{
+	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
+
+	pr_debug("ZSBL is loaded at 0x%010lx\n", (unsigned long)__ld_program_start);
+
+	cfg->sbi.name = "fw_dynamic.bin";
+	cfg->sbi.addr = ram_base + OPENSBI_OFFSET;
+	cfg->dtb.name = "sg2044-evb.dtb";
+	cfg->dtb.addr = ram_base + DEVICETREE_OFFSET;
+#ifdef USE_LINUX_BOOT
+	cfg->kernel.name = "riscv64_Image";
+	cfg->ramfs.name = "initrd";
+	cfg->ramfs.addr = ram_base + RAMFS_OFFSET;
+#else
+	cfg->kernel.name = "SG2044.fd";
+	cfg->ramfs.name = NULL;
+	cfg->ramfs.addr = 0;
+#endif
+	cfg->kernel.addr = ram_base + KERNEL_OFFSET;
+}
+
 int plat_main(void)
 {
 	print_core_ctrlreg();
 	disable_mac_rxdelay();
+
+	config_init(&cfg);
 
 	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
 		pr_info("Working at CPU mode\n");

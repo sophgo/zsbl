@@ -34,7 +34,7 @@ static struct mmc_device_info sd_info = {
 };
 
 static bm_sd_params_t bm_params = {
-	.reg_base	= SDIO_BASE,
+	.reg_base	= 0,
 	.clk_rate	= 50 * 1000 * 1000,
 	.bus_width	= MMC_BUS_WIDTH_4,
 	.flags		= 0,
@@ -108,7 +108,7 @@ static int bm_sd_send_cmd_with_data(struct mmc_cmd *cmd)
 		while (1) {
 			stat = mmio_read_16(base + SDHCI_INT_STATUS);
 			if (stat & SDHCI_INT_ERROR) {
-				// printf("%s interrupt error: 0x%x 0x%x\n", __func__,
+				// pr_err("%s interrupt error: 0x%x 0x%x\n", __func__,
 				//       mmio_read_16(base + SDHCI_INT_STATUS),
 				//       mmio_read_16(base + SDHCI_ERR_INT_STATUS));
 				return -EIO;
@@ -121,7 +121,7 @@ static int bm_sd_send_cmd_with_data(struct mmc_cmd *cmd)
 
 			udelay(1);
 			if (!timeout--) {
-				printf("%s timeout!\n", __func__);
+				pr_err("%s timeout!\n", __func__);
 				return -EIO;
 			}
 		}
@@ -141,7 +141,7 @@ static int bm_sd_send_cmd_with_data(struct mmc_cmd *cmd)
 		while (1) {
 			stat = mmio_read_16(base + SDHCI_INT_STATUS);
 			if (stat & SDHCI_INT_ERROR) {
-				printf("%s interrupt error: 0x%x 0x%x\n", __func__,
+				pr_err("%s interrupt error: 0x%x 0x%x\n", __func__,
 				      mmio_read_16(base + SDHCI_INT_STATUS),
 				      mmio_read_16(base + SDHCI_ERR_INT_STATUS));
 				return -EIO;
@@ -221,7 +221,7 @@ static int bm_sd_send_cmd_without_data(struct mmc_cmd *cmd)
 	while (1) {
 		stat = mmio_read_16(base + SDHCI_INT_STATUS);
 		if (stat & SDHCI_INT_ERROR) {
-			printf("%s interrupt error: 0x%x 0x%x\n", __func__,
+			pr_err("%s interrupt error: 0x%x 0x%x\n", __func__,
 			      mmio_read_16(base + SDHCI_INT_STATUS),
 			      mmio_read_16(base + SDHCI_ERR_INT_STATUS));
 			return -EIO;
@@ -234,7 +234,7 @@ static int bm_sd_send_cmd_without_data(struct mmc_cmd *cmd)
 
 		udelay(1);
 		if (!timeout--) {
-			printf("%s timeout!\n", __func__);
+			pr_err("%s timeout!\n", __func__);
 			return -EIO;
 		}
 	}
@@ -305,7 +305,7 @@ void bm_sd_set_clk(int clk)
 		}
 
 		if (i > 150000) {
-			printf("SD INTERNAL_CLK_EN setting FAILED!\n");
+			pr_err("SD INTERNAL_CLK_EN setting FAILED!\n");
 			assert(0);
 		}
 
@@ -319,7 +319,7 @@ void bm_sd_set_clk(int clk)
 		}
 	}
 
-	printf("SD PLL setting FAILED!\n");
+	pr_err("SD PLL setting FAILED!\n");
 }
 
 void bm_sd_change_clk(int clk)
@@ -368,7 +368,7 @@ void bm_sd_change_clk(int clk)
 		udelay(100);
 	}
 
-	printf("SD PLL setting FAILED!\n");
+	pr_err("SD PLL setting FAILED!\n");
 }
 
 int bm_sd_card_detect(void)
@@ -568,7 +568,7 @@ static int bm_sd_read(int lba, uintptr_t buf, size_t size)
 			}
 
 			if (timeout >= 10000) {
-				printf("sdhci read data timeout\n");
+				pr_err("sdhci read data timeout\n");
 				goto timeout;
 			}
 		}
@@ -588,7 +588,7 @@ static int bm_sd_read(int lba, uintptr_t buf, size_t size)
 			}
 
 			if (timeout >= 10000) {
-				printf("wait xfer complete timeout\n");
+				pr_err("wait xfer complete timeout\n");
 				goto timeout;
 			}
 		}
@@ -637,7 +637,7 @@ static int bm_sd_write(int lba, uintptr_t buf, size_t size)
 			}
 
 			if (timeout >= 10000000) {
-				printf("sdhci write data timeout\n");
+				pr_err("sdhci write data timeout\n");
 				goto timeout;
 			}
 		}
@@ -657,7 +657,7 @@ static int bm_sd_write(int lba, uintptr_t buf, size_t size)
 			}
 
 			if (timeout >= 10000) {
-				printf("wait xfer complete timeout\n");
+				pr_err("wait xfer complete timeout\n");
 				goto timeout;
 			}
 		}
@@ -670,7 +670,7 @@ timeout:
 
 static void bm_sd_phy_init(void)
 {
-	uintptr_t base = SDIO_BASE;
+	uintptr_t base = bm_params.reg_base;
 	int loop = 100;
 
 	// reset hardware
@@ -737,7 +737,7 @@ int bm_sd_init(uint32_t flags)
 	int ret;
 
 	bm_params.clk_rate = bm_get_sd_clock();
-	printf("SD initializing %dHz (transfer frequency at %dHz)\n", bm_params.clk_rate, SDCARD_TRAN_FREQ);
+	pr_debug("SD initializing %dHz (transfer frequency at %dHz)\n", bm_params.clk_rate, SDCARD_TRAN_FREQ);
 
 	bm_params.flags = flags;
 
@@ -747,7 +747,7 @@ int bm_sd_init(uint32_t flags)
 		       bm_params.flags, &sd_info);
 
 	if (ret != 0)
-		printf("SD initialization failed %d\n", ret);
+		pr_err("SD initialization failed %d\n", ret);
 	return ret;
 }
 
@@ -778,29 +778,24 @@ static struct blkops blkops = {
 
 static int probe(struct platform_device *pdev)
 {
-	const struct of_device_id *match_id;
+	/* const struct of_device_id *match_id; */
 	struct blkdev *blkdev;
 
-	match_id = platform_get_match_id(pdev);
-
-	pr_info("compatible: %s\n", match_id->compatible);
-	pr_info("data: %lu\n", (unsigned long)match_id->data);
-	pr_info("register base: 0x%lx\n", pdev->reg_base);
-	pr_info("register size: 0x%lx\n", pdev->reg_size);
+	/* match_id = platform_get_match_id(pdev); */
 
 	bm_params.reg_base = pdev->reg_base;
 
 	if (bm_sd_card_detect()) {
-                pr_info("sd card insert\n");
+                pr_debug("sd card insert\n");
         } else {
-                pr_info("sd card not insert, please insert sd to continue sd test\n");
+                pr_debug("sd card not insert, please insert sd to continue sd test\n");
 		return -ENODEV;
         }
 
         if (bm_sd_init(SD_USE_PIO))
 		return -EIO;
 
-	pr_info("sd card init ok\n");
+	pr_debug("sd card init ok\n");
 
 	blkdev = blkdev_alloc();
 	if (!blkdev)

@@ -233,7 +233,6 @@ int sgfat_init(void)
 	struct blkdev *blkdev;
 
 	for (blkdev = blkdev_first(); blkdev; blkdev = blkdev_next(blkdev)) {
-		pr_info("%s\n", blkdev->device.name);
 		/* create new boot devices */
 		err |= create_fat_dev(blkdev);
 		if (err) {

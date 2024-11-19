@@ -6,7 +6,7 @@
 #include <driver/bootdev.h>
 #include <framework/common.h>
 
-#include <board.h>
+#include "config.h"
 
 static int handler_img(void* user, const char* section, const char* name,
 				   const char* value)

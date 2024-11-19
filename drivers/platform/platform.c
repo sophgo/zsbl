@@ -100,7 +100,7 @@ static LIST_HEAD(driver_list);
 int platform_driver_register(struct platform_driver *pdrv)
 {
 	if (pdrv->driver.name[0] == 0) {
-		pr_err("no driver name\n");
+		pr_debug("no driver name\n");
 		return -EINVAL;
 	}
 
@@ -185,7 +185,7 @@ static const struct of_device_id *match_table(struct platform_device *pdev)
 			return pdev->match;
 	}
 
-	pr_warn("no driver matching device %s\n", pdev->device.name);
+	pr_debug("no driver matching device %s\n", pdev->device.name);
 	return NULL;
 
 }
@@ -259,7 +259,7 @@ static int platform_probe(void)
 
 		prop = fdt_get_property(dtb, offset, "compatible", &plen);
 		if (!prop) {
-			pr_warn("offset: %d, no compatible property\n", offset);
+			pr_debug("offset: %d, no compatible property\n", offset);
 			continue;
 		}
 
@@ -274,8 +274,6 @@ static int platform_probe(void)
 		/* find drivers for this device */
 		match_table(pdev);
 	}
-
-	platform_list_devices();
 
 	return 0;
 }

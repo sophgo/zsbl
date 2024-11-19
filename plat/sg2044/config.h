@@ -1,5 +1,5 @@
-#ifndef __BOARD_H__
-#define __BOARD_H__
+#ifndef __CONFIG_H__
+#define __CONFIG_H__
 
 #include <stdint.h>
 

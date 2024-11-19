@@ -97,7 +97,6 @@ int sgcfg_init(void)
 	struct mtd *mtd;
 
 	for (mtd = mtd_first(); mtd; mtd = mtd_next(mtd)) {
-		pr_info("%s\n", mtd->device.name);
 		/* create new boot devices */
 		tmp = create_bootdev(mtd);
 
