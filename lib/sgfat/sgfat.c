@@ -57,7 +57,7 @@ static long get_file_size(struct bootdev *bootdev, const char *file)
 	err = f_open(&fp, fatfs_name, FA_READ);
 
 	if (err) {
-		pr_err("cannot open %s for read\n", file);
+		pr_debug("cannot open %s for read\n", file);
 		goto out;
 	}
 

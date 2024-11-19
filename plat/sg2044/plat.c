@@ -6,6 +6,7 @@
 #include <driver/bootdev.h>
 #include <sbi.h>
 #include <smp.h>
+#include <board.h>
 
 static void print_core_ctrlreg(void)
 {
@@ -34,120 +35,40 @@ static void disable_mac_rxdelay(void)
 	mmio_write_32(REG_TOP_MISC_CONTROL_ADDR, misc_conf);
 }
 
-#if 0
-static int handler_img(void* user, const char* section, const char* name,
-				   const char* value)
+enum {
+	CHIP_WORK_MODE_POD = 0x1,
+	CHIP_WORK_MODE_CPU = 0x2,
+	CHIP_WORK_MODE_PCIE =0x3,
+};
+
+static int get_work_mode(void)
 {
-	config_ini *pconfig = (config_ini *)user;
+	uint32_t bootsel;
 
-	#define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
-
-	if (MATCH("devicetree", "name"))
-		pconfig->dtb_name = strdup(value);
-	else if (MATCH("devicetree", "addr"))
-		pconfig->dtb_addr = strtoul(value, NULL, 16);
-	else if (MATCH("kernel", "name"))
-		pconfig->kernel_name = strdup(value);
-	else if (MATCH("kernel", "addr"))
-		pconfig->kernel_addr = strtoul(value, NULL, 16);
-	else if (MATCH("firmware", "name"))
-		pconfig->fw_name = strdup(value);
-	else if (MATCH("firmware", "addr"))
-		pconfig->fw_addr = strtoul(value, NULL, 16);
-	else if (MATCH("ramfs", "name")) {
-		if (value && strlen(value))
-			pconfig->ramfs_name = strdup(value);
-	}
-	else if (MATCH("ramfs", "addr"))
-		pconfig->ramfs_addr = strtoul(value, NULL, 16);
+	bootsel = mmio_read_32(BOOT_SEL_ADDR);
+	if (bootsel & BOOT_FROM_SRAM)
+		return CHIP_WORK_MODE_PCIE;
 	else
-		return 0;
-
-	return -1;
+		return CHIP_WORK_MODE_CPU;
 }
 
-static int parse_config_file(void)
-{
-	FILINFO info;
-	const char *header = "[sophgo-config]";
-	const char *tail = "[eof]";
-	char *eof;
-	void *buf;
-	long size;
-	const char *file = "conf.ini";
-
-	size = bdm_get_file_size(file);
-	if (size < 0) {
-		pr_info("No config file found, using default configurations\n");
-		return -ENOENT;
-	}
-
-	buf = malloc(size);
-	if (!size) {
-		pr_err("Can not allocate memory for config file\n");
-		return -ENOMEM;
-	}
-
-	bdm_load(file, buf);
-
-	if (strncmp(header, buf, strlen(header))) {
-		pr_err("Config file should start with \"%s\"\n", header);
-		return -EINVAL;
-	}
-
-	eof = strstr(buf, tail);
-
-	if (!eof) {
-		pr_err("conf.ini should terminated by \"%s\"\n", tail);
-		return -EINVAL;
-	}
-
-	*eof = 0;
-
-	if (ini_parse_string(buf, handler_img, &(sg2042_board_info.config_ini)) < 0)
-		return -EINVAL;
-
-	free(buf);
-
-	return 0;
-}
-#else
-
-static int parse_config_file(void)
-{
-	pr_info("FIXME: parse config file\n");
-	return 0;
-}
-
-#endif
-
-struct boot_file {
-	char *name;
-	uintptr_t addr;
-};
-
-static struct boot_file sbi = {
-	"fw_dynamic.bin", 0x80000000,
-};
-
-static struct boot_file kernel = {
-	"SG2044.fd", 0x80200000,
-};
-
-static struct boot_file dtb = {
-	"sg2044-evb.dtb", 0x88000000,
-};
-
-static struct boot_file ramfs = {
-	"initrd", 0,
-};
 
 static long load(struct boot_file *file)
 {
-	if (!file->name || !file->addr)
+	long err;
+
+	if (!file->name || !file->addr || !file->name[0])
 		return 0;
 
-	return bdm_load(file->name, (void *)file->addr);
+	err = bdm_load(file->name, (void *)file->addr);
+
+	if (err <= 0) {
+		pr_err("Load %s failed, stop booting\n", file->name);
+		while (true)
+			;
+	}
+
+	return err;
 }
 
 static struct fw_dynamic_info dynamic_info;
@@ -156,10 +77,12 @@ static unsigned char secondary_core_stack[CONFIG_SMP_NUM][4096];
 
 static void secondary_core_fun(void *priv)
 {
-	jump_to(sbi.addr, current_hartid(), dtb.addr, (long)&dynamic_info);
+	struct config *cfg = priv;
+
+	jump_to(cfg->sbi.addr, current_hartid(), cfg->dtb.addr, (long)&dynamic_info);
 }
 
-void boot_next_img(void)
+static void boot_next_img(struct config *cfg)
 {
 	int i;
 	unsigned int hartid = current_hartid();
@@ -168,33 +91,69 @@ void boot_next_img(void)
 		if (i == hartid)
 			continue;
 
-		wake_up_other_core(i, secondary_core_fun, NULL,
+		wake_up_other_core(i, secondary_core_fun, cfg,
 				secondary_core_stack[i], sizeof(secondary_core_stack[i]));
 	}
 
-	jump_to(sbi.addr, hartid, dtb.addr, (long)&dynamic_info);
+	jump_to(cfg->sbi.addr, hartid, cfg->dtb.addr, (long)&dynamic_info);
+}
+
+int parse_config_file(struct config *cfg);
+
+static void load_images(struct config *cfg)
+{
+	load(&cfg->sbi);
+	load(&cfg->kernel);
+	load(&cfg->dtb);
+	load(&cfg->ramfs);
+}
+
+static struct config cfg = {
+	.sbi = {"fw_dynamic.bin", 0x80000000},
+	.kernel = {"SG2044.fd", 0x80200000},
+	.dtb = {"sg2044-evb.dtb", 0x88000000},
+	.ramfs = {"initrd", 0},
+};
+
+static void show_boot_file(const char *name, struct boot_file *p)
+{
+	pr_info("%-16s %-20s 0x%010lx\n", name, p->name ? p->name : "[null]", p->addr);
+}
+
+static void show_config(struct config *cfg)
+{
+	pr_info("%-16s %lx\n", "eth0 MAC", cfg->mac0);
+	pr_info("%-16s %lx\n", "eth1 MAC", cfg->mac1);
+
+	pr_info("%-16s %s\n", "SN", cfg->sn ? cfg->sn : "[null]");
+	show_boot_file("SBI", &cfg->sbi);
+	show_boot_file("Kernel", &cfg->kernel);
+	show_boot_file("Device tree", &cfg->dtb);
+	show_boot_file("Ramfs", &cfg->ramfs);
 }
 
 int plat_main(void)
 {
-
 	print_core_ctrlreg();
 	disable_mac_rxdelay();
 
-	parse_config_file();
-
-	load(&sbi);
-	load(&kernel);
-	load(&dtb);
-	load(&ramfs);
-
+	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
+		pr_info("Working at CPU mode\n");
+		parse_config_file(&cfg);
+		show_config(&cfg);
+		load_images(&cfg);
+	} else {
+		pr_info("Working at PCIe mode\n");
+	}
 
 	dynamic_info.magic = FW_DYNAMIC_INFO_MAGIC_VALUE;
 	dynamic_info.version = FW_DYNAMIC_INFO_VERSION_2;
-	dynamic_info.next_addr = KERNEL_ADDR;
+	dynamic_info.next_addr = cfg.kernel.addr;
 	dynamic_info.next_mode = FW_DYNAMIC_INFO_NEXT_MODE_S;
+	dynamic_info.boot_hart = 0xffffffffffffffffUL,
 
-	boot_next_img();
+	boot_next_img(&cfg);
 
 	return 0;
 }
+
