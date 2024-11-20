@@ -1,0 +1,28 @@
+/dts-v1/;
+
+/ {
+	soc {
+		#address-cells = <2>;
+		#size-cells = <2>;
+
+		sd: bm-sd@704002B000 {
+			compatible = "sophgo,sg2044-dwcmshc";
+			reg = <0x70 0x4002B000 0x0 0x2000>;
+			bus-width = <4>;
+		};
+
+		spifmc0: flash-controller@7000180000 {
+			compatible = "sophgo,spifmc";
+			reg = <0x70 0x00180000 0x0 0x1000000>;
+			clock-frequency = <100000000>;
+			sophgo-config;
+		};
+
+		spifmc1: flash-controller@7002180000 {
+			compatible = "sophgo,spifmc";
+			reg = <0x70 0x02180000 0x0 0x1000000>;
+			clock-frequency = <100000000>;
+			sophgo-boot = <0x00000000 0x00600000>;
+		};
+	};
+};
