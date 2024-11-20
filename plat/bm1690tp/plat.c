@@ -1,34 +1,13 @@
 #include <framework/common.h>
+#include <framework/module.h>
 #include <platform.h>
 #include <memmap.h>
 #include <asm.h>
 #include <lib/mmio.h>
-#include <driver/bootdev.h>
 #include <sbi.h>
 #include <smp.h>
 
-#define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
-
-#define OPENSBI_OFFSET		0x00000000
-#define KERNEL_OFFSET		0x00200000
-#define DEVICETREE_OFFSET	0x08000000
-#define RAMFS_OFFSET		0x0b000000
-
-struct boot_file {
-	char *name;
-	uintptr_t addr;
-};
-
-struct config {
-	uint64_t mac0;
-	uint64_t mac1;
-	char *sn;
-	
-	struct boot_file sbi;
-	struct boot_file kernel;
-	struct boot_file dtb;
-	struct boot_file ramfs;
-};
+#include "config.h"
 
 static void print_core_ctrlreg(void)
 {
@@ -66,41 +45,36 @@ static void show_boot_file(const char *name, struct boot_file *p)
 
 static void show_config(struct config *cfg)
 {
-	pr_info("%-16s %lx\n", "eth0 MAC", cfg->mac0);
-	pr_info("%-16s %lx\n", "eth1 MAC", cfg->mac1);
+	pr_info("%-16s %d\n", "Core ID", cfg->core_id);
+	pr_info("%-16s 0x%010lx\n", "RAM Base", cfg->ram_base);
+	pr_info("%-16s 0x%010lx\n", "RAM Size", cfg->ram_size);
 
-	pr_info("%-16s %s\n", "SN", cfg->sn ? cfg->sn : "[null]");
 	show_boot_file("SBI", &cfg->sbi);
 	show_boot_file("Kernel", &cfg->kernel);
 	show_boot_file("Device tree", &cfg->dtb);
 	show_boot_file("Ramfs", &cfg->ramfs);
 }
 
-/* #define USE_LINUX_BOOT */
-
 extern unsigned long __ld_program_start[0];
 
 static void config_init(struct config *cfg)
 {
-	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
-
 	pr_debug("ZSBL is loaded at 0x%010lx\n", (unsigned long)__ld_program_start);
+	cfg->ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
+	cfg->ram_size = RAM_SIZE;
+	cfg->core_id = mmio_read_32(CLINT_MHART_ID);
 
 	cfg->sbi.name = "fw_dynamic.bin";
-	cfg->sbi.addr = ram_base + OPENSBI_OFFSET;
+	cfg->sbi.addr = cfg->ram_base + OPENSBI_OFFSET;
 	cfg->dtb.name = "sg2044-evb.dtb";
-	cfg->dtb.addr = ram_base + DEVICETREE_OFFSET;
-#ifdef USE_LINUX_BOOT
+	cfg->dtb.addr = cfg->ram_base + DEVICETREE_OFFSET;
 	cfg->kernel.name = "riscv64_Image";
+	cfg->kernel.addr = cfg->ram_base + KERNEL_OFFSET;
 	cfg->ramfs.name = "initrd";
-	cfg->ramfs.addr = ram_base + RAMFS_OFFSET;
-#else
-	cfg->kernel.name = "SG2044.fd";
-	cfg->ramfs.name = NULL;
-	cfg->ramfs.addr = 0;
-#endif
-	cfg->kernel.addr = ram_base + KERNEL_OFFSET;
+	cfg->ramfs.addr = cfg->ram_base + RAMFS_OFFSET;
 }
+
+int modify_tpu_dtb(struct config *cfg);
 
 int plat_main(void)
 {
@@ -109,6 +83,8 @@ int plat_main(void)
 	config_init(&cfg);
 
 	show_config(&cfg);
+
+	modify_tpu_dtb(&cfg);
 
 	dynamic_info.magic = FW_DYNAMIC_INFO_MAGIC_VALUE;
 	dynamic_info.version = FW_DYNAMIC_INFO_VERSION_2;

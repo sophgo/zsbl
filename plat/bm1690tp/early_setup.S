@@ -38,5 +38,9 @@ plat_early_setup:
 	ori	t0, t0, 0xff
 	csrw	CSR_MEDELEG, t0
 
+	/* enable u-mode cmo */
+	li	t0, 0x70
+	csrw	CSR_SENVCFG, t0
+
 	ret
 

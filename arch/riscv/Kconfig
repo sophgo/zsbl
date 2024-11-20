@@ -57,11 +57,6 @@ config SMP_NUM
 		the cpu numbers
 endif
 
-config TPU_SCALAR
-	bool "Whether Used for TPU Scalar"
-	help
-		set if used for TPU scalar
-
 config SUPPORT_BUILTIN_DTB
 	bool "Support Builtin DTB"
 	help

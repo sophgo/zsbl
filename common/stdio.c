@@ -10,6 +10,12 @@ void register_stdio(int (*stdinput)(void), void (*stdoutput)(int))
 	stdout_func = stdoutput;
 }
 
+void unregister_stdio(void)
+{
+	stdinput_func = NULL;
+	stdout_func = NULL;
+}
+
 int stdio_input(void)
 {
 	if (!stdinput_func)

@@ -10,6 +10,7 @@
  *	output character to stdout
  */
 void register_stdio(int (*stdinput)(void), void (*stdoutput)(int));
+void unregister_stdio(void);
 
 int stdio_input(void);
 void stdio_output(int ch);

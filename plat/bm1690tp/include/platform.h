@@ -16,5 +16,6 @@
 #define CSR_MCOUNTERWEN  0x7c9
 #define CSR_MCPUID       0xfc0
 #define CSR_MSMPR        0x7f3
+#define CSR_SENVCFG      0x10a
 
 #endif
