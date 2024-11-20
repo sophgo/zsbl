@@ -2,7 +2,6 @@
 #define __RISCV_ASM_H__
 
 #include <encoding.h>
-#include <platform.h>
 
 /* clang-format off */
 
