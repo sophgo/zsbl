@@ -1,6 +1,7 @@
 #include <memmap.h>
 #include <stdint.h>
 
+#include <lib/mmio.h>
 #include <framework/module.h>
 #include <framework/common.h>
 

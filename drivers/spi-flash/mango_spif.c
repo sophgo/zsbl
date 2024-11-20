@@ -31,6 +31,7 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 	uint32_t tran_csr = 0;
 	int cmd_bytes = addr_bytes + ((with_cmd) ? 1 : 0);
 	int i, xfer_size, off;
+	uint64_t start;
 
 	/* 64Kb = 8KB */
 	if (data_bytes > 65536) {
@@ -61,9 +62,12 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 	tran_csr |= BIT_SPI_TRAN_CSR_GO_BUSY;
 	mmio_write_32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
 
+	start = timer_get_tick();
 	/* check rd int to make sure data out done and in data started */
-	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_RD_FIFO) == 0)
-		;
+	while ((mmio_read_32(spi_base + REG_SPI_INT_STS) & BIT_SPI_INT_RD_FIFO) == 0) {
+		if (timer_tick2ms(timer_get_tick() - start) > 100)
+			return -1;
+	}
 
 	/* get data */
 	p_data = (uint32_t *)dst_buf;
@@ -91,6 +95,7 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size)
 {
 	uint8_t cmd_buf[5];
+	int err = 0;
 
 	if (addr & ((uint32_t)0xff << 24)) {
 		cmd_buf[0] = 0x13;
@@ -98,16 +103,16 @@ int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size)
 		cmd_buf[2] = ((addr) >> 16) & 0xFF;
 		cmd_buf[3] = ((addr) >> 8) & 0xFF;
 		cmd_buf[4] = (addr) & 0xFF;
-		spi_data_in_tran(spi_base, dst_buf, cmd_buf, 1, 4, size);
+		err = spi_data_in_tran(spi_base, dst_buf, cmd_buf, 1, 4, size);
 	} else {
 		cmd_buf[0] = SPI_CMD_READ;
 		cmd_buf[1] = ((addr) >> 16) & 0xFF;
 		cmd_buf[2] = ((addr) >> 8) & 0xFF;
 		cmd_buf[3] = (addr) & 0xFF;
-		spi_data_in_tran(spi_base, dst_buf, cmd_buf, 1, 3, size);
+		err = spi_data_in_tran(spi_base, dst_buf, cmd_buf, 1, 3, size);
 	}
 
-	return 0;
+	return err;
 }
 
 void bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf)

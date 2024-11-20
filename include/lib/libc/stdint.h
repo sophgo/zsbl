@@ -12,6 +12,8 @@ typedef short int16_t;
 typedef int int32_t;
 typedef long int int64_t;
 
+typedef unsigned long uintptr_t;
+
 #define UINT32_C(x)	(x ## U)
 #define U(x)		(x ## U)
 #define UL(x)		(x ## UL)

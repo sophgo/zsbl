@@ -11,7 +11,7 @@ KBUILD_LDS := arch/riscv/src/target-ram.lds
 endif
 
 
-KBUILD_CFLAGS += -g -mcmodel=medany -DARCH_RISCV
+KBUILD_CFLAGS += -g -march=rv64imafdc_zifencei -mcmodel=medany -DARCH_RISCV
 
 KBUILD_CFLAGS += -nostdinc
 
