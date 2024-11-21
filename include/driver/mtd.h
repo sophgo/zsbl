@@ -22,8 +22,6 @@ struct mtd {
 
 	char suffix[MTD_DEV_NAME_SUFFIX_MAX];
 
-	void *tmp_buf;
-
 	void *data;
 };
 

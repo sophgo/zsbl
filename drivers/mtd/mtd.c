@@ -104,7 +104,6 @@ void *mtd_get_user_data(struct mtd *mtd)
 
 long mtd_read(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf)
 {
-	/* FIXME: support unaligned access */
 	return mtd->ops->read(mtd, offset, size, buf);
 }
 
@@ -126,12 +125,6 @@ int mtd_register(struct mtd *mtd)
 		return -EINVAL;
 	}
 
-	mtd->tmp_buf = malloc(mtd->block_size);
-	if (!mtd->tmp_buf) {
-		pr_err("allocate temp buffer failed\n");
-		return -ENOMEM;
-	}
-
 	/* append mtd0, mtd1 ... in front of original device name */
 	sprintf(mtd->device.name, "mtd%d-%s", device_count, mtd->suffix);
 
@@ -145,7 +138,4 @@ int mtd_register(struct mtd *mtd)
 void mtd_unregister(struct mtd *mtd)
 {
 	mtd_remove(mtd);
-
-	free(mtd->tmp_buf);
-	mtd->tmp_buf = NULL;
 }

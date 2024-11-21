@@ -10,8 +10,6 @@
 
 #include <driver/bootdev.h>
 
-#include <platform.h>
-
 static int test(void)
 {
 	void *buf = (void *)KERNEL_ADDR;

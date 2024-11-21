@@ -4,6 +4,7 @@
 #include <asm.h>
 #include <lib/mmio.h>
 #include <driver/bootdev.h>
+#include <driver/mtd.h>
 #include <sbi.h>
 #include <smp.h>
 #include <timer.h>

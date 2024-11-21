@@ -8,6 +8,9 @@
 #include <timer.h>
 #include <framework/common.h>
 
+#include <driver/mtd.h>
+#include <driver/platform.h>
+#include <framework/module.h>
 
 #define SPI_CMD_WREN		0x06
 #define SPI_CMD_WRDI		0x04
@@ -99,32 +102,21 @@
 #define SPI_ID_N25Q128		0x0018ba20
 #define SPI_ID_GD25LQ128	0x001860c8
 
-struct part_info {
-	/* disk partition table magic number */
-	uint32_t magic;
-	char name[32];
-	uint32_t offset;
-	uint32_t size;
-	char reserve[4];
-	/* load memory address*/
-	uint64_t lma;
-};
-
-static size_t spi_flash_read_blocks(int lba, uintptr_t buf, size_t size);
+static size_t spi_flash_read_blocks(unsigned long spi_base, int lba, uintptr_t buf, size_t size);
 static size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size);
 static void bm_spi_init(unsigned long base);
-static int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size);
-static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size);
+static int bm_spi_flash_program(unsigned long spi_base, uint8_t *src_buf, uint32_t base, uint32_t size);
+static int bm_spi_flash_read(unsigned long spi_base, uint8_t *dst_buf, uint32_t addr, uint32_t size);
 static int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size);
 static uint32_t bm_spi_read_id(unsigned long spi_base);
 static void bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf);
 static int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr);
 static int bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr);
 
-static unsigned long ctrl_base;
-
-enum {
-	DPT_MAGIC	= 0x55aa55aa,
+struct sgspif {
+	unsigned long reg;
+	struct platform_device *pdev;
+	struct mtd *mdev;
 };
 
 static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *cmd_buf,
@@ -223,9 +215,10 @@ static void __attribute__((unused)) bm_spi_flash_read_sector(unsigned long spi_b
 	spi_data_read(spi_base, buf, (int)addr, 256);
 }
 
-static size_t __attribute__((unused)) spi_flash_read_blocks(int lba, uintptr_t buf, size_t size)
+static size_t __attribute__((unused)) spi_flash_read_blocks(unsigned long spi_base,
+		int lba, uintptr_t buf, size_t size)
 {
-	spi_data_read(ctrl_base, (uint8_t *)buf, lba * SPI_FLASH_BLOCK_SIZE, size);
+	spi_data_read(spi_base, (uint8_t *)buf, lba * SPI_FLASH_BLOCK_SIZE, size);
 	return size;
 }
 
@@ -235,29 +228,27 @@ static size_t __attribute__((unused)) spi_flash_write_blocks(int lba, const uint
 	return -ENODEV;
 }
 
-static void bm_spi_init(unsigned long base)
+static void bm_spi_init(unsigned long spi_base)
 {
 	uint32_t tran_csr = 0;
 	uint32_t tmp;
 
-	ctrl_base = base;
 	/* disable DMMR (direct memory mapping read) */
 	pr_debug("spif init disable DMMR\n");
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 0);
+	mmio_write_32(spi_base + REG_SPI_DMMR, 0);
 	/* soft reset and set SCK frequency = HCLK frequency/(2(sckdiv+1))*/
-	tmp = mmio_read_32(ctrl_base + REG_SPI_CTRL);
+	tmp = mmio_read_32(spi_base + REG_SPI_CTRL);
 	tmp |= BIT_SPI_CTRL_SRST;
 	tmp &= ~((1 << 11) - 1);
 	tmp |= 1;
-	mmio_write_32(ctrl_base + REG_SPI_CTRL,  tmp);
+	mmio_write_32(spi_base + REG_SPI_CTRL,  tmp);
 	/* sent 4 byte each time */
 	tran_csr |= (0x03 << SPI_TRAN_CSR_ADDR_BYTES_SHIFT);
 	/* itr and DMA req when >= 4byte */
 	tran_csr |= BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_4_BYTE;
 	/* with cmd */
 	tran_csr |= BIT_SPI_TRAN_CSR_WITH_CMD;
-	mmio_write_32(ctrl_base + REG_SPI_TRAN_CSR, tran_csr);
-
+	mmio_write_32(spi_base + REG_SPI_TRAN_CSR, tran_csr);
 }
 
 /* here are APIs for SPI flash programming */
@@ -501,7 +492,7 @@ static int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr)
 	uint32_t spi_status, wait = 0;
 
 	pr_debug("disable DMMR\n");
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 0);
+	mmio_write_32(spi_base + REG_SPI_DMMR, 0);
 
 	spi_write_en(spi_base);
 	spi_status = spi_read_status(spi_base);
@@ -523,7 +514,7 @@ static int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr)
 		pr_debug("device busy, get status: 0x%x\n", spi_status);
 	}
 	pr_debug("enable DMMR\n");
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 1);
+	mmio_write_32(spi_base + REG_SPI_DMMR, 1);
 	return 0;
 }
 
@@ -533,7 +524,7 @@ static int __attribute__((unused)) bm_spi_flash_program_sector(unsigned long spi
 	uint32_t wait = 0;
 
 	pr_debug("disable DMMR\n");
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 0);
+	mmio_write_32(spi_base + REG_SPI_DMMR, 0);
 
 	memset(cmd_buf, 0x5d, sizeof(cmd_buf));
 	pr_debug("write 0x%x\n", cmd_buf[0]);
@@ -559,7 +550,7 @@ static int __attribute__((unused)) bm_spi_flash_program_sector(unsigned long spi
 	}
 
 	pr_debug("enable DMMR\n");
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 1);
+	mmio_write_32(spi_base + REG_SPI_DMMR, 1);
 	return 0;
 }
 
@@ -602,13 +593,14 @@ static int do_page_program(unsigned long spi_base, uint8_t *src_buf, uint32_t ad
 	return 0;
 }
 
-static int __attribute__((unused)) bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
+static int __attribute__((unused)) bm_spi_flash_program(unsigned long spi_base,
+		uint8_t *src_buf, uint32_t base, uint32_t size)
 {
 	uint32_t xfer_size, off, cmp_ret;
 	uint8_t cmp_buf[SPI_FLASH_BLOCK_SIZE], erased_sectors, i;
 	uint32_t id, sector_size;
 
-	id = bm_spi_read_id(ctrl_base);
+	id = bm_spi_read_id(spi_base);
 	if (id == SPI_ID_M25P128) {
 		sector_size = 256 * 1024;
 	} else if (id == SPI_ID_N25Q128 || id == SPI_ID_GD25LQ128) {
@@ -628,7 +620,7 @@ static int __attribute__((unused)) bm_spi_flash_program(uint8_t *src_buf, uint32
 	pr_debug("Start erasing %d sectors, each %d bytes...\n", erased_sectors, sector_size);
 
 	for (i = 0; i < erased_sectors; i++)
-		bm_spi_flash_erase_sector(ctrl_base, base + i * sector_size);
+		bm_spi_flash_erase_sector(spi_base, base + i * sector_size);
 
 	off = 0;
 	i = 0;
@@ -639,12 +631,12 @@ static int __attribute__((unused)) bm_spi_flash_program(uint8_t *src_buf, uint32
 		else
 			xfer_size = size - off;
 
-		if (do_page_program(ctrl_base, src_buf + off, base + off, xfer_size) != 0) {
+		if (do_page_program(spi_base, src_buf + off, base + off, xfer_size) != 0) {
 			pr_debug("page prog failed @ 0x%x\n", base + off);
 			return -1;
 		}
 
-		spi_data_read(ctrl_base, cmp_buf, base + off, xfer_size);
+		spi_data_read(spi_base, cmp_buf, base + off, xfer_size);
 		cmp_ret = memcmp(src_buf + off, cmp_buf, xfer_size);
 		if (cmp_ret != 0) {
 			pr_debug("memcmp failed\n");
@@ -661,7 +653,7 @@ static int __attribute__((unused)) bm_spi_flash_program(uint8_t *src_buf, uint32
 }
 
 #define TRAN_NUM	65536
-static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
+static int bm_spi_flash_read(unsigned long spi_base, uint8_t *dst_buf, uint32_t addr, uint32_t size)
 {
 	int nr_frame, bytes;
 	int offset;
@@ -672,7 +664,7 @@ static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
 
 	for (i = 0; i < nr_frame; i++) {
 		offset = i * TRAN_NUM;
-		ret = spi_data_read(ctrl_base, dst_buf + offset,
+		ret = spi_data_read(spi_base, dst_buf + offset,
 				    addr + offset, TRAN_NUM);
 		if (ret)
 			return ret;
@@ -680,7 +672,7 @@ static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
 
 	if (bytes) {
 		offset = nr_frame * TRAN_NUM;
-		ret = spi_data_read(ctrl_base, dst_buf + offset,
+		ret = spi_data_read(spi_base, dst_buf + offset,
 				    addr + offset, bytes);
 		if (ret)
 			return ret;
@@ -690,15 +682,15 @@ static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
 }
 
 /* -------------------- mtd framework -------------------- */
-#include <driver/mtd.h>
-#include <driver/platform.h>
-#include <framework/module.h>
 
 static long read(struct mtd *mdev, unsigned long offset, unsigned long size, void *buf)
 {
 	int err;
+	struct sgspif *spif;
 
-	err = bm_spi_flash_read(buf, offset, size);
+	spif = mdev->data;
+
+	err = bm_spi_flash_read((unsigned long)spif->reg, buf, offset, size);
 
 	return err ? -EIO : size;
 }
@@ -711,6 +703,7 @@ static int probe(struct platform_device *pdev)
 {
 	/* const struct of_device_id *match_id; */
 	struct mtd *mdev;
+	struct sgspif *spif;
 
 	/* match_id = platform_get_match_id(pdev); */
 
@@ -724,8 +717,19 @@ static int probe(struct platform_device *pdev)
 	mdev->block_size = 4096;
 	mdev->total_size = 64UL * 1024 * 1024;
 	mdev->ops = &mtdops;
+	mdev->hwdev = &pdev->device;
 
-	sprintf(mdev->suffix, "spi@%lx", (unsigned long)pdev->reg_base);
+	spif = malloc(sizeof(struct sgspif));
+	if (!spif)
+		return -ENOMEM;
+
+	spif->reg = pdev->reg_base;
+	spif->pdev = pdev;
+	spif->mdev = mdev;
+
+	mdev->data = spif;
+
+	sprintf(mdev->suffix, "spifmc");
 
 	return mtd_register(mdev);
 }
