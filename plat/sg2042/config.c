@@ -31,6 +31,10 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->ramfs.name = strdup(value);
 	else if (MATCH("ramfs", "addr"))
 		pconfig->ramfs.addr = strtoul(value, NULL, 16);
+	else if (MATCH("mac-address", "mac0"))
+		pconfig->mac0 = strtoul(value, NULL, 16);
+	else if (MATCH("mac-address", "mac1"))
+		pconfig->mac1 = strtoul(value, NULL, 16);
 	else
 		return 0;
 

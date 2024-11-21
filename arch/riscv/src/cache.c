@@ -7,12 +7,12 @@ static void sync_dcache(void)
 	asm volatile ("fence iorw, iorw":::);
 }
 
-void sync_icache(void)
+void __attribute__((weak)) sync_icache(void)
 {
 	asm volatile ("fence.i");
 }
 
-void flush_dcache_range(unsigned long start, unsigned long end)
+void __attribute__((weak)) flush_dcache_range(unsigned long start, unsigned long end)
 {
 	register unsigned long i;
 
@@ -22,7 +22,7 @@ void flush_dcache_range(unsigned long start, unsigned long end)
 	sync_dcache();
 }
 
-void invalidate_dcache_range(unsigned long start, unsigned long end)
+void __attribute__((weak)) invalidate_dcache_range(unsigned long start, unsigned long end)
 {
 	register unsigned long i asm("a0") = start & ~(L1_CACHE_BYTES - 1);
 
@@ -32,7 +32,7 @@ void invalidate_dcache_range(unsigned long start, unsigned long end)
 	sync_dcache();
 }
 
-void clean_dcache_range(unsigned long start, unsigned long end)
+void __attribute__((weak)) clean_dcache_range(unsigned long start, unsigned long end)
 {
 	register unsigned long i asm("a0") = start & ~(L1_CACHE_BYTES - 1);
 

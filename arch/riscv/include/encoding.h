@@ -336,7 +336,7 @@
 #define CSR_MHPMEVENT29			0x33d
 #define CSR_MHPMEVENT30			0x33e
 #define CSR_MHPMEVENT31			0x33f
-#define CSR_MENVCFG				0x30a
+#define CSR_MENVCFG			0x30a
 #define CSR_MVENDORID			0xf11
 #define CSR_MARCHID			0xf12
 #define CSR_MIMPID			0xf13

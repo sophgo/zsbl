@@ -816,12 +816,9 @@ scripts: scripts_basic
 
 PHONY += prepare archprepare
 
-zsblrelease:
-	@echo "#define VERSION_SCM \"$(shell $(abs_srctree)/scripts/setlocalversion)\"" > $(abs_srctree)/plat/sg2042/include/board_scm.h
-
 archprepare: outputmakefile scripts $(autoksyms_h)
 
-prepare0: archprepare zsblrelease
+prepare0: archprepare
 	$(Q)$(MAKE) $(build)=.
 
 # All the preparing..

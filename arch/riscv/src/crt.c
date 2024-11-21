@@ -90,12 +90,6 @@ void system_init(void)
 		 (module_init_func *)__ld_early_init_start,
 		 (module_init_func *)__ld_early_init_end);
 
-#ifdef CONFIG_PLAT
-	pr_debug("Hello %s\n", CONFIG_PLAT);
-#else
-	pr_debug("Hello\n");
-#endif
-
 	pr_debug("runtime space %016lx - %016lx\n",
 	       (unsigned long)__ld_ram_start,
 	       (unsigned long)__ld_ram_end);
