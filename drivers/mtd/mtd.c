@@ -102,26 +102,10 @@ void *mtd_get_user_data(struct mtd *mtd)
 	return mtd->data;
 }
 
-int mtd_open(struct mtd *mtd)
-{
-	return mtd->ops->open(mtd);
-}
-
 long mtd_read(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf)
 {
 	/* FIXME: support unaligned access */
 	return mtd->ops->read(mtd, offset, size, buf);
-}
-
-long mtd_write(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf)
-{
-	/* FIXME: support unaligned access */
-	return mtd->ops->write(mtd, offset, size, buf);
-}
-
-int mtd_close(struct mtd *mtd)
-{
-	return mtd->ops->close(mtd);
 }
 
 int mtd_register(struct mtd *mtd)
@@ -137,13 +121,10 @@ int mtd_register(struct mtd *mtd)
 		return -EINVAL;
 	}
 
-	if (!mtd->ops->read || !mtd->ops->write) {
-		pr_err("no read//write operations\n");
+	if (!mtd->ops->read) {
+		pr_err("no read operations\n");
 		return -EINVAL;
 	}
-
-	if (!mtd->ops->open || !mtd->ops->close)
-		pr_warn("no open//close operations\n");
 
 	mtd->tmp_buf = malloc(mtd->block_size);
 	if (!mtd->tmp_buf) {

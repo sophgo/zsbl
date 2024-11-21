@@ -1,24 +1,127 @@
-//#define MANGO_FORCE_ENABLE_RISCV
-
 #include <assert.h>
 #include <stddef.h>
-#include <lib/libc/errno.h>
+#include <errno.h>
 #include <lib/mmio.h>
-#include <driver/spi-flash/mango_spif.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <timer.h>
 #include <framework/common.h>
 
-static unsigned long ctrl_base;
 
-/* load zsbl from spi flash */
-#define ZSBL_IMAGE_NAME		"zsbl.bin"
-#define OPENSBI_IMAGE_NAME		"fw_dynamic.bin"
-#define KERNEL_IMAGE_NAME		"Image"
-#define RAMFS_IMAGE_NAME		"initrd.img"
-#define DEVICE_TREE_IMAGE_NAME		"mango.dtb"
+#define SPI_CMD_WREN		0x06
+#define SPI_CMD_WRDI		0x04
+#define SPI_CMD_RDID		0x9F
+#define SPI_CMD_RDSR		0x05
+#define SPI_CMD_WRSR		0x01
+#define SPI_CMD_READ		0x03
+#define SPI_CMD_FAST_READ	0x0B
+#define SPI_CMD_PP		0x02
+#define SPI_CMD_SE		0x20
+#define SPI_CMD_BE		0xD8
+#define SPI_CMD_CE		0xC7
+
+#define SPI_STATUS_WIP		(0x01 << 0)
+#define SPI_STATUS_WEL		(0x01 << 1)
+#define SPI_STATUS_BP0		(0x01 << 2)
+#define SPI_STATUS_BP1		(0x01 << 3)
+#define SPI_STATUS_BP2		(0x01 << 4)
+#define SPI_STATUS_SRWD		(0x01 << 7)
+
+#define SPI_FLASH_BLOCK_SIZE		256
+#define SPI_TRAN_CSR_ADDR_BYTES_SHIFT	8
+#define SPI_MAX_FIFO_DEPTH		8
+
+/* register definitions */
+#define REG_SPI_CTRL		0x000
+#define REG_SPI_CE_CTRL		0x004
+#define REG_SPI_DLY_CTRL	0x008
+#define REG_SPI_DMMR		0x00C
+#define REG_SPI_TRAN_CSR	0x010
+#define REG_SPI_TRAN_NUM	0x014
+#define REG_SPI_FIFO_PORT	0x018
+#define REG_SPI_FIFO_PT		0x020
+#define REG_SPI_INT_STS		0x028
+#define REG_SPI_INT_EN		0x02C
+
+/* bit definition */
+#define BIT_SPI_CTRL_CPHA		(0x01 << 12)
+#define BIT_SPI_CTRL_CPOL		(0x01 << 13)
+#define BIT_SPI_CTRL_HOLD_OL		(0x01 << 14)
+#define BIT_SPI_CTRL_WP_OL		(0x01 << 15)
+#define BIT_SPI_CTRL_LSBF		(0x01 << 20)
+#define BIT_SPI_CTRL_SRST		(0x01 << 21)
+#define BIT_SPI_CTRL_SCK_DIV_SHIFT	0
+#define BIT_SPI_CTRL_FRAME_LEN_SHIFT	16
+
+#define BIT_SPI_CE_CTRL_CEMANUAL	(0x01 << 0)
+#define BIT_SPI_CE_CTRL_CEMANUAL_EN	(0x01 << 1)
+
+#define BIT_SPI_CTRL_FM_INTVL_SHIFT	0
+#define BIT_SPI_CTRL_CET_SHIFT		8
+
+#define BIT_SPI_DMMR_EN			(0x01 << 0)
+
+#define BIT_SPI_TRAN_CSR_TRAN_MODE_RX		(0x01 << 0)
+#define BIT_SPI_TRAN_CSR_TRAN_MODE_TX		(0x01 << 1)
+#define BIT_SPI_TRAN_CSR_CNTNS_READ		(0x01 << 2)
+#define BIT_SPI_TRAN_CSR_FAST_MODE		(0x01 << 3)
+#define BIT_SPI_TRAN_CSR_BUS_WIDTH_1_BIT	(0x0 << 4)
+#define BIT_SPI_TRAN_CSR_BUS_WIDTH_2_BIT	(0x01 << 4)
+#define BIT_SPI_TRAN_CSR_BUS_WIDTH_4_BIT	(0x02 << 4)
+#define BIT_SPI_TRAN_CSR_DMA_EN			(0x01 << 6)
+#define BIT_SPI_TRAN_CSR_MISO_LEVEL		(0x01 << 7)
+#define BIT_SPI_TRAN_CSR_ADDR_BYTES_NO_ADDR	(0x0 << 8)
+#define BIT_SPI_TRAN_CSR_WITH_CMD		(0x01 << 11)
+#define BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_1_BYTE	(0x0 << 12)
+#define BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_2_BYTE	(0x01 << 12)
+#define BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_4_BYTE	(0x02 << 12)
+#define BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_8_BYTE	(0x03 << 12)
+#define BIT_SPI_TRAN_CSR_GO_BUSY		(0x01 << 15)
+
+#define BIT_SPI_TRAN_CSR_TRAN_MODE_MASK		0x0003
+#define BIT_SPI_TRAN_CSR_ADDR_BYTES_MASK	0x0700
+#define BIT_SPI_TRAN_CSR_FIFO_TRG_LVL_MASK	0x3000
+
+#define BIT_SPI_INT_TRAN_DONE		(0x01 << 0)
+#define BIT_SPI_INT_RD_FIFO		(0x01 << 2)
+#define BIT_SPI_INT_WR_FIFO		(0x01 << 3)
+#define BIT_SPI_INT_RX_FRAME		(0x01 << 4)
+#define BIT_SPI_INT_TX_FRAME		(0x01 << 5)
+
+#define BIT_SPI_INT_TRAN_DONE_EN	(0x01 << 0)
+#define BIT_SPI_INT_RD_FIFO_EN		(0x01 << 2)
+#define BIT_SPI_INT_WR_FIFO_EN		(0x01 << 3)
+#define BIT_SPI_INT_RX_FRAME_EN		(0x01 << 4)
+#define BIT_SPI_INT_TX_FRAME_EN		(0x01 << 5)
+
+#define SPI_ID_M25P128		0x00182020
+#define SPI_ID_N25Q128		0x0018ba20
+#define SPI_ID_GD25LQ128	0x001860c8
+
+struct part_info {
+	/* disk partition table magic number */
+	uint32_t magic;
+	char name[32];
+	uint32_t offset;
+	uint32_t size;
+	char reserve[4];
+	/* load memory address*/
+	uint64_t lma;
+};
+
+static size_t spi_flash_read_blocks(int lba, uintptr_t buf, size_t size);
+static size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size);
+static void bm_spi_init(unsigned long base);
+static int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size);
+static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size);
+static int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size);
+static uint32_t bm_spi_read_id(unsigned long spi_base);
+static void bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf);
+static int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr);
+static int bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr);
+
+static unsigned long ctrl_base;
 
 enum {
 	DPT_MAGIC	= 0x55aa55aa,
@@ -92,7 +195,7 @@ static int spi_data_in_tran(unsigned long spi_base, uint8_t *dst_buf, uint8_t *c
 	return 0;
 }
 
-int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size)
+static int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size)
 {
 	uint8_t cmd_buf[5];
 	int err = 0;
@@ -115,24 +218,24 @@ int spi_data_read(unsigned long spi_base, uint8_t *dst_buf, int addr, int size)
 	return err;
 }
 
-void bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf)
+static void __attribute__((unused)) bm_spi_flash_read_sector(unsigned long spi_base, uint32_t addr, uint8_t *buf)
 {
 	spi_data_read(spi_base, buf, (int)addr, 256);
 }
 
-size_t spi_flash_read_blocks(int lba, uintptr_t buf, size_t size)
+static size_t __attribute__((unused)) spi_flash_read_blocks(int lba, uintptr_t buf, size_t size)
 {
 	spi_data_read(ctrl_base, (uint8_t *)buf, lba * SPI_FLASH_BLOCK_SIZE, size);
 	return size;
 }
 
-size_t spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size)
+static size_t __attribute__((unused)) spi_flash_write_blocks(int lba, const uintptr_t buf, size_t size)
 {
 	pr_debug("SPI flash writing is not supported\n");
 	return -ENODEV;
 }
 
-void bm_spi_init(unsigned long base)
+static void bm_spi_init(unsigned long base)
 {
 	uint32_t tran_csr = 0;
 	uint32_t tmp;
@@ -351,7 +454,7 @@ static uint8_t spi_read_status(unsigned long spi_base)
 	return data_buf[0];
 }
 
-uint32_t bm_spi_read_id(unsigned long spi_base)
+static uint32_t bm_spi_read_id(unsigned long spi_base)
 {
 	uint8_t cmd_buf[4];
 	uint8_t data_buf[4];
@@ -393,7 +496,7 @@ static void spi_sector_erase(unsigned long spi_base, uint32_t addr)
 	spi_non_data_tran(spi_base, cmd_buf, 1, 3);
 }
 
-int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr)
+static int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr)
 {
 	uint32_t spi_status, wait = 0;
 
@@ -424,7 +527,7 @@ int bm_spi_flash_erase_sector(unsigned long spi_base, uint32_t addr)
 	return 0;
 }
 
-int bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr)
+static int __attribute__((unused)) bm_spi_flash_program_sector(unsigned long spi_base, uint32_t addr)
 {
 	uint8_t cmd_buf[256], spi_status;
 	uint32_t wait = 0;
@@ -499,58 +602,7 @@ static int do_page_program(unsigned long spi_base, uint8_t *src_buf, uint32_t ad
 	return 0;
 }
 
-static void dump_hex(char *desc, void *addr, int len)
-{
-	int i;
-	unsigned char buff[17];
-	unsigned char *pc = (unsigned char *)addr;
-
-	/* Output description if given. */
-	if (desc != NULL)
-		printf("%s:\n", desc);
-
-	/* Process every byte in the data. */
-	for (i = 0; i < len; i++) {
-		/* Multiple of 16 means new line (with line offset). */
-		if ((i % 16) == 0) {
-			/* Just don't print ASCII for the zeroth line. */
-			if (i != 0)
-				printf("  %s\n", buff);
-
-			/* Output the offset. */
-			printf("  %x ", i);
-		}
-
-		/* Now the hex code for the specific character. */
-		printf(" %x", pc[i]);
-
-		/* And store a printable ASCII character for later. */
-		if ((pc[i] < 0x20) || (pc[i] > 0x7e))
-			buff[i % 16] = '.';
-		else
-			buff[i % 16] = pc[i];
-		buff[(i % 16) + 1] = '\0';
-	}
-
-	/* Pad out last line if not exactly 16 characters. */
-	while ((i % 16) != 0) {
-		printf("   ");
-		i++;
-	}
-
-	/* And print the final ASCII bit. */
-	printf("  %s\n", buff);
-}
-
-static void fw_sp_read_test(unsigned long spi_base, uint32_t addr)
-{
-	unsigned char cmp_buf[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-
-	spi_data_read(spi_base, cmp_buf, addr, sizeof(cmp_buf));
-	dump_hex((char *)"read flash", (void *)cmp_buf, sizeof(cmp_buf));
-}
-
-int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
+static int __attribute__((unused)) bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 {
 	uint32_t xfer_size, off, cmp_ret;
 	uint8_t cmp_buf[SPI_FLASH_BLOCK_SIZE], erased_sectors, i;
@@ -578,12 +630,9 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 	for (i = 0; i < erased_sectors; i++)
 		bm_spi_flash_erase_sector(ctrl_base, base + i * sector_size);
 
-	fw_sp_read_test(ctrl_base, base);
-	pr_debug("--program boot fw, page size %d\n", SPI_FLASH_BLOCK_SIZE);
-
 	off = 0;
 	i = 0;
-	printf("progress:    ");
+	pr_debug("progress:    ");
 	while (off < size) {
 		if ((size - off) >= SPI_FLASH_BLOCK_SIZE)
 			xfer_size = SPI_FLASH_BLOCK_SIZE;
@@ -599,23 +648,20 @@ int bm_spi_flash_program(uint8_t *src_buf, uint32_t base, uint32_t size)
 		cmp_ret = memcmp(src_buf + off, cmp_buf, xfer_size);
 		if (cmp_ret != 0) {
 			pr_debug("memcmp failed\n");
-			dump_hex((char *)"src_buf", (void *)(src_buf + off), 16);
-			dump_hex((char *)"cmp_buf", (void *)cmp_buf, 16);
 			return cmp_ret;
 		}
 		pr_debug("page read compare ok @ %d\n", off);
 		off += xfer_size;
 
-		printf("\b\b\b%02d%%", off * 100 / size);
+		pr_debug("\b\b\b%02d%%", off * 100 / size);
 	}
 
 	pr_debug("\n--program boot fw success\n");
-	fw_sp_read_test(ctrl_base, base);
 	return 0;
 }
 
 #define TRAN_NUM	65536
-int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
+static int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
 {
 	int nr_frame, bytes;
 	int offset;
@@ -643,76 +689,66 @@ int bm_spi_flash_read(uint8_t *dst_buf, uint32_t addr, uint32_t size)
 	return 0;
 }
 
-int plat_spif_read(uint64_t addr, uint32_t offset, uint32_t size)
+/* -------------------- mtd framework -------------------- */
+#include <driver/mtd.h>
+#include <driver/platform.h>
+#include <framework/module.h>
+
+static long read(struct mtd *mdev, unsigned long offset, unsigned long size, void *buf)
 {
-	int ret;
+	int err;
 
-	ret = bm_spi_flash_read((uint8_t *)addr, offset, size);
+	err = bm_spi_flash_read(buf, offset, size);
 
-	return ret;
+	return err ? -EIO : size;
 }
 
-static int mango_get_part_info(uint32_t addr, struct part_info *info)
+static struct mtdops mtdops = {
+	.read = read,
+};
+
+static int probe(struct platform_device *pdev)
 {
-	int ret;
+	/* const struct of_device_id *match_id; */
+	struct mtd *mdev;
 
-	ret = plat_spif_read((uint64_t)info, addr, sizeof(struct part_info));
-	if (ret)
-		return ret;
+	/* match_id = platform_get_match_id(pdev); */
 
-	if (info->magic != DPT_MAGIC) {
-		pr_debug("bad partition magic\n");
-		return -EINVAL;
-	}
+	bm_spi_init(pdev->reg_base);
 
-	return ret;
+	mdev = mtd_alloc();
+	if (!mdev)
+		return -ENOMEM;
+
+	/* FIXME: block size and total size */
+	mdev->block_size = 4096;
+	mdev->total_size = 64UL * 1024 * 1024;
+	mdev->ops = &mtdops;
+
+	sprintf(mdev->suffix, "spi@%lx", (unsigned long)pdev->reg_base);
+
+	return mtd_register(mdev);
 }
 
-int mango_get_part_info_by_name(uint32_t addr, const char *name, struct part_info *info)
+static struct of_device_id match_table[] = {
+	{
+		.compatible = "sophgo,spifmc",
+		.data = (void *)NULL,
+	},
+	{},
+};
+
+static struct platform_driver driver = {
+	.driver.name = "spifmc",
+	.probe = probe,
+	.of_match_table = match_table,
+};
+
+static int spifmc_init(void)
 {
-	int ret;
-
-	do {
-		ret = mango_get_part_info(addr, info);
-
-		addr += sizeof(struct part_info);
-
-	} while (!ret && strcmp(info->name, name));
-
-	return ret;
-}
-
-int mango_load_from_sf(uint64_t lma, uint32_t start, int size)
-{
-	return plat_spif_read(lma, start, size);
-}
-
-int mango_load_image(uint32_t addr, const char *name, struct part_info *info)
-{
-	int ret;
-
-	ret = mango_get_part_info_by_name(addr, name, info);
-	if (ret) {
-		pr_debug("failed to get %s partition info\n", name);
-		return ret;
-	}
-
-	pr_debug("load %s image from sf 0x%x to memory 0x%lx size %d\n", name,
-		 info->offset, info->lma, info->size);
-
-	ret = mango_load_from_sf(info->lma, info->offset, info->size);
-	if (ret) {
-		pr_debug("failed to load %s image form spi flash\n", name);
-		return ret;
-	}
-
+	platform_driver_register(&driver);
 	return 0;
 }
 
-int sp_flash_enable_dmmr(void)
-{
-	pr_debug("spif enable DMMR\n");
-	mmio_write_32(ctrl_base + REG_SPI_DMMR, 1);
+module_init(spifmc_init);
 
-	return 0;
-}

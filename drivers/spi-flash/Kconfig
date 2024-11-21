@@ -1,4 +1,0 @@
-config DRIVER_SPI_FLASH
-	bool "spi flash driver"
-	help
-	bitmain SPI_FLASH controller driver

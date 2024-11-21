@@ -9,10 +9,7 @@
 struct mtd;
 
 struct mtdops {
-	int (*open)(struct mtd *mtd);
 	long (*read)(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf);
-	long (*write)(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf);
-	int (*close)(struct mtd *mtd);
 };
 
 struct mtd {
@@ -38,7 +35,6 @@ struct mtd *mtd_next(struct mtd *current);
 
 int mtd_open(struct mtd *mtd);
 long mtd_read(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf);
-long mtd_write(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf);
 int mtd_close(struct mtd *mtd);
 void mtd_free(struct mtd *mtd);
 

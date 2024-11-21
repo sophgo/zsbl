@@ -1,1 +1,0 @@
-obj-y += mango_spif.o
