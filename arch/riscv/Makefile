@@ -13,9 +13,9 @@ endif
 
 KBUILD_CFLAGS += -g -march=rv64imafdc_zifencei -mcmodel=medany -DARCH_RISCV
 
-KBUILD_CFLAGS += -nostdinc
+KBUILD_CFLAGS += -nostdinc -fstack-protector
 
 KBUILD_LDFLAGS += -nostdlib
 KBUILD_CFLAGS += -fno-pie -no-pie -fPIE -pie -march=rv64imafdc_zicbom -misa-spec=2.2
 KBUILD_LDFLAGS += -g -Wl,--no-dynamic-linker -Wl,-pie -Wl,--no-warn-rwx-segments
-KBUILD_AFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2
+KBUILD_AFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2 -fstack-protector

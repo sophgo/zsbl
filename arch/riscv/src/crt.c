@@ -150,3 +150,11 @@ void _exit(int n)
 		;
 }
 
+/* stack protection stub */
+uintptr_t __stack_chk_guard = 0xdeadbeef;
+
+void __stack_chk_fail(void)
+{
+	printf("Stack Overflow\n");
+	asm volatile ("ebreak");
+}
