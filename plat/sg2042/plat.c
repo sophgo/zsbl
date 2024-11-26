@@ -203,12 +203,6 @@ static void build_board_info(struct config *cfg)
 	else
 		pr_err("Can not find device tree\n");
 
-#if 0
-	for (int i = 0; i < MAX_CHIP_NUM; i++)
-		for (int j = 0; j < DDR_CHANNEL_NUM; j++)
-			sg2042_board_info.ddr_info[i].ddr_node_name[j] = ddr_node_name[i][j];
-#endif
-
 	for (i = 0; i < MAX_CHIP_NUM; ++i)
 		cfg->ddr[i][0].base = CHIP_ADDR_SPACE * i;
 
@@ -492,9 +486,14 @@ int plat_main(void)
 {
 	print_core_ctrlreg();
 
+	config_init(&cfg);
+
 	build_board_info(&cfg);
 
-	config_init(&cfg);
+	/* setup boot priorities */
+	bdm_set_priority("blk0-sd", 0);
+	bdm_set_priority("mtd1-spifmc", 1);
+	bdm_set_priority("mtd0-spifmc", 2);
 
 	parse_config_file(&cfg);
 	show_config(&cfg);

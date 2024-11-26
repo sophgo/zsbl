@@ -43,7 +43,7 @@ static long get_file_size(struct bootdev *bootdev, const char *file)
 	fdev = sgfat->fdev;
 
 	sprintf(fatfs_devid, "%d:", fdev->id);
-	sprintf(fatfs_name, "%d:%s", fdev->id, file);
+	sprintf(fatfs_name, "%d:%s/%s", fdev->id, prefix, file);
 
 	pr_debug("device: %s | %s\n", sgfat->blkdev->device.name, fatfs_name);
 
