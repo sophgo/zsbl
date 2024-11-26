@@ -51,7 +51,7 @@ int parse_config_file(struct config *cfg)
 	const char *file = "conf.ini";
 
 	size = bdm_get_file_size(file);
-	if (size < 0) {
+	if (size <= 0) {
 		pr_debug("No config file found, using default configurations\n");
 		return -ENOENT;
 	}
