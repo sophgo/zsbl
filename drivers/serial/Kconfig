@@ -1,6 +1,15 @@
 
-menu "Serial Ports"
+menuconfig DRIVER_SERIAL_DEVICE
+	bool "Serial Ports"
+	select DRIVER_DEVICE_MODEL
+	default	y
+	help
+		Support serial device driver model.
+
+if DRIVER_SERIAL_DEVICE
+
 source "drivers/serial/pl01/Kconfig"
 source "drivers/serial/ns16550/Kconfig"
-endmenu
+
+endif
 

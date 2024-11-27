@@ -13,32 +13,4 @@
 #define REG_TOP_MISC_CONTROL_ADDR	(TOP_BASE + REG_TOP_MISC_CONTROL)
 #define RGMII0_DISABLE_INTERNAL_DELAY	(1 << 16)
 
-#define UART_BASE	0x7030001000
-
-#define UART_REG_WIDTH  32
-
-#if defined(CONFIG_TARGET_EMULATOR)
-
-#define UART_PCLK	153600
-#define UART_BAUDRATE	9600
-
-#elif defined(CONFIG_TARGET_PALLADIUM)
-
-#define UART_PCLK	153600
-#define UART_BAUDRATE	9600
-
-#elif defined(CONFIG_TARGET_FPGA)
-
-#define UART_PCLK	25000000
-#define UART_BAUDRATE	115200
-
-#elif defined(CONFIG_TARGET_ASIC)
-
-#define UART_PCLK	500000000
-#define UART_BAUDRATE	115200
-
-#else
-#error "no target specified"
-#endif
-
 #endif

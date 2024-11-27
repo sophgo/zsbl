@@ -2,3 +2,45 @@ config DRIVER_SERIAL_NS16550
 	bool	"NS16550 Serial Port Support"
 	help
 	ns16550 compatible serial port driver
+
+if DRIVER_SERIAL_NS16550
+
+config DRIVER_SERIAL_NS16550_EARLY_SERIAL
+	bool	"NS16550 Early Serial Port Support"
+	help
+		ns16550 compatible serial port driver
+
+if DRIVER_SERIAL_NS16550_EARLY_SERIAL
+
+config DRIVER_SERIAL_NS16550_EARLY_SERIAL_BASE
+	hex	"NS16550 Early Serial Port Base Address"
+	help
+		Base address of ns16550 early serial port
+
+config DRIVER_SERIAL_NS16550_EARLY_SERIAL_REG_IO_WIDTH
+	int	"NS16550 Early Serial Port Register IO Width"
+	default	4
+	help
+		Register IO width of ns16550 early serial port
+
+config DRIVER_SERIAL_NS16550_EARLY_SERIAL_REG_SHIFT
+	int	"NS16550 Early Serial Port Register Shift"
+	default	2
+	help
+		Register shift of ns16550 early serial port
+
+config DRIVER_SERIAL_NS16550_EARLY_SERIAL_BAUDRATE
+	int	"NS16550 Early Serial Port Baudrate"
+	default	115200
+	help
+		Baudrate of ns16550 early serial port
+
+config DRIVER_SERIAL_NS16550_EARLY_SERIAL_CLOCK
+	int	"NS16550 Early Serial Port Input Clock"
+	default	500000000
+	help
+		Input clock of ns16550 early serial port
+
+endif
+
+endif

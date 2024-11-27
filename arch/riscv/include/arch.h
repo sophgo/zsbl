@@ -20,9 +20,15 @@ typedef uint32_t u32;
 typedef uint64_t u64;
 typedef __uint128_t uint128_t;
 
+#define readb(a)	(*(volatile u8 *)(a))
+#define readw(a)	(*(volatile u16 *)(a))
 #define readl(a)	(*(volatile u32 *)(a))
+#define readq(a)	(*(volatile u64 *)(a))
 
+#define writeb(v, a)	(*(volatile u8 *)(a) = (v))
+#define writew(v, a)	(*(volatile u16 *)(a) = (v))
 #define writel(v, a)	(*(volatile u32 *)(a) = (v))
+#define writeq(v, a)	(*(volatile u64 *)(a) = (v))
 
 #ifdef CONFIG_SMP
 #error "smp not supported yet"

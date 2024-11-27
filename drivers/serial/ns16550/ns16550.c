@@ -1,35 +1,9 @@
-#include <memmap.h>
 #include <stdint.h>
-
-#include <lib/mmio.h>
-#include <framework/module.h>
+#include <errno.h>
+#include <arch.h>
 #include <framework/common.h>
 
-#define thr rbr
-#define iir fcr
-#define dll rbr
-#define dlm ier
-
-#if UART_REG_WIDTH == 8
-typedef volatile uint8_t ns16550_reg_t;
-#elif UART_REG_WIDTH == 16
-typedef volatile uint16_t ns16550_reg_t;
-#elif UART_REG_WIDTH == 32
-typedef volatile uint32_t ns16550_reg_t;
-#else
-#error "unsupported register width"
-#endif
-
-struct ns16550_regs {
-	ns16550_reg_t	rbr;	/* 0x00 Data register */
-	ns16550_reg_t	ier;	/* 0x04 Interrupt Enable Register */
-	ns16550_reg_t	fcr;	/* 0x08 FIFO Control Register */
-	ns16550_reg_t	lcr;	/* 0x0C Line control register */
-	ns16550_reg_t	mcr;	/* 0x10 Line control register */
-	ns16550_reg_t	lsr;	/* 0x14 Line Status Register */
-	ns16550_reg_t	msr;	/* 0x18 Modem Status Register */
-	ns16550_reg_t	spr;	/* 0x20 Scratch Register */
-};
+#include "ns16550.h"
 
 #define UART_LCR_WLS_MSK	0x03	/* character length select mask */
 #define UART_LCR_WLS_5		0x00	/* 5 bit character length */
@@ -59,56 +33,78 @@ struct ns16550_regs {
 #define UART_FCR_DEFVAL	(UART_FCR_FIFO_EN | UART_FCR_RXSR | UART_FCR_TXSR)
 #define UART_LCR_8N1	0x03
 
-struct ns16550_regs *uart = (struct ns16550_regs *)UART_BASE;
+#define	RBR	0	/* 0x00 Data register */
+#define	IER	1	/* 0x04 Interrupt Enable Register */
+#define	FCR	2	/* 0x08 FIFO Control Register */
+#define	LCR	3	/* 0x0C Line control register */
+#define	MCR	4	/* 0x10 Line control register */
+#define	LSR	5	/* 0x14 Line Status Register */
+#define	MSR	6	/* 0x18 Modem Status Register */
+#define	SPR	7	/* 0x20 Scratch Register */
 
-void uart_putc(int ch)
+#define THR	RBR
+#define IIR	FCR
+#define DLL	RBR
+#define DLM	IER
+
+/* reg is an index, not an offset */
+static uint32_t read_reg(struct ns16550 *ndev, uint32_t reg)
 {
-	while (!(uart->lsr & UART_LSR_THRE))
-		;
-	uart->rbr= ch;
-}
-
-int uart_getc(void)
-{
-	if (!(uart->lsr & UART_LSR_DR))
-		return -1;
-
-	return (int)uart->rbr;
-}
-
-int uart_init(void)
-{
-	unsigned int divisor;
-
-	unsigned int baudrate = UART_BAUDRATE;
-	unsigned int pclk = UART_PCLK;
-
-	/* if any interrupt has been enabled, that means this uart controller
-	 * may be initialized by some one before, just use it without
-	 * reinitializing. such situation occur when main cpu and a53lite share
-	 * the same uart port. main cpu should bringup first, reinitialize uart
-	 * may cause unpredictable bug, especially disable all interrupts, which
-	 * will cause linux running on main cpu lose of interrupts and cannot
-	 * type into any character in serial console
-	 */
-	if (uart->ier == 0) {
-		divisor = pclk / (16 * baudrate);
-
-		uart->lcr = uart->lcr | UART_LCR_DLAB | UART_LCR_8N1;
-		uart->dll = divisor & 0xff;
-		uart->dlm = (divisor >> 8) & 0xff;
-		uart->lcr = uart->lcr & (~UART_LCR_DLAB);
-
-		uart->ier = 0;
-		uart->mcr = UART_MCRVAL;
-		uart->fcr = UART_FCR_DEFVAL;
-
-		uart->lcr = 3;
+	switch (ndev->reg_io_width) {
+		case 1:
+			return readb(ndev->base + (reg << ndev->reg_shift));
+		case 2:
+			return readw(ndev->base + (reg << ndev->reg_shift));
+		default:
+			return readl(ndev->base + (reg << ndev->reg_shift));
 	}
+}
 
-	register_stdio(uart_getc, uart_putc);
+static void write_reg(struct ns16550 *ndev, uint32_t reg, uint32_t val)
+{
+	switch (ndev->reg_io_width) {
+		case 1:
+			writeb(val, ndev->base + (reg << ndev->reg_shift));
+		case 2:
+			writew(val, ndev->base + (reg << ndev->reg_shift));
+		default:
+			writel(val, ndev->base + (reg << ndev->reg_shift));
+	}
+}
+
+int ns16550_putc(struct ns16550 *ndev, uint8_t ch)
+{
+	while (!(read_reg(ndev, LSR) & UART_LSR_THRE))
+		;
+
+	write_reg(ndev, RBR, ch);
+
+	return ch;
+
+}
+
+int ns16550_getc(struct ns16550 *ndev)
+{
+	if (!(read_reg(ndev, LSR) & UART_LSR_DR))
+		return -EAGAIN;
+
+	return read_reg(ndev, RBR);
+}
+
+int ns16550_init(struct ns16550 *ndev)
+{
+	unsigned long divisor;
+
+	divisor = ndev->pclk / (16 * ndev->baudrate);
+
+	write_reg(ndev, LCR, read_reg(ndev, LCR) | UART_LCR_DLAB | UART_LCR_8N1);
+	write_reg(ndev, DLL, divisor & 0xff);
+	write_reg(ndev, DLM, (divisor >> 8) & 0xff);
+	write_reg(ndev, LCR, read_reg(ndev, LCR) & (~UART_LCR_DLAB));
+	write_reg(ndev, IER, 0);
+	write_reg(ndev, MCR, UART_MCRVAL);
+	write_reg(ndev, FCR, UART_FCR_DEFVAL);
 
 	return 0;
 }
 
-early_init(uart_init);
