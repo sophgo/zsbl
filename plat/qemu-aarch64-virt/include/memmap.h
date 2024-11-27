@@ -1,8 +1,0 @@
-#ifndef __MEMMAP_H__
-
-#define UART_BASE	0x09000000UL
-
-#define GICD_BASE	0x08000000UL
-#define GICC_BASE	0x08010000UL
-
-#endif
