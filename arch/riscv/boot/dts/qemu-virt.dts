@@ -1,0 +1,18 @@
+/dts-v1/;
+
+/ {
+	soc {
+		#address-cells = <2>;
+		#size-cells = <2>;
+
+		serial@7030001000 {
+			compatible = "ns16550a";
+			reg = <0x00000000 0x10000000 0x00000000 0x00001000>;
+			clock-frequency = <0x384000>;
+			current-speed = <115200>;
+			reg-shift = <0>;
+			reg-io-width = <1>;
+			stdio;
+ 		};
+	};
+};

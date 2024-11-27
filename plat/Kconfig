@@ -7,10 +7,6 @@ config PLAT_QEMU_RISCV_VIRT
 	depends on ARCH_RISCV
 	bool "QEMU RISCV Virt Machine"
 
-config PLAT_QEMU_AARCH64_VIRT
-	depends on ARCH_ARM64
-	bool "QEMU AARCH64 Virt Machine"
-
 config PLAT_SG2042
 	bool "SG2042"
 
@@ -27,7 +23,6 @@ endchoice
 config PLAT
 	string
 	default "QEMU-RISCV-Virt" if PLAT_QEMU_RISCV_VIRT
-	default "QEMU-AARCH64-Virt" if PLAT_QEMU_AARCH64_VIRT
 	default "SG2042" if PLAT_SG2042
 	default "SG2044" if PLAT_SG2044
 	default "BM1690TP" if PLAT_BM1690TP

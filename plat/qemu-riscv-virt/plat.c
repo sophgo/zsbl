@@ -2,11 +2,9 @@
 #include <framework/module.h>
 #include <framework/common.h>
 
-static int qemu_init(void)
+int plat_main(void)
 {
-	pr_debug("platform init\n");
+	pr_debug("QEMU RISCV64 Virt Machine\n");
 	return 0;
 }
-
-plat_init(qemu_init);
 

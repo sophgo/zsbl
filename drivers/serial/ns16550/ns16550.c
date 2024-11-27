@@ -65,8 +65,10 @@ static void write_reg(struct ns16550 *ndev, uint32_t reg, uint32_t val)
 	switch (ndev->reg_io_width) {
 		case 1:
 			writeb(val, ndev->base + (reg << ndev->reg_shift));
+			break;
 		case 2:
 			writew(val, ndev->base + (reg << ndev->reg_shift));
+			break;
 		default:
 			writel(val, ndev->base + (reg << ndev->reg_shift));
 	}

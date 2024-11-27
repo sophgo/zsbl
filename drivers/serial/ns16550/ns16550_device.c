@@ -60,13 +60,13 @@ static int probe(struct platform_device *pdev)
 	else 
 		pclk = 500000000;
 
-	prop = fdt_get_property(pdev->of, pdev->of_node_offset, "reg_shift", &plen);
+	prop = fdt_get_property(pdev->of, pdev->of_node_offset, "reg-shift", &plen);
 	if (prop)
 		reg_shift = fdt32_to_cpu(*(volatile uint32_t *)(prop->data));
 	else 
 		reg_shift = 2;
 
-	prop = fdt_get_property(pdev->of, pdev->of_node_offset, "reg_io_width", &plen);
+	prop = fdt_get_property(pdev->of, pdev->of_node_offset, "reg-io-width", &plen);
 	if (prop)
 		reg_io_width = fdt32_to_cpu(*(volatile uint32_t *)(prop->data));
 	else 
@@ -112,6 +112,11 @@ static struct of_device_id match_table[] = {
 		.compatible = "snps,dw-apb-uart",
 		.data = (void *)NULL,
 	},
+	{
+		.compatible = "ns16550a",
+		.data = (void *)NULL,
+	},
+
 	{},
 };
 
