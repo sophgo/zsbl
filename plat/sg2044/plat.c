@@ -15,6 +15,7 @@
 #define KERNEL_OFFSET		0x00200000
 #define DEVICETREE_OFFSET	0x08000000
 #define RAMFS_OFFSET		0x0b000000
+#define CFG_FILE_OFFSET		0x09000000
 
 static void print_core_ctrlreg(void)
 {
@@ -158,6 +159,9 @@ static void config_init(struct config *cfg)
 	cfg->ramfs.addr = 0;
 #endif
 	cfg->kernel.addr = ram_base + KERNEL_OFFSET;
+
+	cfg->cfg.name = "conf.ini";
+	cfg->cfg.addr = ram_base + CFG_FILE_OFFSET;
 }
 
 int plat_main(void)

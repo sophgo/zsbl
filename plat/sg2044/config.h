@@ -17,6 +17,7 @@ struct config {
 	struct boot_file kernel;
 	struct boot_file dtb;
 	struct boot_file ramfs;
+	struct boot_file cfg;
 };
 
 #endif

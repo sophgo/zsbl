@@ -42,30 +42,22 @@ int parse_config_file(struct config *cfg)
 	const char *header = "[sophgo-config]";
 	const char *tail = "[eof]";
 	char *eof;
-	void *buf;
 	long size;
-	const char *file = "conf.ini";
 
-	size = bdm_get_file_size(file);
+	size = bdm_get_file_size(cfg->cfg.name);
 	if (size < 0) {
 		pr_debug("No config file found, using default configurations\n");
 		return -ENOENT;
 	}
 
-	buf = malloc(size);
-	if (!size) {
-		pr_err("Can not allocate memory for config file\n");
-		return -ENOMEM;
-	}
+	bdm_load(cfg->cfg.name, (void *)cfg->cfg.addr);
 
-	bdm_load(file, buf);
-
-	if (strncmp(header, buf, strlen(header))) {
+	if (strncmp(header, (void *)cfg->cfg.addr, strlen(header))) {
 		pr_err("Config file should start with \"%s\"\n", header);
 		return -EINVAL;
 	}
 
-	eof = strstr(buf, tail);
+	eof = strstr((void *)cfg->cfg.addr, tail);
 
 	if (!eof) {
 		pr_err("conf.ini should terminated by \"%s\"\n", tail);
@@ -74,10 +66,8 @@ int parse_config_file(struct config *cfg)
 
 	*eof = 0;
 
-	if (ini_parse_string(buf, handler_img, cfg) < 0)
+	if (ini_parse_string((void *)cfg->cfg.addr, handler_img, cfg) < 0)
 		return -EINVAL;
-
-	free(buf);
 
 	return 0;
 }
