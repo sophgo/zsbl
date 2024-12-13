@@ -6,6 +6,7 @@
 struct boot_file {
 	char *name;
 	uintptr_t addr;
+	unsigned long size;
 };
 
 struct config {

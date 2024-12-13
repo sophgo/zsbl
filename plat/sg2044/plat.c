@@ -3,9 +3,12 @@
 #include <memmap.h>
 #include <asm.h>
 #include <lib/mmio.h>
+#include <lib/mac.h>
 #include <driver/bootdev.h>
 #include <sbi.h>
 #include <smp.h>
+#include <libfdt.h>
+#include <of.h>
 
 #include "config.h"
 
@@ -76,6 +79,8 @@ static long load(struct boot_file *file)
 			;
 	}
 
+	file->size = err;
+
 	return err;
 }
 
@@ -125,8 +130,11 @@ static void show_boot_file(const char *name, struct boot_file *p)
 
 static void show_config(struct config *cfg)
 {
-	pr_info("%-16s %lx\n", "eth0 MAC", cfg->mac0);
-	pr_info("%-16s %lx\n", "eth1 MAC", cfg->mac1);
+	/* include 0 terminator */
+	char mac[7];
+
+	pr_info("%-16s %s\n", "eth0 MAC", mac2str(cfg->mac0, mac));
+	pr_info("%-16s %s\n", "eth1 MAC", mac2str(cfg->mac1, mac));
 
 	pr_info("%-16s %s\n", "SN", cfg->sn ? cfg->sn : "[null]");
 	show_boot_file("SBI", &cfg->sbi);
@@ -164,6 +172,26 @@ static void config_init(struct config *cfg)
 	cfg->cfg.addr = ram_base + CFG_FILE_OFFSET;
 }
 
+static void modify_eth_node(struct config *cfg)
+{
+	uint8_t byte[6];
+
+	if (cfg->mac0)
+		of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
+				"/soc/ethernet@7030006000/", "local-mac-address",
+				mac2byte(cfg->mac0, byte), 6, PROP_TYPE_U8);
+
+	if (cfg->mac1)
+		of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
+				"/soc/dwcxlg@6c08000000/", "local-mac-address",
+				mac2byte(cfg->mac1, byte), 6, PROP_TYPE_U8);
+}
+
+static void modify_dtb(struct config *cfg)
+{
+	modify_eth_node(cfg);
+}
+
 int plat_main(void)
 {
 	print_core_ctrlreg();
@@ -176,6 +204,7 @@ int plat_main(void)
 		parse_config_file(&cfg);
 		show_config(&cfg);
 		load_images(&cfg);
+		modify_dtb(&cfg);
 	} else {
 		pr_info("Working at PCIe mode\n");
 	}

@@ -3,6 +3,7 @@
 #include <errno.h>
 
 #include <lib/ini.h>
+#include <lib/mac.h>
 #include <driver/bootdev.h>
 #include <framework/common.h>
 
@@ -31,6 +32,10 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->ramfs.name = strdup(value);
 	else if (MATCH("ramfs", "addr"))
 		pconfig->ramfs.addr = strtoul(value, NULL, 16);
+	else if (MATCH("mac-address", "mac0"))
+		pconfig->mac0 = str2mac(value);
+	else if (MATCH("mac-address", "mac1"))
+		pconfig->mac1 = str2mac(value);
 	else
 		return 0;
 
