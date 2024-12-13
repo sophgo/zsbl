@@ -199,19 +199,22 @@ long bdm_load(const char *file, void *buf)
 	struct bootdev *bootdev;
 	long err;
 
-	for (bootdev = bootdev_first(); bootdev; bootdev = bootdev_next(bootdev)) {
+	pr_info("Loading %-29s ", file);
 
-		pr_info("Load %s", file);
+	for (bootdev = bootdev_first(); bootdev; bootdev = bootdev_next(bootdev)) {
 
 		err = bootdev_load(bootdev, file, buf);
 		if (err > 0) {
-			pr_info(" from %s (%ld bytes)\n", bootdev->device.name, err);
+			pr_info("[%s] (%ld bytes)\n", bootdev->device.name, err);
 			return err;
 		}
 		pr_debug("load %s from %s failed, try next boot device\n", file, bootdev->device.name);
 	}
 
 	pr_err("\nCan not load %s from any boot devices\n", file);
+
+	pr_err("Available boot devices\n");
+	bootdev_list_devices();
 
 	return -EIO;
 }

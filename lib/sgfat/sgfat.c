@@ -110,7 +110,7 @@ static long load(struct bootdev *bootdev, const char *file, void *buf)
 	err = f_open(&fp, fatfs_name, FA_READ);
 
 	if (err) {
-		pr_err("cannot open %s for read\n", file);
+		pr_debug("cannot open %s for read\n", file);
 		goto out;
 	}
 
@@ -118,14 +118,14 @@ static long load(struct bootdev *bootdev, const char *file, void *buf)
 	err = f_stat(fatfs_name, &fileinfo);
 
 	if (err) {
-		pr_err("cannot get file %s size\n", file);
+		pr_debug("cannot get file %s size\n", file);
 		goto out;
 	}
 
 	err = f_read(&fp, buf, fileinfo.fsize, &size);
 
 	if (err) {
-		pr_err("cannot read file %s\n", file);
+		pr_debug("cannot read file %s\n", file);
 		goto out;
 	}
 
