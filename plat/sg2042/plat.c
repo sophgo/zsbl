@@ -3,6 +3,7 @@
 #include <memmap.h>
 #include <asm.h>
 #include <lib/mmio.h>
+#include <lib/mac.h>
 #include <driver/bootdev.h>
 #include <driver/mtd.h>
 #include <sbi.h>
@@ -120,8 +121,11 @@ static void show_ddr_info(struct ddr_info ddr[][DDR_CHANNEL_NUM])
 
 static void show_config(struct config *cfg)
 {
-	pr_info("%-16s %lx\n", "eth0 MAC", cfg->mac0);
-	pr_info("%-16s %lx\n", "eth1 MAC", cfg->mac1);
+	/* include 0 terminator */
+	char mac[7];
+
+	pr_info("%-16s %s\n", "eth0 MAC", mac2str(cfg->mac0, mac));
+	pr_info("%-16s %s\n", "eth1 MAC", mac2str(cfg->mac1, mac));
 
 	pr_info("%-16s %s\n", "SN", cfg->sn ? cfg->sn : "[null]");
 	show_boot_file("SBI", &cfg->sbi);
@@ -428,30 +432,19 @@ static int modify_cpu_node(struct config *cfg)
 	return 0;
 }
 
-void modify_eth_node(struct config *cfg)
+static void modify_eth_node(struct config *cfg)
 {
-	uint64_t mac = 0;
-	uint8_t *mac_p = (uint8_t *)&cfg->mac0;
+	uint8_t byte[6];
 
-	for (int i = 0; i < 6; i++)
-		mac |= ((uint64_t)mac_p[i]) << (5 - i) * 8;
+	if (cfg->mac0)
+		of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
+				"/soc/ethernet@7040026000/", "local-mac-address",
+				mac2byte(cfg->mac0, byte), 6, PROP_TYPE_U8);
 
-	cfg->mac0 = mac;
-	of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
-			"/soc/ethernet@7040026000/", "local-mac-address",
-			(void *)&cfg->mac0, 6, PROP_TYPE_U8);
-
-	if (cfg->multi_socket_mode) {
-		mac = 0;
-		mac_p = (uint8_t *)&cfg->mac1;
-		for (int i = 0; i < 6; i++)
-			mac |= ((uint64_t)mac_p[i]) << (5 - i) * 8;
-
-		cfg->mac1 = mac;
+	if (cfg->mac1 && cfg->multi_socket_mode)
 		of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
 				"/soc/ethernet@f040026000/", "local-mac-address",
-				(void *)&cfg->mac1, 6, PROP_TYPE_U8);
-	}
+				mac2byte(cfg->mac1, byte), 6, PROP_TYPE_U8);
 }
 
 static void modify_dtb(struct config *cfg)
