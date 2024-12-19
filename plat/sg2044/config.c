@@ -69,6 +69,7 @@ int parse_config_file(struct config *cfg)
 		return -EINVAL;
 	}
 
+	eof += strlen(tail);
 	*eof = 0;
 
 	if (ini_parse_string((void *)cfg->cfg.addr, handler_img, cfg) < 0)
