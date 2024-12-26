@@ -5,6 +5,11 @@
 #include <framework/module.h>
 #include <framework/common.h>
 
+#define UART_REG_WIDTH 32
+#define UART_BASE	0x7030002000
+#define UART_PCLK	500000000
+#define UART_BAUDRATE	115200
+
 #define thr rbr
 #define iir fcr
 #define dll rbr
