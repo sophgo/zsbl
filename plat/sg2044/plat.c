@@ -5,12 +5,15 @@
 #include <lib/mmio.h>
 #include <lib/mac.h>
 #include <driver/bootdev.h>
+#include <driver/platform.h>
+#include <driver/blkdev.h>
 #include <sbi.h>
 #include <smp.h>
 #include <libfdt.h>
 #include <of.h>
 
 #include "config.h"
+#include "efuse.h"
 
 #define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
 
@@ -46,12 +49,6 @@ static void disable_mac_rxdelay(void)
 	misc_conf |= RGMII0_DISABLE_INTERNAL_DELAY;
 	mmio_write_32(REG_TOP_MISC_CONTROL_ADDR, misc_conf);
 }
-
-enum {
-	CHIP_WORK_MODE_POD = 0x1,
-	CHIP_WORK_MODE_CPU = 0x2,
-	CHIP_WORK_MODE_PCIE =0x3,
-};
 
 static int get_work_mode(void)
 {
@@ -128,19 +125,54 @@ static void show_boot_file(const char *name, struct boot_file *p)
 	pr_info("%-16s %-20s 0x%010lx\n", name, p->name ? p->name : "[null]", p->addr);
 }
 
+static const char *mode_names[] = {
+	"Unknown",
+	"POD",
+	"CPU",
+	"PCIe"
+}; 
+static const char *mode2str(int mode)
+{
+	return mode_names[mode];
+}
+
 static void show_config(struct config *cfg)
 {
 	/* include 0 terminator */
 	char mac[7];
+	int i;
 
+	pr_info("\n");
+	pr_info("%-16s %s\n", "Mode", mode2str(cfg->mode));
 	pr_info("%-16s %s\n", "eth0 MAC", mac2str(cfg->mac0, mac));
 	pr_info("%-16s %s\n", "eth1 MAC", mac2str(cfg->mac1, mac));
+
+	pr_info("%-16s %s %luGiB %luMT/s\n", "DRAM Chip",
+			cfg->dram.vendor,
+			cfg->dram.capacity / 1024 / 1024 / 1024,
+			cfg->dram.data_rate / 1000 / 1000 );
+
+	pr_info("%-16s [", "DRAM Map");
+
+	for (i = 0; i < 8; ++i) {
+		if ((cfg->dram.channel_map >> i) & 1)
+			pr_info("O");
+		else
+			pr_info("X");
+
+		if (i != 7)
+			pr_info(" ");
+	}
+
+	pr_info("]\n");
+
 
 	pr_info("%-16s %s\n", "SN", cfg->sn ? cfg->sn : "[null]");
 	show_boot_file("SBI", &cfg->sbi);
 	show_boot_file("Kernel", &cfg->kernel);
 	show_boot_file("Device tree", &cfg->dtb);
 	show_boot_file("Ramfs", &cfg->ramfs);
+	pr_info("\n");
 }
 
 /* #define USE_LINUX_BOOT */
@@ -152,6 +184,8 @@ static void config_init(struct config *cfg)
 	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
 
 	pr_debug("ZSBL is loaded at 0x%010lx\n", (unsigned long)__ld_program_start);
+
+	cfg->mode = get_work_mode();
 
 	cfg->sbi.name = "fw_dynamic.bin";
 	cfg->sbi.addr = ram_base + OPENSBI_OFFSET;
@@ -170,6 +204,8 @@ static void config_init(struct config *cfg)
 
 	cfg->cfg.name = "conf.ini";
 	cfg->cfg.addr = ram_base + CFG_FILE_OFFSET;
+
+	get_dram_info(&cfg->dram);
 }
 
 static void modify_eth_node(struct config *cfg)
@@ -199,14 +235,13 @@ int plat_main(void)
 
 	config_init(&cfg);
 
-	if (get_work_mode() == CHIP_WORK_MODE_CPU) {
-		pr_info("Working at CPU mode\n");
+	if (cfg.mode == CHIP_WORK_MODE_CPU) {
 		parse_config_file(&cfg);
 		show_config(&cfg);
 		load_images(&cfg);
 		modify_dtb(&cfg);
 	} else {
-		pr_info("Working at PCIe mode\n");
+		show_config(&cfg);
 	}
 
 	dynamic_info.magic = FW_DYNAMIC_INFO_MAGIC_VALUE;
