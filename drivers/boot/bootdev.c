@@ -17,13 +17,15 @@ int bootdev_list_devices(void)
 	struct bootdev *bootdev;
 	int i;
 
-	pr_info("%6s %30s %14s %8s\n", "Index", "Device", "Size", "Priority");
+	pr_info("%6s %40s %14s %8s %20s\n", "Index", "Device", "Size", "Priority", "Alias");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		bootdev = container_of(dev, struct bootdev, device);
-		pr_info("%6d %30s %14lu %8d\n", i, bootdev->device.name, bootdev->size, bootdev->priority);
+		pr_info("%6d %40s %14lu %8d %20s\n",
+				i, bootdev->device.name, bootdev->size,
+				bootdev->priority, bootdev->device.alias);
 		++i;
 	}
 
@@ -64,17 +66,11 @@ int bootdev_count(void)
 
 struct bootdev *bootdev_find_by_name(const char *name)
 {
-	struct bootdev *bootdev;
 	struct device *dev;
-	struct list_head *p;
 
-	list_for_each(p, &device_list) {
-		dev = container_of(p, struct device, list_head);
-		bootdev = container_of(dev, struct bootdev, device);
-		if (strcmp(bootdev->device.name, name) == 0) {
-			return bootdev;
-		}
-	}
+	dev = device_find_by_name(&device_list, name);
+	if (dev)
+		return container_of(dev, struct bootdev, device);
 
 	return NULL;
 }
@@ -205,7 +201,8 @@ long bdm_load(const char *file, void *buf)
 
 		err = bootdev_load(bootdev, file, buf);
 		if (err > 0) {
-			pr_info("[%s] (%ld bytes)\n", bootdev->device.name, err);
+			pr_info("[%s] (%ld bytes)\n",
+					bootdev->device.alias[0] ? bootdev->device.alias : bootdev->device.name, err);
 			return err;
 		}
 		pr_debug("load %s from %s failed, try next boot device\n", file, bootdev->device.name);

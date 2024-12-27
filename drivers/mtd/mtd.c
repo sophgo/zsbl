@@ -16,14 +16,14 @@ int mtd_list_devices(void)
 	struct mtd *mtd;
 	int i;
 
-	pr_info("%6s %30s %14s %14s\n", "Index", "Device", "Block Size", "Total Size");
+	pr_info("%6s %40s %14s %14s %20s\n", "Index", "Device", "Block Size", "Total Size", "Alias");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		mtd = container_of(dev, struct mtd, device);
-		pr_info("%6d %30s %14lu %14lu\n", i, mtd->device.name,
-				mtd->block_size, mtd->total_size);
+		pr_info("%6d %40s %14lu %14lu %20s\n", i, mtd->device.name,
+				mtd->block_size, mtd->total_size, mtd->device.alias);
 		++i;
 	}
 
@@ -77,17 +77,11 @@ struct mtd *mtd_next(struct mtd *current)
 
 struct mtd *mtd_find_by_name(const char *name)
 {
-	struct mtd *mtd;
 	struct device *dev;
-	struct list_head *p;
 
-	list_for_each(p, &device_list) {
-		dev = container_of(p, struct device, list_head);
-		mtd = container_of(dev, struct mtd, device);
-		if (strcmp(mtd->device.name, name) == 0) {
-			return mtd;
-		}
-	}
+	dev = device_find_by_name(&device_list, name);
+	if (dev)
+		return container_of(dev, struct mtd, device);
 
 	return NULL;
 }
@@ -124,9 +118,6 @@ int mtd_register(struct mtd *mtd)
 		pr_err("no read operations\n");
 		return -EINVAL;
 	}
-
-	/* append mtd0, mtd1 ... in front of original device name */
-	sprintf(mtd->device.name, "mtd%d-%s", device_count, mtd->suffix);
 
 	mtd_add(mtd);
 

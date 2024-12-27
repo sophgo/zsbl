@@ -18,16 +18,17 @@ int platform_list_devices(void)
 	struct platform_device *pdev;
 	int i;
 
-	pr_info("%6s %40s %14s %14s %20s\n", "Index", "Device", "Base", "Size", "Driver");
+	pr_info("%6s %40s %14s %14s %20s %20s\n", "Index", "Device", "Base", "Size", "Driver", "Alias");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		pdev = container_of(dev, struct platform_device, device);
-		pr_info("%6d %40s %14lx %14lx %20s\n",
+		pr_info("%6d %40s %14lx %14lx %20s %20s\n",
 				i, pdev->device.name,
 				pdev->reg_base, pdev->reg_size,
-				(pdev->pdrv) ? pdev->pdrv->driver.name : "");
+				(pdev->pdrv) ? pdev->pdrv->driver.name : "",
+				pdev->device.alias);
 		++i;
 	}
 
@@ -68,17 +69,11 @@ int platform_device_count(void)
 
 struct platform_device *platform_device_find_by_name(const char *name)
 {
-	struct platform_device *pdev;
 	struct device *dev;
-	struct list_head *p;
 
-	list_for_each(p, &device_list) {
-		dev = container_of(p, struct device, list_head);
-		pdev = container_of(dev, struct platform_device, device);
-		if (strcmp(pdev->device.name, name) == 0) {
-			return pdev;
-		}
-	}
+	dev = device_find_by_name(&device_list, name);
+	if (dev)
+		return container_of(dev, struct platform_device, device);
 
 	return NULL;
 }
@@ -196,6 +191,7 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	const struct fdt_property *prop;
 	int plen;
 	const char *compatible;
+	const char *node_name;
 
 	prop = fdt_get_property(dtb, node_offset, "compatible", &plen);
 
@@ -234,7 +230,23 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 		pdev->reg_size = fdt64_to_cpu(*(volatile uint64_t *)(prop->data + 8));
 	}
 
-	snprintf(pdev->device.name, sizeof(pdev->device.name), "%s.%lx", compatible, pdev->reg_base);
+	plen = sizeof(pdev->device.name);
+	node_name = fdt_get_name(dtb, node_offset, &plen);
+	if (node_name)
+		strcpy(pdev->device.name, node_name);
+	else
+		snprintf(pdev->device.name, sizeof(pdev->device.name), "%s.%lx", compatible, pdev->reg_base);
+
+	/* get alias */
+	/* instead of searching aliases node in dtb, we use an alias property in each node.
+	 * parsing alias is too expensive and not reasonable
+	 */
+	prop = fdt_get_property(dtb, node_offset, "alias", &plen);
+	if (prop)
+		strcpy(pdev->device.alias, prop->data);
+	else
+		pdev->device.alias[0] = 0;
+
 	platform_device_add(pdev);
 
 	return pdev;

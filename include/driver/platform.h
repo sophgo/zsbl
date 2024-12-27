@@ -1,5 +1,5 @@
-#ifndef __PLATFORM_H__
-#define __PLATFORM_H__
+#ifndef __PLATFORM_DEVICE_H__
+#define __PLATFORM_DEVICE_H__
 
 #include <driver/device.h>
 #include <driver/driver.h>

@@ -76,17 +76,11 @@ struct serial *serial_next(struct serial *current)
 
 struct serial *serial_find_by_name(const char *name)
 {
-	struct serial *serial;
 	struct device *dev;
-	struct list_head *p;
 
-	list_for_each(p, &device_list) {
-		dev = container_of(p, struct device, list_head);
-		serial = container_of(dev, struct serial, device);
-		if (strcmp(serial->device.name, name) == 0) {
-			return serial;
-		}
-	}
+	dev = device_find_by_name(&device_list, name);
+	if (dev)
+		return container_of(dev, struct serial, device);
 
 	return NULL;
 }

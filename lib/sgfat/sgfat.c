@@ -208,9 +208,7 @@ static int create_fat_dev(struct blkdev *blkdev)
 	fdev->ops = &fops;
 	fdev->data = sgfat;
 
-	err = snprintf(bootdev->device.name, sizeof(bootdev->device.name), "%s", blkdev->device.name);
-	if (err == sizeof(bootdev->device.name))
-		pr_warn("boot device name overflow\n");
+	device_set_child_name(&bootdev->device, &blkdev->device, "boot");
 
 	err = fatio_register(fdev);
 

@@ -729,7 +729,7 @@ static int probe(struct platform_device *pdev)
 
 	mdev->data = spif;
 
-	sprintf(mdev->suffix, "spifmc");
+	device_set_child_name(&mdev->device, &pdev->device, "mtd");
 
 	return mtd_register(mdev);
 }

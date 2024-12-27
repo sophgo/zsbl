@@ -4,8 +4,6 @@
 #include <driver/device.h>
 #include <lib/list.h>
 
-#define BLK_DEV_NAME_SUFFIX_MAX	32
-
 struct blkdev;
 
 struct blkops {
@@ -19,8 +17,6 @@ struct blkdev {
 
 	unsigned long block_size;
 	unsigned long total_size;
-
-	char suffix[BLK_DEV_NAME_SUFFIX_MAX];
 
 	void *tmp_buf;
 

@@ -16,14 +16,14 @@ int blkdev_list_devices(void)
 	struct blkdev *blkdev;
 	int i;
 
-	pr_info("%6s %30s %14s %14s\n", "Index", "Device", "Block Size", "Total Size");
+	pr_info("%6s %40s %14s %14s %20s\n", "Index", "Device", "Block Size", "Total Size", "Alias");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		blkdev = container_of(dev, struct blkdev, device);
-		pr_info("%6d %30s %14lu %14lu\n", i, blkdev->device.name,
-				blkdev->block_size, blkdev->total_size);
+		pr_info("%6d %40s %14lu %14lu %20s\n", i, blkdev->device.name,
+				blkdev->block_size, blkdev->total_size, blkdev->device.alias);
 		++i;
 	}
 
@@ -77,17 +77,11 @@ struct blkdev *blkdev_next(struct blkdev *current)
 
 struct blkdev *blkdev_find_by_name(const char *name)
 {
-	struct blkdev *blkdev;
 	struct device *dev;
-	struct list_head *p;
 
-	list_for_each(p, &device_list) {
-		dev = container_of(p, struct device, list_head);
-		blkdev = container_of(dev, struct blkdev, device);
-		if (strcmp(blkdev->device.name, name) == 0) {
-			return blkdev;
-		}
-	}
+	dev = device_find_by_name(&device_list, name);
+	if (dev)
+		return container_of(dev, struct blkdev, device);
 
 	return NULL;
 }
@@ -135,9 +129,6 @@ int blkdev_register(struct blkdev *blkdev)
 		pr_err("allocate temp buffer failed\n");
 		return -ENOMEM;
 	}
-
-	/* append blk0, blk1 ... in front of original device name */
-	sprintf(blkdev->device.name, "blk%d-%s", device_count, blkdev->suffix);
 
 	blkdev_add(blkdev);
 

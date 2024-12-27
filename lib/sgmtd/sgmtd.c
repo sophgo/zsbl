@@ -156,9 +156,7 @@ static int create_bootdev(struct mtd *mtd)
 	bootdev->size = mtd->total_size;
 	bootdev->ops = &ops;
 
-	err = snprintf(bootdev->device.name, sizeof(bootdev->device.name), "%s", mtd->device.name);
-	if (err == sizeof(bootdev->device.name))
-		pr_warn("boot device name overflow\n");
+	device_set_child_name(&bootdev->device, &mtd->device, "boot");
 
 	bootdev_add(bootdev);
 

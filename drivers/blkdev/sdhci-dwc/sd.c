@@ -806,7 +806,7 @@ static int probe(struct platform_device *pdev)
 	blkdev->total_size = 1UL * 1024 * 1024 * 1024;
 	blkdev->ops = &blkops;
 
-	strcpy(blkdev->suffix, "sd");
+	device_set_child_name(&blkdev->device, &pdev->device, "block");
 
 	return blkdev_register(blkdev);
 }

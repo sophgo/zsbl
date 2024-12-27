@@ -105,6 +105,8 @@ static int create_bootdev(struct mtd *mtd)
 	if (err == sizeof(bootdev->device.name))
 		pr_warn("boot device name overflow\n");
 
+	device_set_child_name(&bootdev->device, &mtd->device, "boot");
+
 	/* read out config file */
 	/* make sure config buffer end with 0 */
 	err = mtd_read(mtd, 0, sizeof(sgcfg->cfg) - 1, sgcfg->cfg);
