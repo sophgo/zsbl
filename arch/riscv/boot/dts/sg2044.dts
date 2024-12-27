@@ -19,6 +19,7 @@
 			compatible = "sophgo,sg2044-dwcmshc";
 			reg = <0x70 0x3000B000 0x0 0x2000>;
 			bus-width = <4>;
+			alias = "sd0";
 		};
 
 		flash-controller@7001000000 {
@@ -26,6 +27,7 @@
 			reg = <0x70 0x01000000 0x0 0x4000000>;
 			clock-frequency = <100000000>;
 			sophgo-boot = <0x00000000 0x00080000>;
+			alias = "flash0";
 		};
 
 		flash-controller@7005000000 {
@@ -33,6 +35,14 @@
 			reg = <0x70 0x05000000 0x0 0x4000000>;
 			clock-frequency = <100000000>;
 			sophgo-config;
+			alias = "flash1";
 		};
+
+		efuse@7040000000 {
+			compatible = "sg,efuse";
+			reg = <0x70 0x40000000 0x0 0x00001000>;
+			alias = "efuse0";
+		};
+
 	};
 };

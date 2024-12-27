@@ -484,9 +484,9 @@ int plat_main(void)
 	build_board_info(&cfg);
 
 	/* setup boot priorities */
-	bdm_set_priority("blk0-sd", 0);
-	bdm_set_priority("mtd1-spifmc", 1);
-	bdm_set_priority("mtd0-spifmc", 2);
+	bdm_set_priority("sd0", 0);
+	bdm_set_priority("flash1", 1);
+	bdm_set_priority("flash0", 2);
 
 	parse_config_file(&cfg);
 	show_config(&cfg);
