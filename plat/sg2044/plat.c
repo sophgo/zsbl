@@ -223,9 +223,55 @@ static void modify_eth_node(struct config *cfg)
 				mac2byte(cfg->mac1, byte), 6, PROP_TYPE_U8);
 }
 
+static void modify_memory_node(struct config *cfg)
+{
+	uint64_t dram_base, dram_size;
+	void *fdt;
+	char memory_node_name[64] = "/memory";
+	int root_node_offset, memory_node_offset;
+
+	dram_base = 0x80000000;
+	dram_size = cfg->dram.channel_number * cfg->dram.capacity;
+
+	fdt = (void *)cfg->dtb.addr;
+
+	/* remove all memory nodes */
+	do {
+		memory_node_offset = fdt_path_offset_namelen(fdt, memory_node_name, strlen(memory_node_name));
+
+		if (memory_node_offset >= 0) {
+			pr_debug("Remove memory node at offset %d\n", memory_node_offset);
+			fdt_del_node(fdt, memory_node_offset);
+		}
+
+	} while (memory_node_offset >= 0);
+
+	/* add memory node at root node */
+	root_node_offset = fdt_path_offset(fdt, "/");
+
+	snprintf(memory_node_name, sizeof(memory_node_name), "memory@%lx", dram_base);
+
+	memory_node_offset = fdt_add_subnode(fdt, root_node_offset, memory_node_name);
+	if (memory_node_offset < 0) {
+		pr_err("Failed to add memory node %s\n", memory_node_name);
+		return;
+	}
+
+	if (fdt_appendprop_addrrange(fdt, root_node_offset, memory_node_offset, "reg", dram_base, dram_size)) {
+		pr_err("Failed to add memory region in node %s\n", memory_node_name);
+		return;
+	}
+
+	if (fdt_setprop_string(fdt, memory_node_offset, "device_type", "memory")) {
+		pr_err("Failed to set memory node type for node %s\n", memory_node_name);
+		return;
+	}
+}
+
 static void modify_dtb(struct config *cfg)
 {
 	modify_eth_node(cfg);
+	modify_memory_node(cfg);
 }
 
 int plat_main(void)

@@ -34,7 +34,7 @@ int get_dram_info(struct dram_info *dram_info)
 	nvmem = nvmem_find_by_name("efuse0");
 	if (!nvmem) {
 		memset(dram_info, 0, sizeof(struct dram_info));
-		pr_err("eFuse0 not found, using defaults\n");
+		pr_err("eFuse0 not found\n");
 		return -ENODEV;
 	}
 
@@ -46,8 +46,8 @@ int get_dram_info(struct dram_info *dram_info)
 		dram_info->vendor = "Hynix";
 		dram_info->capacity = GB(8UL);
 		dram_info->data_rate = MT(8533UL);
-		dram_info->channel_number = 4;
-		dram_info->channel_map = (1 << 1) | (1 << 2) | (1 << 5) | (1 << 6);
+		dram_info->channel_number = 8;
+		dram_info->channel_map = 0xff;
 		return 0;
 	}
 
