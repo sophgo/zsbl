@@ -9,5 +9,6 @@ source "drivers/platform/Kconfig"
 source "drivers/blkdev/Kconfig"
 source "drivers/mtd/Kconfig"
 source "drivers/boot/Kconfig"
+source "drivers/nvmem/Kconfig"
 
 endmenu

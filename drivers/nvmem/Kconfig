@@ -1,0 +1,17 @@
+menuconfig DRIVER_NVMEM_DEVICE
+	bool "Support NVMEM Device Model"
+	select DRIVER_DEVICE_MODEL
+	default	n
+	help
+		Support nvmem(None Volatile Memory) device driver model.
+		Like efuse, eeprom, etc.
+
+if DRIVER_NVMEM_DEVICE
+
+config DRIVER_NVMEM_DEVICE_SG_EFUSE
+	bool "Sophgo eFuse"
+	default n
+	help
+		SOPHGO eFuse controller
+endif
+
