@@ -41,11 +41,6 @@ typedef unsigned long		virtual_size_t;
 typedef unsigned long		physical_addr_t;
 typedef unsigned long		physical_size_t;
 
-#define TRUE			1
-#define FALSE			0
-#define true			TRUE
-#define false			FALSE
-
 #define NULL			((void *)0)
 
 #define __packed		__attribute__((packed))
