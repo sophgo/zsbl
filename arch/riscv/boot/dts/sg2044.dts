@@ -40,8 +40,8 @@
 
 		efuse@7040000000 {
 			compatible = "sg,efuse";
-			reg = <0x70 0x40000000 0x0 0x00001000>;
-			alias = "efuse0";
+			reg = <0x70 0x40001000 0x0 0x00001000>;
+			alias = "efuse1";
 		};
 
 	};

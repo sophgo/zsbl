@@ -91,23 +91,6 @@ static void efuse_embedded_write(struct sg_efuse_device *sdev, uint32_t address,
 
 }
 
-static uint32_t efuse_ecc_read(struct sg_efuse_device *sdev, uint32_t address)
-{
-	/* double bits */
-	address *= 2;
-
-	return efuse_embedded_read(sdev, address) | efuse_embedded_read(sdev, address + 1);
-}
-
-static void efuse_ecc_write(struct sg_efuse_device *sdev, uint32_t address, uint32_t val)
-{
-	/* double bits */
-	address *= 2;
-
-	efuse_embedded_write(sdev, address, val);
-	efuse_embedded_write(sdev, address + 1, val);
-}
-
 static long efuse_read(struct nvmem *nvmem, unsigned long off, unsigned long count, void *val)
 {
 	int size, left, start, i;
@@ -121,7 +104,7 @@ static long efuse_read(struct nvmem *nvmem, unsigned long off, unsigned long cou
 	if (off & 0x03) {
 		size = MIN(4 - (off & 0x03), left);
 		start = (off & 0x03);
-		tmp = efuse_ecc_read(sdev, off >> 2);
+		tmp = efuse_embedded_read(sdev, off >> 2);
 		memcpy(dst, &((uint8_t *)&tmp)[start], size);
 		dst += size;
 		left -= size;
@@ -131,7 +114,7 @@ static long efuse_read(struct nvmem *nvmem, unsigned long off, unsigned long cou
 	/* body */
 	size = left >> 2;
 	for (i = 0; i < size; ++i) {
-		tmp = efuse_ecc_read(sdev, off >> 2);
+		tmp = efuse_embedded_read(sdev, off >> 2);
 		memcpy(dst, &tmp, 4);
 		dst += 4;
 		left -= 4;
@@ -140,7 +123,7 @@ static long efuse_read(struct nvmem *nvmem, unsigned long off, unsigned long cou
 
 	/* tail */
 	if (left) {
-		tmp = efuse_ecc_read(sdev, off >> 2);
+		tmp = efuse_embedded_read(sdev, off >> 2);
 		memcpy(dst, &tmp, left);
 	}
 
@@ -162,7 +145,7 @@ static long efuse_write(struct nvmem *nvmem, unsigned long off, unsigned long co
 		size = MIN(4 - (off & 0x03), left);
 		start = (off & 0x03);
 		memcpy(&((uint8_t *)&tmp)[start], dst, size);
-		efuse_ecc_write(sdev, off >> 2, tmp);
+		efuse_embedded_write(sdev, off >> 2, tmp);
 		dst += size;
 		left -= size;
 		off += size;
@@ -172,7 +155,7 @@ static long efuse_write(struct nvmem *nvmem, unsigned long off, unsigned long co
 	size = left >> 2;
 	for (i = 0; i < size; ++i) {
 		memcpy(&tmp, dst, 4);
-		efuse_ecc_write(sdev, off >> 2, tmp);
+		efuse_embedded_write(sdev, off >> 2, tmp);
 		dst += 4;
 		left -= 4;
 		off += 4;
@@ -182,7 +165,7 @@ static long efuse_write(struct nvmem *nvmem, unsigned long off, unsigned long co
 	if (left) {
 		tmp = 0;
 		memcpy(&tmp, dst, left);
-		efuse_ecc_write(sdev, off >> 2, tmp);
+		efuse_embedded_write(sdev, off >> 2, tmp);
 	}
 
 	return count;
@@ -213,8 +196,7 @@ static int probe(struct platform_device *pdev)
 	sdev->nvmem = nvmem;
 
 	nvmem->cell_bits = 32;
-	/* double bit, cell n and cell n + 1 are mirror bits */
-	nvmem->cell_count = 256 / 2;
+	nvmem->cell_count = 256;
 	nvmem->ops = &nvmem_ops;
 
 	nvmem->data = sdev;
