@@ -425,3 +425,25 @@ int vsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
 	return print(&str, &size, format, ap);
 }
+
+FILE _stdin, _stdout, _stderr;
+FILE *stdin = &_stdin;
+FILE *stdout = &_stdout;
+FILE *stderr = &_stderr;
+
+int fputs(const char *s, FILE *stream)
+{
+	return puts(s);
+}
+
+int fputc(int c, FILE *stream)
+{
+	return putchar(c);
+}
+
+int putc(int c, FILE *stream)
+{
+	stdio_output(c);
+	return c;
+}
+

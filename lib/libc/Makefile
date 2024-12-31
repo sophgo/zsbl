@@ -1,1 +1,1 @@
-obj-y += stdio.o string.o stdlib.o
+obj-y += stdio.o string.o stdlib.o getopt.o

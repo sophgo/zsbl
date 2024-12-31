@@ -7,7 +7,10 @@
 #define EOF	-1
 
 typedef struct {
+	void *__unused;
 } FILE;
+
+extern FILE *stdin, *stdout, *stderr;
 
 #define va_start(v, l) __builtin_va_start((v), l)
 #define va_end __builtin_va_end
@@ -30,5 +33,9 @@ int sscanf(const char *str, const char *format, ...);
 char *fgets(char *s, int size, FILE *stream);
 FILE *fopen(const char *pathname, const char *mode);
 int fclose(FILE *stream);
+
+int fputs(const char *s, FILE *stream);
+int fputc(int c, FILE *stream);
+int putc(int c, FILE *stream);
 
 #endif
