@@ -285,7 +285,7 @@ int plat_main(void)
 	if (cfg.mode == CHIP_WORK_MODE_CPU) {
 		parse_config_file(&cfg);
 		show_config(&cfg);
-		cli_loop(10000000);
+		cli_loop(100000);
 		load_images(&cfg);
 		modify_dtb(&cfg);
 	} else {

@@ -9,6 +9,8 @@
 #include <framework/common.h>
 #include <framework/module.h>
 
+#include <lib/cli.h>
+
 static LIST_HEAD(device_list);
 
 int platform_list_devices(void)
@@ -34,6 +36,33 @@ int platform_list_devices(void)
 
 	return i;
 }
+
+static void command_show_devices(struct command *c, int argc, const char *argv[])
+{
+	struct list_head *p;
+	struct device *dev;
+	struct platform_device *pdev;
+	int i;
+
+	console_printf(command_get_console(c),
+		       "%6s %40s %14s %14s %20s %20s\n",
+		       "Index", "Device", "Base", "Size", "Driver", "Alias");
+
+	i = 0;
+	list_for_each(p, &device_list) {
+		dev = container_of(p, struct device, list_head);
+		pdev = container_of(dev, struct platform_device, device);
+		console_printf(command_get_console(c),
+			       "%6d %40s %14lx %14lx %20s %20s\n",
+			       i, pdev->device.name,
+			       pdev->reg_base, pdev->reg_size,
+			       (pdev->pdrv) ? pdev->pdrv->driver.name : "",
+			       pdev->device.alias);
+		++i;
+	}
+}
+
+cli_command(lspdev, command_show_devices);
 
 struct platform_device *platform_device_alloc(void)
 {
