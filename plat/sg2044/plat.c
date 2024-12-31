@@ -24,12 +24,12 @@
 #define RAMFS_OFFSET		0x0b000000
 #define CFG_FILE_OFFSET		0x09000000
 
-static void print_core_ctrlreg(void)
+static void command_show_csr(struct command *c, int argc, const char *argv[])
 {
-	pr_info("C920 control register information:\n");
-
-#define P_REG(reg) \
-	pr_info("\t %-12s - %016lx\n", #reg, csr_read(reg))
+#define P_REG(reg)							\
+	console_printf(command_get_console(c),				\
+		       "%-12s %016lx\n",				\
+		       #reg, csr_read(reg))
 
 	P_REG(CSR_MCOR);
 	P_REG(CSR_MHCR);
@@ -41,6 +41,8 @@ static void print_core_ctrlreg(void)
 	P_REG(CSR_MHINT4);
 	P_REG(CSR_MXSTATUS);
 }
+
+cli_command(lscsr, command_show_csr);
 
 static void disable_mac_rxdelay(void)
 {
@@ -277,7 +279,6 @@ static void modify_dtb(struct config *cfg)
 
 int plat_main(void)
 {
-	print_core_ctrlreg();
 	disable_mac_rxdelay();
 
 	config_init(&cfg);
