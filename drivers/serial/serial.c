@@ -6,6 +6,8 @@
 #include <framework/common.h>
 #include <driver/serial.h>
 
+#include <lib/cli.h>
+
 static LIST_HEAD(device_list);
 static int device_count;
 
@@ -28,6 +30,30 @@ int serial_list_devices(void)
 
 	return i;
 }
+
+static void command_show_devices(struct command *c, int argc, const char *argv[])
+{
+	struct list_head *p;
+	struct device *dev;
+	struct serial *serial;
+	int i;
+
+	console_printf(command_get_console(c),
+		       "%6s %30s %14s\n",
+		       "Index", "Device", "Baudrate");
+
+	i = 0;
+	list_for_each(p, &device_list) {
+		dev = container_of(p, struct device, list_head);
+		serial = container_of(dev, struct serial, device);
+		console_printf(command_get_console(c),
+			       "%6d %30s %14u\n",
+			       i, serial->device.name, serial->baudrate);
+		++i;
+	}
+}
+
+cli_command(lss, command_show_devices);
 
 struct serial *serial_alloc(void)
 {

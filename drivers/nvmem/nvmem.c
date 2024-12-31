@@ -6,6 +6,8 @@
 #include <framework/common.h>
 #include <driver/nvmem.h>
 
+#include <lib/cli.h>
+
 static LIST_HEAD(device_list);
 static int device_count;
 
@@ -30,6 +32,31 @@ int nvmem_list_devices(void)
 
 	return i;
 }
+
+static void command_show_devices(struct command *c, int argc, const char *argv[])
+{
+	struct list_head *p;
+	struct device *dev;
+	struct nvmem *nvmem;
+	int i;
+
+	console_printf(command_get_console(c),
+		       "%6s %40s %14s %14s %20s\n",
+		       "Index", "Device", "Cell Bits", "Cell Count", "Alias");
+
+	i = 0;
+	list_for_each(p, &device_list) {
+		dev = container_of(p, struct device, list_head);
+		nvmem = container_of(dev, struct nvmem, device);
+		console_printf(command_get_console(c),
+			       "%6d %40s %14u %14u %20s\n", i, nvmem->device.name,
+			       nvmem->cell_bits, nvmem->cell_count,
+			       nvmem->device.alias);
+		++i;
+	}
+}
+
+cli_command(lsnvmem, command_show_devices);
 
 struct nvmem *nvmem_alloc(void)
 {

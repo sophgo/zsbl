@@ -6,6 +6,8 @@
 #include <framework/common.h>
 #include <driver/mtd.h>
 
+#include <lib/cli.h>
+
 static LIST_HEAD(device_list);
 static int device_count;
 
@@ -29,6 +31,30 @@ int mtd_list_devices(void)
 
 	return i;
 }
+
+static void command_show_devices(struct command *c, int argc, const char *argv[])
+{
+	struct list_head *p;
+	struct device *dev;
+	struct mtd *mtd;
+	int i;
+
+	console_printf(command_get_console(c),
+		       "%6s %40s %14s %14s %20s\n",
+		       "Index", "Device", "Block Size", "Total Size", "Alias");
+
+	i = 0;
+	list_for_each(p, &device_list) {
+		dev = container_of(p, struct device, list_head);
+		mtd = container_of(dev, struct mtd, device);
+		console_printf(command_get_console(c),
+			       "%6d %40s %14lu %14lu %20s\n", i, mtd->device.name,
+			       mtd->block_size, mtd->total_size, mtd->device.alias);
+		++i;
+	}
+}
+
+cli_command(lsmtd, command_show_devices);
 
 struct mtd *mtd_alloc(void)
 {
