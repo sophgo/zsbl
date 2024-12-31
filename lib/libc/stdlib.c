@@ -1,3 +1,4 @@
+#include <types.h>
 
 void *_sbrk(unsigned long inc);
 
@@ -16,6 +17,11 @@ void *realloc(void *ptr, unsigned long nbytes)
 		*((char *)dst+i) = *((char *)ptr+i);
 
 	return dst;
+}
+
+void *calloc(size_t nmemb, size_t size)
+{
+	return malloc(nmemb * size);
 }
 
 void free (void *addr)

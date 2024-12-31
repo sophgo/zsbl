@@ -11,6 +11,7 @@
 #include <smp.h>
 #include <libfdt.h>
 #include <of.h>
+#include <lib/cli.h>
 
 #include "config.h"
 #include "efuse.h"
@@ -284,10 +285,12 @@ int plat_main(void)
 	if (cfg.mode == CHIP_WORK_MODE_CPU) {
 		parse_config_file(&cfg);
 		show_config(&cfg);
+		cli_loop(10000000);
 		load_images(&cfg);
 		modify_dtb(&cfg);
 	} else {
 		show_config(&cfg);
+		cli_loop(0);
 	}
 
 	dynamic_info.magic = FW_DYNAMIC_INFO_MAGIC_VALUE;

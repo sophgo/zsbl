@@ -52,6 +52,10 @@ SECTIONS
 		KEEP (*(.late_init));
 		__ld_late_init_end = .;
 
+		__ld_cli_command_start = .;
+		KEEP (*(.cli_command));
+		__ld_cli_command_end = .;
+
 		__ld_test_case_start = .;
 		KEEP (*(.test_case));
 		__ld_test_case_end = .;
