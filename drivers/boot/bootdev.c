@@ -8,6 +8,8 @@
 #include <framework/common.h>
 #include <lib/container_of.h>
 
+#include <lib/cli.h>
+
 static LIST_HEAD(device_list);
 
 int bootdev_list_devices(void)
@@ -31,6 +33,31 @@ int bootdev_list_devices(void)
 
 	return i;
 }
+
+static void command_show_devices(struct command *c, int argc, const char *argv[])
+{
+	struct list_head *p;
+	struct device *dev;
+	struct bootdev *bootdev;
+	int i;
+
+	console_printf(command_get_console(c),
+		       "%6s %40s %14s %8s %20s\n",
+		       "Index", "Device", "Size", "Priority", "Alias");
+
+	i = 0;
+	list_for_each(p, &device_list) {
+		dev = container_of(p, struct device, list_head);
+		bootdev = container_of(dev, struct bootdev, device);
+		console_printf(command_get_console(c),
+			       "%6d %40s %14lu %8d %20s\n",
+			       i, bootdev->device.name, bootdev->size,
+			       bootdev->priority, bootdev->device.alias);
+		++i;
+	}
+}
+
+cli_command(lsbdev, command_show_devices);
 
 struct bootdev *bootdev_alloc(void)
 {
