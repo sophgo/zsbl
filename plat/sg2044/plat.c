@@ -291,7 +291,6 @@ int plat_main(void)
 		modify_dtb(&cfg);
 	} else {
 		show_config(&cfg);
-		cli_loop(0);
 	}
 
 	dynamic_info.magic = FW_DYNAMIC_INFO_MAGIC_VALUE;
