@@ -24,6 +24,15 @@ struct sgfat {
 	FATFS fatfs;
 };
 
+static void get_file_name(char *fatfs_name, struct fatio_dev *fdev,
+			  const char *file)
+{
+	if (strncmp(file, "/", 1) == 0)
+		sprintf(fatfs_name, "%d:%s", fdev->id, file);
+	else
+		sprintf(fatfs_name, "%d:%s/%s", fdev->id, prefix, file);
+}
+
 static long get_file_size(struct bootdev *bootdev, const char *file)
 {
 	pr_debug("sgfat get file size from device %s\n",bootdev->device.name);
@@ -43,7 +52,8 @@ static long get_file_size(struct bootdev *bootdev, const char *file)
 	fdev = sgfat->fdev;
 
 	sprintf(fatfs_devid, "%d:", fdev->id);
-	sprintf(fatfs_name, "%d:%s/%s", fdev->id, prefix, file);
+
+	get_file_name(fatfs_name, fdev, file);
 
 	pr_debug("device: %s | %s\n", sgfat->blkdev->device.name, fatfs_name);
 
@@ -96,7 +106,8 @@ static long load(struct bootdev *bootdev, const char *file, void *buf)
 	fdev = sgfat->fdev;
 
 	sprintf(fatfs_devid, "%d:", fdev->id);
-	sprintf(fatfs_name, "%d:%s/%s", fdev->id, prefix, file);
+
+	get_file_name(fatfs_name, fdev, file);
 
 	pr_debug("device: %s | %s\n", sgfat->blkdev->device.name, fatfs_name);
 
