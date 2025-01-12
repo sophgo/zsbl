@@ -29,7 +29,8 @@ struct config {
 	char *sn;
 	struct dram_info dram;
 	int mode;
-	
+	char *bootargs;
+
 	struct boot_file sbi;
 	struct boot_file kernel;
 	struct boot_file dtb;

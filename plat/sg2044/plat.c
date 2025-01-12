@@ -133,7 +133,7 @@ static const char *mode_names[] = {
 	"POD",
 	"CPU",
 	"PCIe"
-}; 
+};
 static const char *mode2str(int mode)
 {
 	return mode_names[mode];
@@ -347,12 +347,37 @@ static int modify_initramfs(struct config *cfg)
 	return 0;
 }
 
+static int modify_bootargs(struct config *cfg)
+{
+	void *fdt;
+	int node;
+	int ret;
+
+	if (!cfg->bootargs)
+		return 0;
+
+	fdt = (void *)cfg->dtb.addr;
+
+	node = of_get_chosen(fdt);
+	if (node < 0)
+		return node;
+
+	ret = fdt_setprop_string(fdt, node, "bootargs", cfg->bootargs);
+	if (ret < 0) {
+		pr_err("fdt: failed to set bootargs, error[%d]\n", ret);
+		return -1;
+	}
+
+	return 0;
+}
+
 static void modify_dtb(struct config *cfg)
 {
 	resize_dtb(cfg, 4096);
 	modify_eth_node(cfg);
 	modify_memory_node(cfg);
 	modify_initramfs(cfg);
+	modify_bootargs(cfg);
 }
 
 int plat_main(void)
