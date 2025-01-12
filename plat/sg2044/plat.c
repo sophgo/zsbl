@@ -211,6 +211,33 @@ static void config_init(struct config *cfg)
 	get_dram_info(&cfg->dram);
 }
 
+/*Resize fdt to modify some node, eg: bootargs*/
+int resize_dtb(struct config *cfg, int delta)
+{
+	void *fdt;
+	int size;
+	int ret = 0;
+
+	fdt = (void *)cfg->dtb.addr;
+	size = fdt_totalsize(fdt) + delta;
+
+	fdt = realloc(fdt, size);
+	if (fdt) {
+		ret = fdt_open_into(fdt, fdt, size);
+		if (ret != 0)
+			pr_err("fdt: resize failed, error[%d\n]", ret);
+		else {
+			cfg->dtb.addr = (uint64_t)fdt;
+			cfg->dtb.size = size;
+		}
+	} else {
+		pr_err("fdt: realloc fdt failed\n");
+		ret = -1;
+	}
+
+	return ret;
+}
+
 static void modify_eth_node(struct config *cfg)
 {
 	uint8_t byte[6];
@@ -271,10 +298,61 @@ static void modify_memory_node(struct config *cfg)
 	}
 }
 
+static int of_get_chosen(void *fdt)
+{
+	int node;
+
+	node = fdt_path_offset(fdt, "/chosen");
+	if (node < 0) {
+		node = fdt_path_offset(fdt, "/");
+		node = fdt_add_subnode(fdt, node, "chosen");
+		if (node < 0) {
+			pr_err("fdt: create /chosen failed, error[%d]\n", node);
+			return -1;
+		}
+	}
+
+	return node;
+}
+
+static int modify_initramfs(struct config *cfg)
+{
+	uint64_t addr, size;
+	void *fdt;
+	int node, ret;
+
+	if (!cfg->ramfs.name)
+		return 0;
+
+	addr = (uint64_t)cfg->ramfs.addr;
+	size = (uint64_t)cfg->ramfs.size;
+	fdt = (void *)cfg->dtb.addr;
+
+	node = of_get_chosen(fdt);
+	if (node < 0)
+		return node;
+
+	ret = fdt_setprop_u64(fdt, node, "linux,initrd-start", addr);
+	if (ret < 0) {
+		pr_err("fdt: failed to set linux,initrd-start, error[%d]\n", ret);
+		return -1;
+	}
+
+	ret = fdt_setprop_u64(fdt, node, "linux,initrd-end", addr + size);
+	if (ret < 0) {
+		pr_err("fdt: failed to set linux,initrd-end, error[%d]\n", ret);
+		return -1;
+	}
+
+	return 0;
+}
+
 static void modify_dtb(struct config *cfg)
 {
+	resize_dtb(cfg, 4096);
 	modify_eth_node(cfg);
 	modify_memory_node(cfg);
+	modify_initramfs(cfg);
 }
 
 int plat_main(void)
