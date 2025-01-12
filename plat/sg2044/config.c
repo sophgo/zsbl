@@ -36,6 +36,8 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->mac0 = str2mac(value);
 	else if (MATCH("mac-address", "mac1"))
 		pconfig->mac1 = str2mac(value);
+	else if (MATCH("boot", "cmdline"))
+		pconfig->bootargs = strdup(value);
 	else
 		return 0;
 
