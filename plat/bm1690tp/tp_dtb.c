@@ -312,11 +312,6 @@ int modify_tpu_dtb(struct config *cfg)
 		pr_err("modify memory node failed, ret = %d\n", ret);
 		return -1;
 	}
-	ret = modify_node_reg(fdt, "/soc/clint-mswi", TP_SYS_STRIDE);
-	if (ret != 0) {
-		pr_err("modify mswi node failed, ret = %d\n", ret);
-		return -1;
-	}
 	ret = modify_node_reg(fdt, "/soc/interrupt-controller", TP_SYS_STRIDE);
 	if (ret != 0) {
 		pr_err("modify plic node failed, ret = %d\n", ret);

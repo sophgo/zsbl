@@ -66,11 +66,11 @@ static void config_init(struct config *cfg)
 
 	cfg->sbi.name = "fw_dynamic.bin";
 	cfg->sbi.addr = cfg->ram_base + OPENSBI_OFFSET;
-	cfg->dtb.name = "sg2044-evb.dtb";
+	cfg->dtb.name = "bm1690-cdm-tp.dtb ";
 	cfg->dtb.addr = cfg->ram_base + DEVICETREE_OFFSET;
-	cfg->kernel.name = "riscv64_Image";
+	cfg->kernel.name = "tp_Image";
 	cfg->kernel.addr = cfg->ram_base + KERNEL_OFFSET;
-	cfg->ramfs.name = "initrd";
+	cfg->ramfs.name = "tp_rootfs.cpio";
 	cfg->ramfs.addr = cfg->ram_base + RAMFS_OFFSET;
 }
 
