@@ -257,11 +257,11 @@ int add_memory_node(struct config *cfg, uint64_t addr, uint64_t len, int numa_no
 	root_node = fdt_path_offset(fdt, "/");
 
 	memset(name, 0, sizeof(name));
-	sprintf(name, "memory@%lx", addr);
+	sprintf(name, "memory@%llx", addr);
 
 	memory_node = fdt_add_subnode(fdt, root_node, name);
 	if (memory_node < 0) {
-		pr_err("fdt: failed to add memory node [%lx, %lx], error(%d)\n", addr, addr+len, memory_node);
+		pr_err("fdt: failed to add memory node [%llx, %llx], error(%d)\n", addr, addr+len, memory_node);
 		return -1;
 	}
 
@@ -283,7 +283,7 @@ static int show_ddr_node(struct config *cfg, uint64_t addr)
 	int p_len;
 
 	fdt = (void *)cfg->dtb.addr;
-	sprintf(path, "/memory@%lx", addr);
+	sprintf(path, "/memory@%llx", addr);
 
 	node = fdt_path_offset(fdt, path);
 	if (node < 0) {

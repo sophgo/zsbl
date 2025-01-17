@@ -110,7 +110,7 @@ int of_test(const void *fdt)
 
 	len = of_property_read_u64((void *)fdt, "/", "u64intr", &data64);
 	if (len > 0) {
-		pr_info("read 64 data=0x%lx\n", data64);
+		pr_info("read 64 data=0x%llx\n", data64);
 	}
 
 	of_modify_prop((void *)fdt, g_filelen, "/", "compatible",

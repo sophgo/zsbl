@@ -15,21 +15,11 @@ typedef unsigned int		u32;
 typedef int			int32_t;
 typedef unsigned int		uint32_t;
 
-#if __riscv_xlen == 64
-typedef long			s64;
-typedef unsigned long		u64;
-typedef long			int64_t;
-typedef unsigned long		uint64_t;
-#define PRILX			"016lx"
-#elif __riscv_xlen == 32
 typedef long long		s64;
 typedef unsigned long long	u64;
 typedef long long		int64_t;
 typedef unsigned long long	uint64_t;
-#define PRILX			"08lx"
-#else
-#error "Unexpected __riscv_xlen"
-#endif
+#define PRILX			"016llx"
 
 typedef int			bool;
 typedef unsigned long		ulong;

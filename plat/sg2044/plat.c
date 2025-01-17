@@ -10,6 +10,7 @@
 #include <sbi.h>
 #include <smp.h>
 #include <libfdt.h>
+#include <fdt_dump.h>
 #include <of.h>
 #include <lib/cli.h>
 
@@ -150,7 +151,7 @@ static void show_config(struct config *cfg)
 	pr_info("%-16s %s\n", "eth0 MAC", mac2str(cfg->mac0, mac));
 	pr_info("%-16s %s\n", "eth1 MAC", mac2str(cfg->mac1, mac));
 
-	pr_info("%-16s %s %luGiB %luMT/s\n", "DRAM Chip",
+	pr_info("%-16s %s %lluGiB %lluMT/s\n", "DRAM Chip",
 			cfg->dram.vendor,
 			cfg->dram.capacity / 1024 / 1024 / 1024,
 			cfg->dram.data_rate / 1000 / 1000 );
@@ -279,7 +280,7 @@ static void modify_memory_node(struct config *cfg)
 	/* add memory node at root node */
 	root_node_offset = fdt_path_offset(fdt, "/");
 
-	snprintf(memory_node_name, sizeof(memory_node_name), "memory@%lx", dram_base);
+	snprintf(memory_node_name, sizeof(memory_node_name), "memory@%llx", dram_base);
 
 	memory_node_offset = fdt_add_subnode(fdt, root_node_offset, memory_node_name);
 	if (memory_node_offset < 0) {
@@ -400,7 +401,9 @@ int plat_main(void)
 	dynamic_info.version = FW_DYNAMIC_INFO_VERSION_2;
 	dynamic_info.next_addr = cfg.kernel.addr;
 	dynamic_info.next_mode = FW_DYNAMIC_INFO_NEXT_MODE_S;
-	dynamic_info.boot_hart = 0xffffffffffffffffUL,
+	dynamic_info.boot_hart = 0xffffffffffffffffUL;
+
+	fdt_dump_blob((void *)cfg.dtb.addr, false);
 
 	boot_next_img(&cfg);
 

@@ -41,7 +41,7 @@ uint64_t str2mac(const char *s)
 
 char *mac2str(uint64_t mac, char *s)
 {
-	sprintf(s, "%02lx:%02lx:%02lx:%02lx:%02lx:%02lx",
+	sprintf(s, "%02llx:%02llx:%02llx:%02llx:%02llx:%02llx",
 			(mac >> 40) & 0xff,
 			(mac >> 32) & 0xff,
 			(mac >> 24) & 0xff,

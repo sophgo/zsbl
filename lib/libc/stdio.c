@@ -238,6 +238,10 @@ static int print(char **out, size_t *out_len, const char *format, va_list args)
 				++format;
 				flags |= PAD_ALTERNATE;
 			}
+			if (*format == '*') {
+				++format;
+				width = va_arg(args, int);
+			}
 			while (*format == '0') {
 				++format;
 				flags |= PAD_ZERO;
