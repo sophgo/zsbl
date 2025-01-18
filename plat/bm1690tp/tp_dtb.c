@@ -38,7 +38,8 @@ static int modify_node_reg(void *fdt, char *node_path, uint64_t offset)
 	}
 
 	pr_info("%s offset is %d, prop reg len is %d\n", node_path, nodeoffset, len);
-	pr_info("%s reg start: 0x%lx, len: 0x%lx\n", node_path, fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
+	pr_info("%s reg start: 0x%llx, len: 0x%llx\n", node_path,
+		fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
 	pr_info("%s name is %s\n", node_path, fdt_get_name(fdt, nodeoffset, NULL));
 
 	addr = fdt64_to_cpu(*(fdt64_t *)nodep) + (core_id * offset);
@@ -59,7 +60,7 @@ static int modify_node_reg(void *fdt, char *node_path, uint64_t offset)
 	node += 1;
 	pr_info("first part of node name is %s\n", node);
 
-	sprintf(node_name, "%s@%lx", node, addr);
+	sprintf(node_name, "%s@%llx", node, addr);
 	ret = fdt_set_name(fdt, nodeoffset, node_name);
 	if (ret) {
 		pr_err("Unable to set name: %s\n", node_name);
@@ -125,7 +126,8 @@ static int modify_node_vtty(void *fdt)
 	}
 
 	pr_info("/soc/vtty offset is %d, prop reg len is %d\n", nodeoffset, len);
-	pr_info("/soc/vtty reg start: 0x%lx, len: 0x%lx\n", fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
+	pr_info("/soc/vtty reg start: 0x%llx, len: 0x%llx\n",
+		fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
 	pr_info("/soc/vtty name is %s\n", fdt_get_name(fdt, nodeoffset, NULL));
 
 	reg[0] = fdt64_to_cpu(*((fdt64_t *)nodep));
@@ -142,8 +144,10 @@ static int modify_node_vtty(void *fdt)
 		return -1;
 	}
 
-	pr_info("modified tx reg start: 0x%lx, len: 0x%lx\n", fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
-	pr_info("modified rx reg start: 0x%lx, len: 0x%lx\n", fdt64_to_cpu(*((fdt64_t *)nodep + 2)), fdt64_to_cpu(*((fdt64_t *)nodep + 3)));
+	pr_info("modified tx reg start: 0x%llx, len: 0x%llx\n",
+		fdt64_to_cpu(*(fdt64_t *)nodep), fdt64_to_cpu(*((fdt64_t *)nodep + 1)));
+	pr_info("modified rx reg start: 0x%llx, len: 0x%llx\n",
+		fdt64_to_cpu(*((fdt64_t *)nodep + 2)), fdt64_to_cpu(*((fdt64_t *)nodep + 3)));
 
 	nodep = fdt_getprop(fdt, nodeoffset, "virtaul-msi", &len);
 	if (nodep == NULL) {
@@ -161,7 +165,7 @@ static int modify_node_vtty(void *fdt)
 		return -1;
 	}
 
-	pr_info("modified virtual-msi reg: 0x%lx\n", fdt64_to_cpu(*(fdt64_t *)nodep));
+	pr_info("modified virtual-msi reg: 0x%llx\n", fdt64_to_cpu(*(fdt64_t *)nodep));
 
 	nodep = fdt_getprop(fdt, nodeoffset, "clr-irq", &len);
 	if (nodep == NULL) {
@@ -179,9 +183,9 @@ static int modify_node_vtty(void *fdt)
 		return -1;
 	}
 
-	pr_info("modified clr-irq reg: 0x%lx\n", fdt64_to_cpu(*(fdt64_t *)nodep));
+	pr_info("modified clr-irq reg: 0x%llx\n", fdt64_to_cpu(*(fdt64_t *)nodep));
 
-	sprintf(node_name, "vtty@%lx", fdt64_to_cpu(reg[0]));
+	sprintf(node_name, "vtty@%llx", fdt64_to_cpu(reg[0]));
 	ret = fdt_set_name(fdt, nodeoffset, node_name);
 	if (ret) {
 		pr_err("Unable to set name: %s\n", node_name);
@@ -204,7 +208,7 @@ static int modify_node_vtty(void *fdt)
 	pr_info("/aliases offset is %d, prop vtty0 len is %d\n", nodeoffset, len);
 	pr_info("old_vtty0: %s\n", (char *)nodep);
 
-	sprintf(node_name, "/soc/vtty@%lx", fdt64_to_cpu(reg[0]));
+	sprintf(node_name, "/soc/vtty@%llx", fdt64_to_cpu(reg[0]));
 	ret = fdt_setprop_string(fdt, nodeoffset, "vtty0", node_name);
 	if (ret != 0) {
 		pr_err("set aliases: vtty0 failed\n");
@@ -247,7 +251,7 @@ static int modify_node_chosen(struct config *cfg, void *fdt, bool modify_stdout)
 	}
 
 	ramfs_addr += cfg->ram_size * core_id;
-	sprintf(ramfs_addr_str, "0x%lx", ramfs_addr);
+	sprintf(ramfs_addr_str, "0x%llx", ramfs_addr);
 	new_bootargs = (char *)malloc(strlen(bootargs) + 1 - (end_ptr - substr_start) + strlen(ramfs_addr_str));
 	memset(new_bootargs, 0, strlen(bootargs) + 1 - (end_ptr - substr_start) + strlen(ramfs_addr_str));
 
@@ -294,7 +298,8 @@ int modify_tpu_dtb(struct config *cfg)
 		return -1;
 	}
 
-	pr_info("modifying tpu dtb, core_id = %d, dtb_addr is 0x%lx\n", core_id, (uint64_t)fdt);
+	pr_info("modifying tpu dtb, core_id = %d, dtb_addr is 0x%llx\n",
+		core_id, (uint64_t)fdt);
 	pr_info("fdt_totalsize is %d\n", fdt_totalsize(fdt));
 	pr_info("fdt_header_size is %ld\n", fdt_header_size(fdt));
 	pr_info("fdt_version is %d\n", fdt_version(fdt));
