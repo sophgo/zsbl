@@ -13,6 +13,10 @@ static int handler_img(void* user, const char* section, const char* name,
 				   const char* value)
 {
 	struct config *pconfig = user;
+	uint32_t ctrl_id = 0;
+	static uint32_t domain;
+	static uint32_t pcie_use_ini;
+	const char *pcie_section_prefix = "pcie";
 
 	#define MATCH(s, n) (strcmp(section, s) == 0 && strcmp(name, n) == 0)
 
@@ -38,7 +42,49 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->mac1 = str2mac(value);
 	else if (MATCH("boot", "cmdline"))
 		pconfig->bootargs = strdup(value);
-	else
+	else if (strncmp(section, pcie_section_prefix, strlen(pcie_section_prefix)) == 0) {
+		if (pcie_use_ini != 0x12345678) {
+			pcie_use_ini = 0x12345678;
+			for (ctrl_id = 0; ctrl_id < PCIE_MAX; ctrl_id++)
+				pconfig->pcie[ctrl_id].enable = false;
+		}
+		ctrl_id = strtoul((section + strlen(pcie_section_prefix)), NULL, 0);
+		if (strcmp(name, "width") == 0) {
+			pconfig->pcie[ctrl_id].enable = true;
+			pconfig->pcie[ctrl_id].domain = domain;
+			domain++;
+		} else if (strcmp(name, "io-addr") == 0) {
+			pconfig->pcie[ctrl_id].io.cpu = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "io-transl") == 0) {
+			pconfig->pcie[ctrl_id].io.pci = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "io-length") == 0) {
+			pconfig->pcie[ctrl_id].io.len = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "pmem64-addr") == 0) {
+			pconfig->pcie[ctrl_id].mem64p.cpu = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "pmem64-transl") == 0) {
+			pconfig->pcie[ctrl_id].mem64p.pci = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "pmem64-length") == 0) {
+			pconfig->pcie[ctrl_id].mem64p.len = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "mem64-addr") == 0) {
+			pconfig->pcie[ctrl_id].mem64.cpu = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "mem64-transl") == 0) {
+			pconfig->pcie[ctrl_id].mem64.pci = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "mem64-length") == 0) {
+			pconfig->pcie[ctrl_id].mem64.len = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "pmem32-addr") == 0) {
+			pconfig->pcie[ctrl_id].mem32p.cpu = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "pmem32-transl") == 0) {
+			pconfig->pcie[ctrl_id].mem32p.pci = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "pmem32-length") == 0) {
+			pconfig->pcie[ctrl_id].mem32p.len = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "mem32-addr") == 0) {
+			pconfig->pcie[ctrl_id].mem32.cpu = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "mem32-pci") == 0) {
+			pconfig->pcie[ctrl_id].mem32.pci = strtoul(value, NULL, 0);
+		} else if (strcmp(name, "mem32-length") == 0) {
+			pconfig->pcie[ctrl_id].mem32.len = strtoul(value, NULL, 0);
+		}
+	} else
 		return 0;
 
 	return -1;

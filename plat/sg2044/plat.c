@@ -202,6 +202,7 @@ static void config_init(struct config *cfg)
 	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
 	struct pcie_config *p = cfg->pcie;
 	int i;
+	static uint32_t domain;
 
 	pr_debug("ZSBL is loaded at 0x%010lx\n", (unsigned long)__ld_program_start);
 
@@ -228,20 +229,25 @@ static void config_init(struct config *cfg)
 	get_dram_info(&cfg->dram);
 
 	/* init pcie config */
-	for (i = 0; i < 5; ++i, ++p) {
+	for (i = 0; i < PCIE_MAX; ++i, ++p) {
 		p->compatible = "sophgo,sg2044-pcie-host";
 		p->bus_start = 0;
 		p->bus_end = 255;
-		p->domain = i;
 		p->coherent = true;
 		init_pcie_win(&p->ib, 0x80000000, 0x80000000, 0x4000000000UL - 0x80000000);
-		p->enable = true;
+		if ((i % 2)  == 1)
+			p->enable = false;
+		else {
+			p->domain = domain;
+			p->enable = true;
+			domain++;
+		}
 	}
 
-	/* pcie0 */
+	/* pcie0 c2c0-w0-p0 */
 	p = &cfg->pcie[0];
 	init_pcie_res(&p->dbi, 0x6c00400000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c00780000UL, 0x400);
+	init_pcie_res(&p->ctl, 0x6c00780000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c00700000UL, 0x4000);
 	init_pcie_res(&p->cfg, 0x4000000000UL, 0x1000);
 
@@ -253,10 +259,25 @@ static void config_init(struct config *cfg)
 
 	p->irq = 64;
 
-	/* pcie1 */
+	/* pcie1 c2c0-w0-p1 */
 	p = &cfg->pcie[1];
+	init_pcie_res(&p->dbi, 0x6c00800000UL, 0x1000);
+	init_pcie_res(&p->ctl, 0x6c00b80000UL, 0x1000);
+	init_pcie_res(&p->atu, 0x6c00b00000UL, 0x4000);
+	init_pcie_res(&p->cfg, 0x4400000000UL, 0x1000);
+
+	init_pcie_win(&p->io, 0, 0x4410000000UL, 0x00200000);
+	init_pcie_win(&p->mem32p, 0x08000000, 0x08000000, 0x04000000);
+	init_pcie_win(&p->mem32, 0x0c000000, 0x0c000000, 0x04000000);
+	init_pcie_win(&p->mem64p, 0x4600000000UL, 0x4600000000UL, 0x200000000UL);
+	init_pcie_win(&p->mem64, 0x4500000000UL, 0x4500000000UL, 0x100000000UL);
+
+	p->irq = 66;
+
+	/* pcie2 c2c0-w1-p0 */
+	p = &cfg->pcie[2];
 	init_pcie_res(&p->dbi, 0x6c00000000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c000c0000UL, 0x400);
+	init_pcie_res(&p->ctl, 0x6c000c0000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c00300000UL, 0x4000);
 	init_pcie_res(&p->cfg, 0x4800000000UL, 0x1000);
 
@@ -268,10 +289,25 @@ static void config_init(struct config *cfg)
 
 	p->irq = 65;
 
-	/* pcie2 */
-	p = &cfg->pcie[2];
+	/* pcie3 c2c0-w1-p1 */
+	p = &cfg->pcie[3];
+	init_pcie_res(&p->dbi, 0x6c00c00000UL, 0x1000);
+	init_pcie_res(&p->ctl, 0x6c00f80000UL, 0x1000);
+	init_pcie_res(&p->atu, 0x6c00f00000UL, 0x4000);
+	init_pcie_res(&p->cfg, 0x4c00000000UL, 0x1000);
+
+	init_pcie_win(&p->io, 0, 0x4c10000000UL, 0x00200000);
+	init_pcie_win(&p->mem32p, 0x18000000, 0x18000000, 0x04000000);
+	init_pcie_win(&p->mem32, 0x1c000000, 0x1c000000, 0x04000000);
+	init_pcie_win(&p->mem64p, 0x4e00000000UL, 0x4e00000000UL, 0x200000000UL);
+	init_pcie_win(&p->mem64, 0x4d00000000UL, 0x4d00000000UL, 0x100000000UL);
+
+	p->irq = 67;
+
+	/* pcie4 c2c1-w0-p0 */
+	p = &cfg->pcie[4];
 	init_pcie_res(&p->dbi, 0x6c04400000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c04780000UL, 0x400);
+	init_pcie_res(&p->ctl, 0x6c04780000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c04700000UL, 0x4000);
 	init_pcie_res(&p->cfg, 0x5000000000UL, 0x1000);
 
@@ -283,10 +319,25 @@ static void config_init(struct config *cfg)
 
 	p->irq = 73;
 
-	/* pcie3 */
-	p = &cfg->pcie[3];
+	/* pcie5 c2c1-w0-p1 */
+	p = &cfg->pcie[5];
+	init_pcie_res(&p->dbi, 0x6c04800000UL, 0x1000);
+	init_pcie_res(&p->ctl, 0x6c04b80000UL, 0x1000);
+	init_pcie_res(&p->atu, 0x6c04b00000UL, 0x4000);
+	init_pcie_res(&p->cfg, 0x5400000000UL, 0x1000);
+
+	init_pcie_win(&p->io, 0, 0x5410000000UL, 0x00200000);
+	init_pcie_win(&p->mem32p, 0x28000000, 0x28000000, 0x04000000);
+	init_pcie_win(&p->mem32, 0x2c000000, 0x2c000000, 0x04000000);
+	init_pcie_win(&p->mem64p, 0x5600000000UL, 0x5600000000UL, 0x200000000UL);
+	init_pcie_win(&p->mem64, 0x5500000000UL, 0x5500000000UL, 0x100000000UL);
+
+	p->irq = 75;
+
+	/* pcie6 c2c1-w1-p0 */
+	p = &cfg->pcie[6];
 	init_pcie_res(&p->dbi, 0x6c04000000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c040c0000UL, 0x400);
+	init_pcie_res(&p->ctl, 0x6c040c0000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c04300000UL, 0x4000);
 	init_pcie_res(&p->cfg, 0x5800000000UL, 0x1000);
 
@@ -298,10 +349,25 @@ static void config_init(struct config *cfg)
 
 	p->irq = 74;
 
-	/* pcie4 */
-	p = &cfg->pcie[4];
+	/* pcie7 c2c1-w1-p1 */
+	p = &cfg->pcie[7];
+	init_pcie_res(&p->dbi, 0x6c04c00000UL, 0x1000);
+	init_pcie_res(&p->ctl, 0x6c04f80000UL, 0x1000);
+	init_pcie_res(&p->atu, 0x6c04f00000UL, 0x4000);
+	init_pcie_res(&p->cfg, 0x5c00000000UL, 0x1000);
+
+	init_pcie_win(&p->io, 0, 0x5c10000000UL, 0x00200000);
+	init_pcie_win(&p->mem32p, 0x38000000, 0x38000000, 0x04000000);
+	init_pcie_win(&p->mem32, 0x3c000000, 0x3c000000, 0x04000000);
+	init_pcie_win(&p->mem64p, 0x5e00000000UL, 0x5e00000000UL, 0x200000000UL);
+	init_pcie_win(&p->mem64, 0x5d00000000UL, 0x5d00000000UL, 0x100000000UL);
+
+	p->irq = 76;
+
+	/* pcie8 cxp-w0-p0 */
+	p = &cfg->pcie[8];
 	init_pcie_res(&p->dbi, 0x6c08400000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c08780000UL, 0x400);
+	init_pcie_res(&p->ctl, 0x6c08780000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c08700000UL, 0x4000);
 	init_pcie_res(&p->cfg, 0x6000000000UL, 0x1000);
 
@@ -312,6 +378,22 @@ static void config_init(struct config *cfg)
 	init_pcie_win(&p->mem64, 0x6100000000UL, 0x6100000000UL, 0x100000000UL);
 
 	p->irq = 125;
+
+	/* pcie9 cxp-w0-p1 */
+	p = &cfg->pcie[9];
+	init_pcie_res(&p->dbi, 0x6c08800000UL, 0x1000);
+	init_pcie_res(&p->ctl, 0x6c08b80000UL, 0x1000);
+	init_pcie_res(&p->atu, 0x6c08b00000UL, 0x4000);
+	init_pcie_res(&p->cfg, 0x6400000000UL, 0x1000);
+
+	init_pcie_win(&p->io, 0, 0x6410000000UL, 0x00200000);
+	init_pcie_win(&p->mem32p, 0x48000000, 0x48000000, 0x04000000);
+	init_pcie_win(&p->mem32, 0x4c000000, 0x4c000000, 0x04000000);
+	init_pcie_win(&p->mem64p, 0x6600000000UL, 0x6600000000UL, 0x200000000UL);
+	init_pcie_win(&p->mem64, 0x6500000000UL, 0x6500000000UL, 0x100000000UL);
+
+	p->irq = 126;
+
 }
 
 /*Resize fdt to modify some node, eg: bootargs*/
