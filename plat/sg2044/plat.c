@@ -558,7 +558,7 @@ static int modify_bootargs(struct config *cfg)
 
 static void modify_dtb(struct config *cfg)
 {
-	resize_dtb(cfg, 4096);
+	resize_dtb(cfg, 8192);
 	modify_eth_node(cfg);
 	modify_memory_node(cfg);
 	modify_pcie_node(cfg);
