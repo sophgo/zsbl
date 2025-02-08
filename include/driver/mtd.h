@@ -31,5 +31,6 @@ int mtd_open(struct mtd *mtd);
 long mtd_read(struct mtd *mtd, unsigned long offset, unsigned long size, void *buf);
 int mtd_close(struct mtd *mtd);
 void mtd_free(struct mtd *mtd);
+struct mtd *mtd_find_by_name(const char *name);
 
 #endif

@@ -5,9 +5,11 @@
 #include <lib/ini.h>
 #include <lib/mac.h>
 #include <driver/bootdev.h>
+#include <driver/mtd.h>
 #include <framework/common.h>
 
 #include "config.h"
+#include "efi.h"
 
 static int handler_img(void* user, const char* section, const char* name,
 				   const char* value)
@@ -84,7 +86,15 @@ static int handler_img(void* user, const char* section, const char* name,
 		} else if (strcmp(name, "mem32-length") == 0) {
 			pconfig->pcie[ctrl_id].mem32.len = strtoul(value, NULL, 0);
 		}
-	} else
+	} else if (MATCH("sophgo-config", "work-mode")) {
+		/* reserve half memory for TPU */
+		if (strcmp(value, "soc") == 0) {
+			pconfig->reserved_memory_size =
+				pconfig->dram.channel_number * pconfig->dram.capacity / 2;
+			pconfig->mode = CHIP_WORK_MODE_SOC;
+		}
+	}
+	else
 		return 0;
 
 	return -1;
@@ -126,3 +136,57 @@ int parse_config_file(struct config *cfg)
 	return 0;
 }
 
+#define EFI_VARIABLE_FIRMWARE_VOLUME_OFFSET	(0x600000 + 0x800000)
+#define EFI_VARIABLE_FIRMWARE_VOLUME_SIZE	(0x10000)
+
+int parse_efi_variable(struct config *cfg)
+{
+	struct mtd *mtd;
+	void *fv;
+	struct variable_zone vz;
+	struct efi_variable_header *var;
+	int err;
+	const struct efi_guid sophgo_variable_guid = {
+		0x4a20a5c6, 0x50c1, 0xe94a,
+		{ 0x92, 0x96, 0x03, 0xbe, 0x8e, 0x38, 0x62, 0xc9 }
+	};
+
+
+	mtd = mtd_find_by_name("flash0");
+
+	if (!mtd) {
+		pr_debug("Device %s not found\n");
+		return 0;
+	}
+
+	fv = malloc(EFI_VARIABLE_FIRMWARE_VOLUME_SIZE);
+
+	if (!fv) {
+		pr_err("Allocate EFI variable buffer failed\n");
+		return -ENOMEM;
+	}
+
+	if (mtd_read(mtd, EFI_VARIABLE_FIRMWARE_VOLUME_OFFSET,
+		     EFI_VARIABLE_FIRMWARE_VOLUME_SIZE, fv) < 0) {
+		pr_err("Read EFI variable firmware volume failed\n");
+		return -EIO;
+	}
+
+	err = efi_vz_init(&vz, fv);
+	if (err)
+		return err;
+
+	var = efi_vz_find_variable(&vz, &sophgo_variable_guid, L"ReservedMemorySize");
+	if (!var) {
+		pr_debug("Variable %s not found\n", "ReservedMemorySize");
+		return 0;
+	}
+
+	/* little endian */
+	memcpy(&cfg->reserved_memory_size, efi_var_get_data(var),
+	       sizeof(cfg->reserved_memory_size));
+
+	pr_debug("Reserved memory size 0x%lx\n", cfg->reserved_memory_size);
+
+	return 0;
+}

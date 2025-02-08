@@ -112,7 +112,7 @@ static int create_bootdev(struct mtd *mtd)
 	const struct fdt_property *prop;
 	int plen;
 
-	/* check if it is mtd device that store config file */
+	/* check if it is mtd device that store boot file */
 	/* assume mtd device is platform device */
 	if (!mtd->hwdev) {
 		pr_err("hardware device instance is NULL\n");

@@ -52,9 +52,9 @@ struct dram_info {
 };
 
 enum {
-	CHIP_WORK_MODE_POD = 0x1,
-	CHIP_WORK_MODE_CPU = 0x2,
-	CHIP_WORK_MODE_PCIE =0x3,
+	CHIP_WORK_MODE_CPU = 0,
+	CHIP_WORK_MODE_SOC,
+	CHIP_WORK_MODE_PCIE,
 };
 
 #define PCIE_MAX	(10)
@@ -67,6 +67,7 @@ struct config {
 	struct pcie_config pcie[PCIE_MAX];
 	int mode;
 	char *bootargs;
+	unsigned long reserved_memory_size;
 
 	struct boot_file sbi;
 	struct boot_file kernel;

@@ -13,7 +13,7 @@ endif
 
 KBUILD_CFLAGS += -g -march=rv64imafdc_zifencei -mcmodel=medany -DARCH_RISCV
 
-KBUILD_CFLAGS += -nostdinc -fstack-protector
+KBUILD_CFLAGS += -nostdinc -fstack-protector -fshort-wchar
 
 KBUILD_LDFLAGS += -nostdlib
 KBUILD_CFLAGS += -fno-pie -no-pie -fPIE -pie -march=rv64imafdc_zicbom -misa-spec=2.2

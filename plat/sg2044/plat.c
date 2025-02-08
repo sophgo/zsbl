@@ -114,6 +114,7 @@ static void boot_next_img(struct config *cfg)
 }
 
 int parse_config_file(struct config *cfg);
+int parse_efi_variable(struct config *cfg);
 
 static void load_images(struct config *cfg)
 {
@@ -131,9 +132,8 @@ static void show_boot_file(const char *name, struct boot_file *p)
 }
 
 static const char *mode_names[] = {
-	"Unknown",
-	"POD",
 	"CPU",
+	"SOC",
 	"PCIe"
 };
 static const char *mode2str(int mode)
@@ -440,19 +440,21 @@ static void modify_eth_node(struct config *cfg)
 
 static void modify_memory_node(struct config *cfg)
 {
-	uint64_t dram_base, dram_size;
+	uint64_t dram_base, dram_size, system_memory_size;
 	void *fdt;
 	char memory_node_name[64] = "/memory";
 	int root_node_offset, memory_node_offset;
 
 	dram_base = 0x80000000;
 	dram_size = cfg->dram.channel_number * cfg->dram.capacity;
+	system_memory_size = dram_size - cfg->reserved_memory_size;
 
 	fdt = (void *)cfg->dtb.addr;
 
 	/* remove all memory nodes */
 	do {
-		memory_node_offset = fdt_path_offset_namelen(fdt, memory_node_name, strlen(memory_node_name));
+		memory_node_offset = fdt_path_offset_namelen(fdt, memory_node_name,
+							     strlen(memory_node_name));
 
 		if (memory_node_offset >= 0) {
 			pr_debug("Remove memory node at offset %d\n", memory_node_offset);
@@ -472,7 +474,8 @@ static void modify_memory_node(struct config *cfg)
 		return;
 	}
 
-	if (fdt_appendprop_addrrange(fdt, root_node_offset, memory_node_offset, "reg", dram_base, dram_size)) {
+	if (fdt_appendprop_addrrange(fdt, root_node_offset, memory_node_offset, "reg",
+				     dram_base, system_memory_size)) {
 		pr_err("Failed to add memory region in node %s\n", memory_node_name);
 		return;
 	}
@@ -572,8 +575,9 @@ int plat_main(void)
 
 	config_init(&cfg);
 
-	if (cfg.mode == CHIP_WORK_MODE_CPU) {
+	if (cfg.mode != CHIP_WORK_MODE_PCIE) {
 		parse_config_file(&cfg);
+		/* parse_efi_variable(&cfg); */
 		show_config(&cfg);
 		cli_loop(100000);
 		load_images(&cfg);
