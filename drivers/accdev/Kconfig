@@ -1,0 +1,14 @@
+config DRIVER_ACCELERATOR
+	bool "Support Accelerator Device"
+	select DRIVER_DEVICE_MODEL
+	default	n
+	help
+		Support Accelerator Device.
+
+if DRIVER_ACCELERATOR
+
+config DRIVER_PKA
+	bool "Support PKA"
+	default	n
+	help
+		Support PKA.

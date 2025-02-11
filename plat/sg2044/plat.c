@@ -17,6 +17,7 @@
 #include "config.h"
 #include "efuse.h"
 #include "fdt_pcie.h"
+#include <verify.h>
 
 #define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
 
@@ -25,6 +26,40 @@
 #define DEVICETREE_OFFSET	0x08000000
 #define RAMFS_OFFSET		0x0b000000
 #define CFG_FILE_OFFSET		0x09000000
+
+#define PUBKEY_DIG_SIZE 	32
+#define SIG_SIZE 		256
+
+uint8_t kernel_sig[SIG_SIZE], sbi_sig[SIG_SIZE], dtb_sig[SIG_SIZE], ramfs_sig[SIG_SIZE];
+uint8_t pubkey_dig[PUBKEY_DIG_SIZE];
+DER_INFO der_info;
+static struct sec_config sec_cfg;
+
+static int sec_cfg_init(struct sec_config *sec_cfg)
+{	
+	/*pubkey*/
+	sec_cfg->pub_key.name = "public_key.der";
+	sec_cfg->pub_key.addr = (uint64_t)der_info.pubkey;
+
+	/*sbi sig*/
+	sec_cfg->sbi_sig.name = "fw_dynamic.sig";
+	sec_cfg->sbi_sig.addr = (uint64_t)sbi_sig;
+
+	/*kernel sig*/
+	sec_cfg->kernel_sig.name = "SG2044.sig";
+	sec_cfg->kernel_sig.addr = (uint64_t)kernel_sig;
+
+#ifdef USE_LINUX_BOOT
+	sec_cfg->kernel_sig.name = "riscv64_Image.sig";
+	sec_cfg->ramfs_sig.name = "initrd.sig";
+	sec_cfg->ramfs_sig.addr = (uint64_t)ramfs_sig;
+#endif
+	/*dtb sig*/
+	sec_cfg->dtb_sig.name = "sg2044-evb.sig";
+	sec_cfg->dtb_sig.addr =(uint64_t)dtb_sig;
+
+	return 0;
+}
 
 static void command_show_csr(struct command *c, int argc, const char *argv[])
 {
@@ -122,6 +157,17 @@ static void load_images(struct config *cfg)
 	load(&cfg->kernel);
 	load(&cfg->dtb);
 	load(&cfg->ramfs);
+}
+
+static void sec_load_images(struct sec_config *sec_cfg)
+{
+	load(&sec_cfg->kernel_sig);
+	load(&sec_cfg->sbi_sig);
+	load(&sec_cfg->dtb_sig);
+	load(&sec_cfg->pub_key);
+#ifdef USE_LINUX_BOOT
+	load(&sec_cfg->ramfs_sig);
+#endif
 }
 
 static struct config cfg;
@@ -396,6 +442,65 @@ static void config_init(struct config *cfg)
 
 }
 
+static int do_verify()
+{
+	int ret;
+	int pubkey_len = sec_cfg.pub_key.size;
+	der_info.key_size = pubkey_len;
+
+	parse_public_key(der_info.pubkey, der_info.key_size, &der_info.m_len, &der_info.alg);
+
+	/*verify pubkey*/
+	read_pubkey_hash((uint32_t *)pubkey_dig);
+	ret = pubkey_verify(pubkey_dig, &der_info, (unsigned long)sec_cfg.pub_key.size);
+	if (ret) {
+		pr_err("pubkey verify failed\n");
+		goto exit;
+	}
+
+	/*sbi verify*/
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.sbi.addr,
+			  (unsigned char *)sec_cfg.sbi_sig.addr, (unsigned long)cfg.sbi.size);
+
+	if (ret) {
+		pr_err("sbi verify failed\n");
+		goto exit;
+	}
+
+	/*kernel verify*/
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.kernel.addr,
+			  (unsigned char *)sec_cfg.kernel_sig.addr, (unsigned long)cfg.kernel.size);
+
+	if (ret) {
+		pr_err("kernel verify failed\n");
+		goto exit;
+	}
+
+	/*dtb verify*/
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.dtb.addr,
+			  (unsigned char *)sec_cfg.dtb_sig.addr, (unsigned long)cfg.dtb.size);
+
+	if (ret) {
+		pr_err("dtb verify failed\n");
+		goto exit;
+	}
+
+#ifdef USE_LINUX_BOOT
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.ramfs.addr,
+			  (unsigned char *)sec_cfg.ramfs_sig.addr, (unsigned long)cfg.ramfs.size);
+
+	if (ret) {
+		pr_err("ramfs verify failed\n");
+		goto exit;
+	}
+#endif
+
+	return 0;
+
+exit:
+	return -1;
+}
+
 /*Resize fdt to modify some node, eg: bootargs*/
 int resize_dtb(struct config *cfg, int delta)
 {
@@ -581,7 +686,18 @@ int plat_main(void)
 		show_config(&cfg);
 		cli_loop(100000);
 		load_images(&cfg);
+		
+		if (secure_boot()) {
+			sec_cfg_init(&sec_cfg);
+			sec_load_images(&sec_cfg);
+			if (do_verify()) {
+				pr_err("verify failed\n");
+				return 0;
+			} 
+		}
+		
 		modify_dtb(&cfg);
+
 	} else {
 		show_config(&cfg);
 	}
