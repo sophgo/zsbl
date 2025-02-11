@@ -30,5 +30,6 @@ int stdout_ready(void);
 
 #define ARRAY_SIZE(a)	(sizeof(a) / sizeof((a)[0]))
 #define ROUND_UP(x, align)	(((x) + ((align) - 1)) & ~((align) - 1))
+#define TOUPPER(c)      ((c) - 0x20 * (((c) >= 'a') && ((c) <= 'z')))
 
 #endif

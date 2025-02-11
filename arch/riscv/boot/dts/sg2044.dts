@@ -44,5 +44,12 @@
 			alias = "efuse1";
 		};
 
+		pka@7040040000 {
+			compatible = "snps,designware-pka";
+			reg = <0x70 0x40040000 0x00 0x6000>;
+			bus-width = <4>;
+			alias = "pka";
+		};
+
 	};
 };
