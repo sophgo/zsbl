@@ -17,6 +17,7 @@
 #include "config.h"
 #include "efuse.h"
 #include "fdt_pcie.h"
+#include <verify.h>
 
 #define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
 
@@ -25,6 +26,13 @@
 #define DEVICETREE_OFFSET	0x08000000
 #define RAMFS_OFFSET		0x0b000000
 #define CFG_FILE_OFFSET		0x09000000
+
+#define PUBKEY_DIG_SIZE 	32
+#define SIG_SIZE 		256
+
+struct DER_INFO der_info;
+static uint8_t sbi_sig[SIG_SIZE], kernel_sig[SIG_SIZE], dtb_sig[SIG_SIZE];
+static uint8_t __attribute__((unused)) ramfs_sig[SIG_SIZE];
 
 static void command_show_csr(struct command *c, int argc, const char *argv[])
 {
@@ -122,6 +130,12 @@ static void load_images(struct config *cfg)
 	load(&cfg->kernel);
 	load(&cfg->dtb);
 	load(&cfg->ramfs);
+
+	load(&cfg->pub_key);
+	load(&cfg->sbi_sig);
+	load(&cfg->kernel_sig);
+	load(&cfg->dtb_sig);
+	load(&cfg->ramfs_sig);
 }
 
 static struct config cfg;
@@ -225,6 +239,32 @@ static void config_init(struct config *cfg)
 
 	cfg->cfg.name = "conf.ini";
 	cfg->cfg.addr = ram_base + CFG_FILE_OFFSET;
+
+	if (secure_boot()) {
+		/* pubkey */
+		cfg->pub_key.name = "public_key.der";
+		cfg->pub_key.addr = (uint64_t)der_info.pubkey;
+
+		/* sbi sig */
+		cfg->sbi_sig.name = "fw_dynamic.sig";
+		cfg->sbi_sig.addr = (uint64_t)sbi_sig;
+
+		/* kernel & ramfs sig */
+		if (cfg->ramfs.addr) {
+			cfg->kernel_sig.name = "riscv64_Image.sig";
+			cfg->ramfs_sig.name = "initrd.sig";
+			cfg->ramfs_sig.addr = (uint64_t)ramfs_sig;
+		} else {
+			cfg->kernel_sig.name = "SG2044.sig";
+			cfg->ramfs_sig.name = NULL;
+			cfg->ramfs_sig.addr = 0;
+		}
+		cfg->kernel_sig.addr = (uint64_t)kernel_sig;
+
+		/* dtb sig */
+		cfg->dtb_sig.name = "sg2044-evb.sig";
+		cfg->dtb_sig.addr = (uint64_t)dtb_sig;
+	}
 
 	get_dram_info(&cfg->dram);
 
@@ -394,6 +434,63 @@ static void config_init(struct config *cfg)
 
 	p->irq = 126;
 
+}
+
+static int do_verify(void)
+{
+	int ret;
+	uint8_t pubkey_dig[PUBKEY_DIG_SIZE];
+	int pubkey_len = cfg.pub_key.size;
+
+	der_info.key_size = pubkey_len;
+	parse_public_key(der_info.pubkey, der_info.key_size, &der_info.m_len, &der_info.alg);
+
+	/* verify pubkey */
+	read_pubkey_hash((uint32_t *)pubkey_dig);
+	ret = pubkey_verify(pubkey_dig, &der_info, (unsigned long)cfg.pub_key.size);
+	if (ret) {
+		pr_err("pubkey verify failed\n");
+		goto exit;
+	}
+
+	/* openSBI verify */
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.sbi.addr,
+			(unsigned char *)cfg.sbi_sig.addr, (unsigned long)cfg.sbi.size);
+	if (ret) {
+		pr_err("sbi verify failed\n");
+		goto exit;
+	}
+
+	/* kernel verify */
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.kernel.addr,
+			(unsigned char *)cfg.kernel_sig.addr, (unsigned long)cfg.kernel.size);
+	if (ret) {
+		pr_err("kernel verify failed\n");
+		goto exit;
+	}
+
+	/* dtb verify */
+	ret = akchipher_verify(&der_info, (unsigned char *)cfg.dtb.addr,
+			(unsigned char *)cfg.dtb_sig.addr, (unsigned long)cfg.dtb.size);
+	if (ret) {
+		pr_err("dtb verify failed\n");
+		goto exit;
+	}
+
+	/* initramfs verify */
+	if (cfg.ramfs.addr) {
+		ret = akchipher_verify(&der_info, (unsigned char *)cfg.ramfs.addr,
+				(unsigned char *)cfg.ramfs_sig.addr, (unsigned long)cfg.ramfs.size);
+		if (ret) {
+			pr_err("ramfs verify failed\n");
+			goto exit;
+		}
+	}
+
+	return 0;
+
+exit:
+	return -1;
 }
 
 /*Resize fdt to modify some node, eg: bootargs*/
@@ -581,7 +678,15 @@ int plat_main(void)
 		show_config(&cfg);
 		cli_loop(100000);
 		load_images(&cfg);
+	
+		if (secure_boot()) {
+			if (do_verify()) {
+				pr_err("verify failed\n");
+				return 0;
+			} 
+		}	
 		modify_dtb(&cfg);
+
 	} else {
 		show_config(&cfg);
 	}

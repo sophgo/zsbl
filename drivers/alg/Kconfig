@@ -1,0 +1,14 @@
+menuconfig DRIVER_ALG_DEVICE
+	bool "Support Signature Verification Algorithms"
+	default	n
+	help
+		Support Signature Verification Algorithms.
+
+if DRIVER_ALG_DEVICE
+
+config DRIVER_ALG_DEVICE_PKA
+	bool "Support PKA Driver"
+	default n
+	help
+		Support PKA Driver
+endif
