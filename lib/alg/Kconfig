@@ -1,0 +1,26 @@
+config ALG_VERIFY
+	bool "Support Signature Verification Algorithms"
+	select DRIVER_ACCELERATOR
+	default	n
+	help
+		Support Accelerator Device.
+
+if ALG_VERIFY
+
+config ALG_HASH
+	bool "Support Hash"
+	default	n
+	help
+		Support Hash.
+
+config ALG_RSA_SHA256
+	bool "Support RSA(SHA256)"
+	default	n
+	help
+		Support RSA(SHA256).
+
+config ALG_SM2_SM3
+	bool "Support SM2(SM3)"
+	default	n
+	help
+		Support SM2(SM3).
