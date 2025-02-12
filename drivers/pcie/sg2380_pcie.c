@@ -185,6 +185,20 @@ void pcie_wait_core_clk(uint32_t sys_id, uint32_t ctrl_id)
 	} while (val != 1);
 }
 
+void pcie_check_radm_status(uint32_t sys_id, uint32_t ctrl_id)
+{
+	uint32_t val = 0;
+	uint64_t base_addr = 0;
+
+	base_addr = PCIE_CFG_BASE(sys_id) + PCIE_CTRL_INTF_REG_BASE(ctrl_id);
+
+	do {
+		udelay(10);
+		val = mmio_read_32(base_addr + 0x100);
+		val &= 0x1; //bit0, core_clk_active
+	} while (val != 1);
+}
+
 void pcie_config_link(uint32_t sys_id, uint32_t ctrl_id, uint32_t pcie_ln_cnt)
 {
 	uint32_t val = 0;
@@ -655,15 +669,17 @@ void pcie_enable_ltssm(uint32_t sys_id, uint32_t ctrl_id)
 void pcie_wait_link(uint32_t sys_id, uint32_t ctrl_id)
 {
 	uint32_t val = 0;
+	uint32_t times = 0;
 	uint64_t pcie_sii_base = 0;
 
 	pcie_sii_base = PCIE_CFG_BASE(sys_id) + PCIE_SII_INTF_REG_BASE(ctrl_id);
 
 	do {
-		udelay(10);
+		udelay(20);
 		val = mmio_read_32(pcie_sii_base + 0xb4); //LNK_DBG_2
-		val = (val >> 7) & 0x1; //bit7, RDLH_LINK_UP
-	} while (val != 1);
+		val = (val >> 6) & 0x3; //bit6, SMLH_LINK_UP; bit7, RDLH_LINK_UP
+		times++;
+	} while ((val != 3) && (times < 10000));
 }
 
 void pcie_check_link_status(uint32_t sys_id, uint32_t ctrl_id,
@@ -704,29 +720,22 @@ void pcie_init_phy(uint32_t sys_id, uint32_t ctrl_id, uint32_t phy_id, uint32_t 
 {
 	pr_info("%s:1\n", __func__);
 	pcie_config_power_reset(sys_id, ctrl_id);
-	pr_info("%s:2\n", __func__);
 	pcie_config_phy_pwr_stable(sys_id, phy_id);
-	pr_info("%s:3\n", __func__);
 	pcie_config_ss_mode(sys_id, phy_id, ss_mode);
-	pr_info("%s:4\n", __func__);
 	pcie_config_phy_bl_bypass(sys_id, phy_id, PCIE_PHY_NO_SRAM_BYPASS);
-	pr_info("%s:5\n", __func__);
 	pcie_config_button_reset(sys_id, ctrl_id);
-	pr_info("%s:6\n", __func__);
+	pr_info("%s:2\n", __func__);
 #ifdef PCIE_PLD_TEST
 	udelay(10);
 #else
-	pr_info("%s:7\n", __func__);
+	pr_info("%s:3\n", __func__);
 	pcie_wait_sram_init_done(sys_id, phy_id);
-	pr_info("%s:8\n", __func__);
 	pcie_config_exload_phy(sys_id, phy_id);
-	pr_info("%s:9\n", __func__);
 	if (ss_mode == 0) {
 		pcie_wait_sram_init_done(sys_id, 1);
-		pr_info("%s:10\n", __func__);
 		pcie_config_exload_phy(sys_id, 1);
 	}
-	pr_info("%s:11\n", __func__);
+	pr_info("%s:4\n", __func__);
 #endif
 }
 
@@ -823,16 +832,17 @@ void pcie_resize_bar0(uint32_t sys_id, uint32_t ctrl_id)
 	val = (val & 0xfffffffe) | 0x1;
 	mmio_write_32((dbi_reg_base + 0x8bc), val);
 
-	pr_info("before reg bar0 value is: 0x%x\n", mmio_read_32((dbi_reg_base) + 0x10));
-	pr_info("before reg bar1 value is: 0x%x\n", mmio_read_32((dbi_reg_base) + 0x14));
 	/* resize bar0 */
 	mmio_write_32(dbi_reg_base + 0x10, 0x0);
 	pcie_switch_to_cs2(sys_id, ctrl_id, PCIE_CONFIG_CS2);
 	mmio_write_32(dbi_reg_base + 0x10, 0xffffff);
 	pcie_switch_to_cs2(sys_id, ctrl_id, PCIE_CONFIG_DBI);
 
-	pr_info("after reg bar0 value is: 0x%x\n", mmio_read_32((dbi_reg_base) + 0x10));
-	pr_info("after reg bar1 value is: 0x%x\n", mmio_read_32((dbi_reg_base) + 0x14));
+	mmio_write_32(dbi_reg_base + 0x24c, 0x280);
+
+	val = mmio_read_32(dbi_reg_base + 0x250);
+	val = (val & 0xffff) | 0x23810000;
+	mmio_write_32(dbi_reg_base + 0x250, val);
 
 	/* disable DBI_RO_WR_EN */
 	val = mmio_read_32(dbi_reg_base + 0x8bc);
@@ -840,7 +850,34 @@ void pcie_resize_bar0(uint32_t sys_id, uint32_t ctrl_id)
 	mmio_write_32((dbi_reg_base + 0x8bc), val);
 }
 
-void pcie_config_bar0_bar1_atu(uint32_t sys_id, uint32_t ctrl_id)
+void pcie_resize_sriov_bar0(uint32_t sys_id, uint32_t ctrl_id)
+{
+	uint32_t val = 0;
+	uint64_t dbi_reg_base = 0;
+
+	if (ctrl_id == 5)
+		dbi_reg_base = PCIE_CFG_BASE(sys_id) + PCIE_X16_DBI_OFFSET;
+	else
+		dbi_reg_base = PCIE_CFG_BASE(sys_id) + PCIE_CTRL_DBI_REG_BASE(ctrl_id);
+
+	/* enable DBI_RO_WR_EN */
+	val = mmio_read_32(dbi_reg_base + 0x8bc);
+	val = (val & 0xfffffffe) | 0x1;
+	mmio_write_32((dbi_reg_base + 0x8bc), val);
+
+	/* resize bar0 */
+	mmio_write_32(dbi_reg_base + 0x25c, 0x0);
+	pcie_switch_to_cs2(sys_id, ctrl_id, PCIE_CONFIG_CS2);
+	mmio_write_32(dbi_reg_base + 0x25c, 0x3fffff); // 0xffffff
+	pcie_switch_to_cs2(sys_id, ctrl_id, PCIE_CONFIG_DBI);
+
+	/* disable DBI_RO_WR_EN */
+	val = mmio_read_32(dbi_reg_base + 0x8bc);
+	val &= 0xfffffffe;
+	mmio_write_32((dbi_reg_base + 0x8bc), val);
+}
+
+void pcie_config_bar0_atu(uint32_t sys_id, uint32_t ctrl_id)
 {
 	uint64_t atu_reg_base = 0;
 	uint64_t cfg_reg_addr = 0;
@@ -857,6 +894,35 @@ void pcie_config_bar0_bar1_atu(uint32_t sys_id, uint32_t ctrl_id)
 	mmio_write_32((atu_reg_base + 0x118), 0x50);
 	mmio_write_32((atu_reg_base + 0x100), 0x0);
 	mmio_write_32((atu_reg_base + 0x104), 0xC0080000);
+}
+
+void pcie_config_sriov_bar0_atu(uint32_t sys_id, uint32_t ctrl_id)
+{
+	uint64_t atu_reg_base = 0;
+	uint64_t cfg_reg_addr = 0;
+
+	if ((sys_id == PCIE_SUBSYS) && (ctrl_id == 5)) {
+		atu_reg_base = PCIE_CFG_BASE(sys_id) + PCIE_X16_ATU_OFFSET;
+		cfg_reg_addr = PCIE_CFG_BASE(sys_id) + PCIE_X16_DBI_OFFSET;
+	}  else {
+		atu_reg_base = PCIE_CFG_BASE(sys_id) + PCIE_CTRL_ATU_REG_BASE(ctrl_id);
+		cfg_reg_addr = PCIE_CFG_BASE(sys_id) + PCIE_CTRL_DBI_REG_BASE(ctrl_id);
+	}
+
+	//VF0
+	mmio_write_32((atu_reg_base + 0x1114), (cfg_reg_addr & 0xffffffff));
+	mmio_write_32((atu_reg_base + 0x1118), 0x50);
+	mmio_write_32((atu_reg_base + 0x111c), 0x80000000);
+	mmio_write_32((atu_reg_base + 0x1100), 0x0);
+	mmio_write_32((atu_reg_base + 0x1104), 0xC4100000); //all VF bar use a atu
+
+	//VF1
+	//cfg_reg_addr += 0x400000;
+	mmio_write_32((atu_reg_base + 0x2114), (cfg_reg_addr & 0xffffffff));
+	mmio_write_32((atu_reg_base + 0x2118), 0x50);
+	mmio_write_32((atu_reg_base + 0x211c), 0x80000001);
+	mmio_write_32((atu_reg_base + 0x2100), 0x0);
+	mmio_write_32((atu_reg_base + 0x2104), 0xC4100000); //all VF bar use a atu
 }
 
 void pcie_config_mps(uint32_t sys_id, uint32_t ctrl_id, uint32_t mps)
@@ -893,6 +959,7 @@ void pcie_config_mrrs(uint32_t sys_id, uint32_t ctrl_id, uint32_t mrrs)
 
 void pcie_clear_pasid(uint32_t sys_id, uint32_t ctrl_id)
 {
+	uint32_t val = 0;
 	uint64_t ctrl_reg_base = 0;
 
 	ctrl_reg_base = PCIE_CFG_BASE(sys_id) + PCIE_CTRL_INTF_REG_BASE(ctrl_id);
@@ -900,6 +967,10 @@ void pcie_clear_pasid(uint32_t sys_id, uint32_t ctrl_id)
 	//clear PASID
 	mmio_write_32((ctrl_reg_base + 0x104), 0x0);
 	mmio_write_32((ctrl_reg_base + 0x108), 0x0);
+
+	val = mmio_read_32(ctrl_reg_base + 0x17c);
+	val |= (3 << 5);
+	mmio_write_32((ctrl_reg_base + 0x17c), val);
 }
 
 void pcie_init(uint32_t sys_id, uint32_t ctrl_id, uint32_t phy_id,
@@ -911,14 +982,18 @@ void pcie_init(uint32_t sys_id, uint32_t ctrl_id, uint32_t phy_id,
 	pcie_init_phy(sys_id, ctrl_id, phy_id, ss_mode);
 
 	pcie_wait_core_clk(sys_id, ctrl_id);
+	pcie_check_radm_status(sys_id, ctrl_id);
 	pcie_config_ctrl(sys_id, ctrl_id, pcie_gen_slt, dev_type);
 	if (sys_id != SSPERI_SUBSYS)
 		pcie_config_eq(sys_id, ctrl_id, pcie_gen_slt, pcie_ln_cnt, dev_type);
 	pcie_config_link(sys_id, ctrl_id, pcie_ln_cnt);
 	if (dev_type == PCIE_DEV_TYPE_EP) {
-		if ((sys_id == 0) && (ctrl_id == 5))
+		if ((sys_id == 0) && (ctrl_id == 5)) {
 			pcie_resize_bar0(sys_id, ctrl_id);
-		pcie_config_bar0_bar1_atu(sys_id, ctrl_id);
+			pcie_resize_sriov_bar0(sys_id, ctrl_id);
+		}
+		pcie_config_bar0_atu(sys_id, ctrl_id);
+		pcie_config_sriov_bar0_atu(sys_id, ctrl_id);
 		pcie_clear_pasid(sys_id, ctrl_id);
 	}
 	pcie_enable_ltssm(sys_id, ctrl_id);
@@ -937,15 +1012,18 @@ void sg2380_pcie_init(void)
 {
 	//pcie_init(1, 0, 0, SSPERI_SERDES_PCIE_PROTOCOL, PCIE_DEV_TYPE_RC,
 	//          PCIE_GEN_1, PCIE_LANE_WIDTH_X1);
-	//pcie_init(1, 4, 1, SSPERI_SERDES_PCIE_PROTOCOL, PCIE_GEN_3, PCIE_LANE_WIDTH_X1);
-	pcie_init(0, 5, 0, PCIE_SERDES_MODE_1_LINK, PCIE_DEV_TYPE_RC,
+	//pcie_init(1, 4, 1, SSPERI_SERDES_PCIE_PROTOCOL, PCIE_DEV_TYPE_RC,
+	//		  PCIE_GEN_3, PCIE_LANE_WIDTH_X1);
+	pcie_init(0, 5, 0, PCIE_SERDES_MODE_1_LINK, PCIE_DEV_TYPE_EP,
 		  PCIE_GEN_4, PCIE_LANE_WIDTH_X16);
-	//pcie_init(0, 4, 0, PCIE_SERDES_MODE_6_LINK, PCIE_GEN_4, PCIE_LANE_WIDTH_X4);
-	//pcie_init(0, 0, 0, PCIE_SERDES_MODE_6_LINK, PCIE_GEN_4, PCIE_LANE_WIDTH_X2);
+	//pcie_init(0, 4, 0, PCIE_SERDES_MODE_6_LINK, PCIE_DEV_TYPE_RC,
+	//		  PCIE_GEN_4, PCIE_LANE_WIDTH_X4);
+	//pcie_init(0, 0, 0, PCIE_SERDES_MODE_6_LINK, PCIE_DEV_TYPE_RC,
+	//		  PCIE_GEN_4, PCIE_LANE_WIDTH_X2);
 	pr_info("%s, done\n", __func__);
 }
 
-
+#if 0
 void sg2380_pcie_cdma_test(uint32_t sys_id, uint32_t cdma_id, uint32_t mode,
 			uint32_t length, uint64_t src_addr, uint64_t dst_addr)
 {
@@ -1159,8 +1237,8 @@ void sg2380_pcie_cdma_test(uint32_t sys_id, uint32_t cdma_id, uint32_t mode,
 		 time, bw, time1, bw1);
 	pr_info("cdma finished!, timer = %d\n", timer);
 }
-
-void sg2380_pcie_cdma1_test(uint32_t sys_id, uint32_t cdma_id, uint32_t mode,
+#endif
+void sg2380_pcie_cdma_test(uint32_t sys_id, uint32_t cdma_id, uint32_t mode,
 			uint32_t length, uint64_t src_addr, uint64_t dst_addr)
 {
 	uint32_t val = 0;
@@ -1199,7 +1277,7 @@ void sg2380_pcie_cdma1_test(uint32_t sys_id, uint32_t cdma_id, uint32_t mode,
 		mmio_write_32((cdma_base + PCIE_CDMA_DESC_1D_DATA_LEGTH_REG), length);
 	} else if (mode == 1) {
 		//D2S
-		pr_info("D2S tesst, length = 0x%x\n", length);
+		pr_info("D2S test, length = 0x%x\n", length);
 		mmio_write_32((cdma_base + PCIE_CDMA_DESC_SRC_ADDR_HI_REG),
 			      (0x80000000 | (src_addr >> 32)));
 		mmio_write_32((cdma_base + PCIE_CDMA_DESC_SRC_ADDR_LO_REG),
@@ -1211,7 +1289,7 @@ void sg2380_pcie_cdma1_test(uint32_t sys_id, uint32_t cdma_id, uint32_t mode,
 		mmio_write_32((cdma_base + PCIE_CDMA_DESC_1D_DATA_LEGTH_REG), length);
 	} else {
 		//S2D
-		pr_info("S2D tesst, length = 0x%x\n", length);
+		pr_info("S2D test, length = 0x%x\n", length);
 		mmio_write_32((cdma_base + PCIE_CDMA_DESC_SRC_ADDR_HI_REG),
 			      (0x90000000 | (src_addr >> 32)));
 		mmio_write_32((cdma_base + PCIE_CDMA_DESC_SRC_ADDR_LO_REG),
