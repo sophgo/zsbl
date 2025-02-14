@@ -15,19 +15,6 @@
 
 typedef void (*console_state_fn)(struct console *);
 
-struct command {
-	// Command linked list storage
-	struct command *next;
-	struct console *console;
-
-	// Callback
-	command_callback callback;
-	void *hint;
-
-	// Command info
-	char *name;
-};
-
 struct console {
 	// Command linked list root pointer
 	struct command *root;

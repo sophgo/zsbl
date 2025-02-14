@@ -143,14 +143,17 @@ int parse_efi_variable(struct config *cfg)
 {
 	struct mtd *mtd;
 	void *fv;
-	struct variable_zone vz;
-	struct efi_variable_header *var;
+	struct efi_variable_zone vz;
+	struct efi_variable var;
 	int err;
-	const struct efi_guid sophgo_variable_guid = {
-		0x4a20a5c6, 0x50c1, 0xe94a,
-		{ 0x92, 0x96, 0x03, 0xbe, 0x8e, 0x38, 0x62, 0xc9 }
-	};
+	uint32_t rms_in_gb;
 
+	/* 726aa033-3547-ef41-8167d98e5d2157bd */
+	const struct efi_guid sophgo_variable_guid = {
+		0x33a06a72, 0x4735, 0x41ef,
+		{ 0X81, 0X67, 0XD9, 0X8E, 0X5D, 0X21, 0X57, 0XBD }
+	};
+	const wchar_t *rms_var_name = L"ReservedMemorySize";
 
 	mtd = mtd_find_by_name("flash0");
 
@@ -176,17 +179,20 @@ int parse_efi_variable(struct config *cfg)
 	if (err)
 		return err;
 
-	var = efi_vz_find_variable(&vz, &sophgo_variable_guid, L"ReservedMemorySize");
-	if (!var) {
+	err = efi_vz_find_variable(&vz, &var, &sophgo_variable_guid, rms_var_name);
+	if (err) {
 		pr_debug("Variable %s not found\n", "ReservedMemorySize");
 		return 0;
 	}
 
 	/* little endian */
-	memcpy(&cfg->reserved_memory_size, efi_var_get_data(var),
-	       sizeof(cfg->reserved_memory_size));
+	memcpy(&rms_in_gb, efi_variable_data(&var), sizeof(rms_in_gb));
+
+	/* little endian */
+	cfg->reserved_memory_size = (uint64_t)rms_in_gb * 1024 * 1024 * 1024;
 
 	pr_debug("Reserved memory size 0x%lx\n", cfg->reserved_memory_size);
 
 	return 0;
 }
+

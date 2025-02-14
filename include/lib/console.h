@@ -14,8 +14,20 @@ enum console_mode {
 
 struct console;
 struct command;
-
 typedef void (*command_callback)(struct command *cmd, int argc, char const *argv[]);
+
+struct command {
+	// Command linked list storage
+	struct command *next;
+	struct console *console;
+
+	// Callback
+	command_callback callback;
+	void *hint;
+
+	// Command info
+	char *name;
+};
 
 struct console *console_alloc_console(struct serial *dev, size_t max_arg_line_length,
 				      size_t max_arg_count);

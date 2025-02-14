@@ -344,20 +344,39 @@ struct efi_authenticated_variable_header {
 
 #pragma pack()
 
-struct variable_zone {
+struct efi_variable_zone {
 	struct efi_firmware_volume_header *fv;
 	struct efi_variable_store_header *vs;
-	struct efi_variable_header *var;
-	struct efi_variable_header *end;
+	void *var;
+	void *end;
 	int auth;
 };
 
-int efi_vz_init(struct variable_zone *vz, void *fv);
+struct efi_variable {
+	int auth;
+	void *header;
+};
 
-struct efi_variable_header *
-efi_vz_find_variable(struct variable_zone *vz,
-		     const struct efi_guid *vendor_guid, const wchar_t *name);
-wchar_t *efi_var_get_name(struct efi_variable_header *var);
-void *efi_var_get_data(struct efi_variable_header *var);
+int efi_vz_init(struct efi_variable_zone *vz, void *fv);
+
+int efi_vz_find_variable(struct efi_variable_zone *vz, struct efi_variable *var,
+			 const struct efi_guid *vendor_guid, const wchar_t *name);
+
+uint16_t efi_variable_id(struct efi_variable *var);
+uint8_t efi_variable_status(struct efi_variable *var);
+uint32_t efi_variable_attr(struct efi_variable *var);
+uint32_t efi_variable_name_size(struct efi_variable *var);
+uint32_t efi_variable_data_size(struct efi_variable *var);
+struct efi_guid *efi_variable_vendor_guid(struct efi_variable *var);
+wchar_t *efi_variable_name(struct efi_variable *var);
+void *efi_variable_data(struct efi_variable *var);
+int efi_variable_first(struct efi_variable_zone *vz, struct efi_variable *var);
+int efi_variable_next(struct efi_variable_zone *vz, struct efi_variable *var);
+
+void efi_list_variables(struct efi_variable_zone *vz);
+void efi_show_variable(struct efi_variable_zone *vz, struct efi_variable *var);
+void efi_show_variable_zone(struct efi_variable_zone *vz);
+void efi_show_variable_store_header(struct efi_variable_store_header *vs);
+void efi_show_fv_header(struct efi_firmware_volume_header *fv);
 
 #endif

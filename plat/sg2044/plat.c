@@ -577,7 +577,7 @@ int plat_main(void)
 
 	if (cfg.mode != CHIP_WORK_MODE_PCIE) {
 		parse_config_file(&cfg);
-		/* parse_efi_variable(&cfg); */
+		parse_efi_variable(&cfg);
 		show_config(&cfg);
 		cli_loop(100000);
 		load_images(&cfg);

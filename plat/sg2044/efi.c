@@ -1,4 +1,3 @@
-#include <efi.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -7,6 +6,8 @@
 #include <wchar.h>
 
 #include <framework/common.h>
+
+#include "efi.h"
 
 static void show_guid(struct efi_guid *guid)
 {
@@ -59,7 +60,7 @@ uint16_t checksum(void *data, unsigned long size)
 	return sum;
 }
 
-static void show_fv(struct efi_firmware_volume_header *fv)
+void efi_show_fv_header(struct efi_firmware_volume_header *fv)
 {
 	pr_info("GUID: ");
 	show_guid(&fv->guid);
@@ -74,12 +75,10 @@ static void show_fv(struct efi_firmware_volume_header *fv)
 	pr_info("Calculated Checksum: %d\n", checksum(fv, fv->header_len));
 }
 
-int efi_vz_check_fv(struct variable_zone *vz)
+int efi_vz_check_fv(struct efi_variable_zone *vz)
 {
 	struct efi_firmware_volume_header *fv = vz->fv;
 	struct efi_guid efi_system_nvdata_fv_guid = EFI_SYSTEM_NVDATA_FV_GUID;
-
-	show_fv(fv);
 
 	if (compare_guid(&fv->guid, &efi_system_nvdata_fv_guid)) {
 		pr_debug("Not a non-volatile firmware volume\n");
@@ -108,7 +107,7 @@ int efi_vz_check_fv(struct variable_zone *vz)
 	return 0;
 }
 
-static void show_variable_store_header(struct efi_variable_store_header *vs)
+void efi_show_variable_store_header(struct efi_variable_store_header *vs)
 {
 	pr_info("GUID: ");
 	show_guid(&vs->guid);
@@ -117,14 +116,12 @@ static void show_variable_store_header(struct efi_variable_store_header *vs)
 	pr_info("Status: 0x%02x\n", vs->status);
 }
 
-int efi_vz_check_variable_store(struct variable_zone *vz)
+int efi_vz_check_variable_store(struct efi_variable_zone *vz)
 {
 	struct efi_variable_store_header *vs = vz->vs;
 	struct efi_firmware_volume_header *fv = vz->fv;
 	struct efi_guid efi_variable_guid = EFI_VARIABLE_GUID;
 	struct efi_guid efi_auth_variable_guid = EFI_AUTHENTICATED_VARIABLE_GUID;
-
-	show_variable_store_header(vs);
 
 	if (compare_guid(&vs->guid, &efi_variable_guid) == 0) {
 		vz->auth = false;
@@ -153,7 +150,7 @@ int efi_vz_check_variable_store(struct variable_zone *vz)
 	return 0;
 }
 
-static void efi_vz_show(struct variable_zone *vz)
+void efi_show_variable_zone(struct efi_variable_zone *vz)
 {
 	pr_info("Firmware Volume Header: 0x%lx (0x%08lx)\n",
 		(unsigned long)vz->fv, 0UL);
@@ -164,17 +161,15 @@ static void efi_vz_show(struct variable_zone *vz)
 	pr_info("Variable Header Type: %s\n", vz->auth ? "Authenticated" : "Normal");
 }
 
-int efi_vz_init(struct variable_zone *vz, void *fv)
+int efi_vz_init(struct efi_variable_zone *vz, void *fv)
 {
 	vz->fv = fv;
 
 	if (efi_vz_check_fv(vz)) {
-		pr_err("Variable zone at 0x%lx is not a valid EFI firmware volume\n",
+		pr_debug("Variable zone at 0x%lx is not a valid EFI firmware volume\n",
 		       (unsigned long)vz);
 		return -EINVAL;
 	}
-
-	pr_info("-----------------------------\n");
 
 	vz->vs = fv + vz->fv->header_len;
 
@@ -184,47 +179,193 @@ int efi_vz_init(struct variable_zone *vz, void *fv)
 		return -EINVAL;
 	}
 
-	pr_info("-----------------------------\n");
 	vz->var = (void *)HEADER_ALIGN((void *)vz->vs + sizeof(struct efi_variable_store_header));
-	efi_vz_show(vz);
-
 	vz->end = (void *)vz->vs + vz->vs->size;
 
 	return 0;
 }
 
-struct efi_variable_header *
-efi_vz_find_variable(struct variable_zone *vz,
-		     const struct efi_guid *vendor_guid, const wchar_t *name)
+static void wputs(wchar_t *ws, unsigned long n)
 {
-	struct efi_variable_header *var;
-	wchar_t *var_name;
+	int i;
 
-	for (var = vz->var;
-	     var < vz->end && var->id == VARIABLE_DATA;
-	     var = (void *)var + var->name_size + var->data_size) {
-		var_name = (void *)var + sizeof(struct efi_variable_header);
-		if (compare_guid(&var->vendor_guid, vendor_guid) == 0
-		    && wcscmp(name, var_name) == 0)
-			return var;
+	for (i = 0; ws[i] && i < n / sizeof(wchar_t); ++i) {
+		if (ws[i] > 255)
+			pr_info("[%04x]", ws[i]);
+		else
+			pr_info("%c", ws[i]);
+	}
+}
+
+/* id */
+uint16_t efi_variable_id(struct efi_variable *var)
+{
+	if (var->auth)
+		return ((struct efi_authenticated_variable_header *)(var->header))->id;
+	else
+		return ((struct efi_variable_header *)(var->header))->id;
+}
+
+/* status */
+uint8_t efi_variable_status(struct efi_variable *var)
+{
+	if (var->auth)
+		return ((struct efi_authenticated_variable_header *)(var->header))->status;
+	else
+		return ((struct efi_variable_header *)(var->header))->status;
+}
+
+/* attr */
+uint32_t efi_variable_attr(struct efi_variable *var)
+{
+	if (var->auth)
+		return ((struct efi_authenticated_variable_header *)(var->header))->attr;
+	else
+		return ((struct efi_variable_header *)(var->header))->attr;
+}
+
+/* name_size */
+uint32_t efi_variable_name_size(struct efi_variable *var)
+{
+	if (var->auth)
+		return ((struct efi_authenticated_variable_header *)(var->header))->name_size;
+	else
+		return ((struct efi_variable_header *)(var->header))->name_size;
+}
+
+/* data_size */
+uint32_t efi_variable_data_size(struct efi_variable *var)
+{
+	if (var->auth)
+		return ((struct efi_authenticated_variable_header *)(var->header))->data_size;
+	else
+		return ((struct efi_variable_header *)(var->header))->data_size;
+}
+
+/* vendor_guid */
+struct efi_guid *efi_variable_vendor_guid(struct efi_variable *var)
+{
+	if (var->auth)
+		return &((struct efi_authenticated_variable_header *)(var->header))->vendor_guid;
+	else
+		return &((struct efi_variable_header *)(var->header))->vendor_guid;
+}
+
+/* name */
+wchar_t *efi_variable_name(struct efi_variable *var)
+{
+	if (var->auth)
+		return (void *)(var->header) + sizeof(struct efi_authenticated_variable_header);
+	else
+		return (void *)(var->header) + sizeof(struct efi_variable_header);
+}
+
+/* data */
+void *efi_variable_data(struct efi_variable *var)
+{
+	return (void *)efi_variable_name(var) + efi_variable_name_size(var);
+}
+
+/* total size of a variable, including variable header */
+uint32_t efi_variable_size(struct efi_variable *var)
+{
+	uint32_t size;
+
+	if (var->auth)
+		size = sizeof(struct efi_authenticated_variable_header);
+	else
+		size = sizeof(struct efi_variable_header);
+
+	size += efi_variable_name_size(var);
+	size += efi_variable_data_size(var);
+
+	return size;
+}
+
+/*
+ * return true if variable is valid
+ */
+int efi_variable_valid(struct efi_variable *var)
+{
+	return efi_variable_id(var) == VARIABLE_DATA;
+}
+
+int efi_variable_first(struct efi_variable_zone *vz, struct efi_variable *var)
+{
+	var->auth = vz->auth;
+	var->header = vz->var;
+
+	if (!efi_variable_valid(var))
+		return -ENOENT;
+
+	return 0;
+}
+
+int efi_variable_next(struct efi_variable_zone *vz, struct efi_variable *var)
+{
+	var->header = (void *)HEADER_ALIGN(var->header + efi_variable_size(var));
+
+	if (!efi_variable_valid(var))
+		return -ENOENT;
+
+	if ((unsigned long)var->header >= (unsigned long)vz->end)
+		return -ENOENT;
+
+	return 0;
+}
+
+void efi_show_variable(struct efi_variable_zone *vz, struct efi_variable *var)
+{
+	pr_info("Offset Inner FV 0x%08lx, Name Length 0x%08x, Data Length 0x%08x\n",
+		(unsigned long)var->header - (unsigned long)vz->fv,
+		efi_variable_name_size(var), efi_variable_data_size(var));
+	pr_info("Variable Vendor GUID: ");
+	show_guid(efi_variable_vendor_guid(var));
+	pr_info("Variable Name: ");
+	wputs(efi_variable_name(var), efi_variable_name_size(var));
+	pr_info("\n");
+	pr_info("Variable Attributies: %08x\n", efi_variable_attr(var));
+	pr_info("Variable Status: %02x\n", efi_variable_status(var));
+
+}
+
+void efi_list_variables(struct efi_variable_zone *vz)
+{
+
+	int i;
+	int err;
+	struct efi_variable var;
+
+	for (err = efi_variable_first(vz, &var), i = 0; err == 0;
+	     err = efi_variable_next(vz, &var), ++i) {
+
+		if (!(efi_variable_status(&var) == VAR_ADDED ||
+		      efi_variable_status(&var) == (VAR_IN_DELETED_TRANSITION & VAR_ADDED))) {
+			continue;
+		}
+
+		pr_info("Show %dth Variable\n", i);
+		efi_show_variable(vz, &var);
+	}
+}
+
+int efi_vz_find_variable(struct efi_variable_zone *vz, struct efi_variable *var,
+			 const struct efi_guid *vendor_guid, const wchar_t *name)
+{
+	int err;
+
+	for (err = efi_variable_first(vz, var); err == 0; err = efi_variable_next(vz, var)) {
+
+		if (!(efi_variable_status(var) == VAR_ADDED ||
+		      efi_variable_status(var) == (VAR_IN_DELETED_TRANSITION & VAR_ADDED))) {
+			continue;
+		}
+
+		if (compare_guid(efi_variable_vendor_guid(var), vendor_guid) == 0 &&
+		    wcscmp(name, efi_variable_name(var)) == 0)
+			return 0;
 	}
 
-	return NULL;
-}
-
-wchar_t *efi_var_get_name(struct efi_variable_header *var)
-{
-	return (void *)var + sizeof(struct efi_variable_header);
-}
-
-void *efi_var_get_data(struct efi_variable_header *var)
-{
-	wchar_t *var_name;
-	void *var_data;
-
-	var_name = (void *)var + sizeof(struct efi_variable_header);
-	var_data = (void *)var_name + var->name_size;
-
-	return var_data;
+	return -ENOENT;
 }
 
