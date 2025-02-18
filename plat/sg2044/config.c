@@ -148,17 +148,16 @@ int parse_efi_variable(struct config *cfg)
 	int err;
 	uint32_t rms_in_gb;
 
-	/* 726aa033-3547-ef41-8167d98e5d2157bd */
 	const struct efi_guid sophgo_variable_guid = {
-		0x33a06a72, 0x4735, 0x41ef,
-		{ 0X81, 0X67, 0XD9, 0X8E, 0X5D, 0X21, 0X57, 0XBD }
+		0x570CF83D, 0x5A8D, 0x4F79,
+		{ 0x91, 0xA9, 0xBA, 0x82, 0x8F, 0x05, 0x79, 0xF6 }
 	};
 	const wchar_t *rms_var_name = L"ReservedMemorySize";
 
 	mtd = mtd_find_by_name("flash0");
 
 	if (!mtd) {
-		pr_debug("Device %s not found\n");
+		pr_debug("Device not found\n");
 		return 0;
 	}
 
