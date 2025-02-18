@@ -86,15 +86,7 @@ static int handler_img(void* user, const char* section, const char* name,
 		} else if (strcmp(name, "mem32-length") == 0) {
 			pconfig->pcie[ctrl_id].mem32.len = strtoul(value, NULL, 0);
 		}
-	} else if (MATCH("sophgo-config", "work-mode")) {
-		/* reserve half memory for TPU */
-		if (strcmp(value, "soc") == 0) {
-			pconfig->reserved_memory_size =
-				pconfig->dram.channel_number * pconfig->dram.capacity / 2;
-			pconfig->mode = CHIP_WORK_MODE_SOC;
-		}
-	}
-	else
+	} else
 		return 0;
 
 	return -1;
@@ -189,6 +181,9 @@ int parse_efi_variable(struct config *cfg)
 
 	/* little endian */
 	cfg->reserved_memory_size = (uint64_t)rms_in_gb * 1024 * 1024 * 1024;
+
+	if (cfg->reserved_memory_size)
+	    cfg->mode = CHIP_WORK_MODE_SOC;
 
 	pr_debug("Reserved memory size 0x%lx\n", cfg->reserved_memory_size);
 
