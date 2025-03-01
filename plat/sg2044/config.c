@@ -81,7 +81,7 @@ static int handler_img(void* user, const char* section, const char* name,
 			pconfig->pcie[ctrl_id].mem32p.len = strtoul(value, NULL, 0);
 		} else if (strcmp(name, "mem32-addr") == 0) {
 			pconfig->pcie[ctrl_id].mem32.cpu = strtoul(value, NULL, 0);
-		} else if (strcmp(name, "mem32-pci") == 0) {
+		} else if (strcmp(name, "mem32-transl") == 0) {
 			pconfig->pcie[ctrl_id].mem32.pci = strtoul(value, NULL, 0);
 		} else if (strcmp(name, "mem32-length") == 0) {
 			pconfig->pcie[ctrl_id].mem32.len = strtoul(value, NULL, 0);
