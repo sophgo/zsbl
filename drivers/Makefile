@@ -8,3 +8,6 @@ obj-$(CONFIG_DRIVER_MTD) += mtd/
 obj-$(CONFIG_DRIVER_BOOT_DEVICE) += boot/
 obj-$(CONFIG_DRIVER_NVMEM_DEVICE) += nvmem/
 
+obj-y += accdev/
+#obj-$(CONFIG_DRIVER_ACCELERATOR) += accdev/
+

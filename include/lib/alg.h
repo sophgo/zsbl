@@ -1,0 +1,73 @@
+#ifndef _ALG_H_
+#define _ALG_H_
+
+#include <lib/list.h>
+#define ALG_NAME_MAX 16
+#define MAX_NAME 8
+
+struct akchipher_alg;
+
+struct base_alg {
+	struct list_head list_head;
+	unsigned int priority;
+	char name[ALG_NAME_MAX];
+};
+
+struct rsa_ctx {
+	unsigned int size;
+	unsigned char *m, *e, *x, *y;
+	unsigned char *r_inv,*mp,*r_sqr;
+};
+
+struct ecc_ctx {
+	unsigned int size;
+	unsigned char *prime, *e, *out;
+	unsigned char *A, *B, *Gx, *Gy, *order;
+
+	void * key, *randomkey;
+	void * pubx, *puby, *r, *s, *msg;
+
+	unsigned char *r_inv, *mp, *r_sqr; 
+	unsigned long cofactor;
+
+	//unsigned long msglen;
+	//unsigned char *encmsg;
+	//unsigned long encmsglen;
+};
+
+struct akchipher_param {
+	struct rsa_ctx rsa_ctx;
+	struct ecc_ctx sm2_ctx;
+};
+
+struct akchipher_ops {
+	int (*set_pub_key)(struct akchipher_alg *alg, struct akchipher_param *param);
+	int (*set_priv_key)(struct akchipher_alg *alg, struct akchipher_param *param);
+	int (*sign)(struct akchipher_alg *alg, struct akchipher_param *param);
+	int (*verify)(struct akchipher_alg *alg, struct akchipher_param *param);
+	void (*release)(struct akchipher_alg *alg);
+};
+
+struct akchipher_alg {
+	char name[ALG_NAME_MAX];
+	struct base_alg base;
+	struct akchipher_ops *ops;
+	void *priv;
+};
+
+int alg_set_pub_key(struct akchipher_alg *alg, struct akchipher_param *param);
+int alg_set_priv_key(struct akchipher_alg *alg, struct akchipher_param *param);
+int alg_sign(struct akchipher_alg *alg, struct akchipher_param *param);
+int alg_verify(struct akchipher_alg *alg, struct akchipher_param *param);
+void alg_release(struct akchipher_alg *alg);
+struct akchipher_alg *alg_find_by_name(const char *name);
+
+int alg_register(struct akchipher_alg *alg);
+void alg_unregister(struct akchipher_alg *alg);
+struct akchipher_alg *alg_first(void);
+struct akchipher_alg *alg_next(struct akchipher_alg *cur);
+int alg_list_all(void);
+struct akchipher_alg *alg_alloc();
+
+
+#endif
