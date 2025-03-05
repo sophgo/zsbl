@@ -13,7 +13,7 @@
 #include <driver/bootdev.h>
 #include <driver/mtd.h>
 
-#define SGCFG_SIZE_MAX	4096
+#define SGCFG_SIZE_MAX	(8 * 1024)
 
 struct sgcfg {
 	struct bootdev *bootdev;

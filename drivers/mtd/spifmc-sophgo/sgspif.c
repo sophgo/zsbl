@@ -240,8 +240,8 @@ static void bm_spi_init(unsigned long spi_base)
 	tmp = mmio_read_32(spi_base + REG_SPI_CTRL);
 	tmp |= BIT_SPI_CTRL_SRST;
 	tmp &= ~((1 << 11) - 1);
-	tmp |= 1;
-	mmio_write_32(spi_base + REG_SPI_CTRL,  tmp);
+	tmp |= 3;
+	mmio_write_32(spi_base + REG_SPI_CTRL, tmp);
 	/* sent 4 byte each time */
 	tran_csr |= (0x03 << SPI_TRAN_CSR_ADDR_BYTES_SHIFT);
 	/* itr and DMA req when >= 4byte */
