@@ -27,25 +27,23 @@ static int debug_on=0;
 /* write a 32-bit word to a given address */
 void pdu_io_write32 (void *addr, unsigned long val)
 {
-   if (addr == NULL) {
-      debug_on ^= 1;
-      return;
-   }
-   if (debug_on) {
-      ELPHW_PRINT("PDU: write %.8lx -> %p\n", val, addr);
-   }
-   *((uint32_t *)addr) = val;
+	if (addr == NULL) {
+		debug_on ^= 1;
+		return;
+	}
+	if (debug_on)
+		ELPHW_PRINT("PDU: write %.8lx -> %p\n", val, addr);
+	*((uint32_t *)addr) = val;
 }
 
 /* read a 32-bit word from a given address */
 unsigned long pdu_io_read32 (void *addr)
 {
-   unsigned long foo;
-   foo = *((uint32_t *)addr);
-   if (debug_on) {
-      ELPHW_PRINT("PDU: read  %.8lx <- %p\n", foo, addr);
-   }
-   return foo;
+	unsigned long foo;
+	foo = *((uint32_t *)addr);
+	if (debug_on)
+		ELPHW_PRINT("PDU: read  %.8lx <- %p\n", foo, addr);
+	return foo;
 }
 
 /* Platform specific DDT routines */
@@ -59,7 +57,7 @@ static unsigned long pdu_heap_ptr;
 // initialize memory for DDT routines
 int pdu_mem_init(void *device)
 {
-   return 0; // does nothing, here is where you could initialize your heap/etc
+   	return 0; // does nothing, here is where you could initialize your heap/etc
 }
 
 // cleanup memory used by DDT routines
@@ -89,106 +87,106 @@ void pdu_free (void *p)
 /**** PORTABLE PDU CODE ****/
 void pdu_io_cached_write32 (void *addr, unsigned long val, uint32_t *cache)
 {
-   if (*cache == val) {
-      return;
-   }
-   *cache = val;
-   pdu_io_write32 (addr, val);
+	if (*cache == val)
+		return;
+	*cache = val;
+	pdu_io_write32 (addr, val);
 }
 
 void pdu_to_dev32(void *addr, uint32_t *src, unsigned long nword)
 {
-   while (nword--) {
-      pdu_io_write32(addr, *src++);
-      addr += 4;
-   }
+	while (nword--) {
+		pdu_io_write32(addr, *src++);
+		addr += 4;
+	}
 }
 
 void pdu_from_dev32(uint32_t *dst, void *addr, unsigned long nword)
 {
-   while (nword--) {
-      *dst++ = pdu_io_read32(addr);
-      addr += 4;
-   }
+	while (nword--) {
+		*dst++ = pdu_io_read32(addr);
+		addr += 4;
+	}
 }
 
 void pdu_to_dev32_big(void *addr, const unsigned char *src, unsigned long nword)
 {
-   unsigned long v;
+   	unsigned long v;
 
-   while (nword--) {
-     v = 0;
-     v = (v << 8) | ((unsigned long)*src++);
-     v = (v << 8) | ((unsigned long)*src++);
-     v = (v << 8) | ((unsigned long)*src++);
-     v = (v << 8) | ((unsigned long)*src++);
-     pdu_io_write32(addr, v);
-     addr += 4;
-   }
+	while (nword--) {
+		v = 0;
+		v = (v << 8) | ((unsigned long)*src++);
+		v = (v << 8) | ((unsigned long)*src++);
+		v = (v << 8) | ((unsigned long)*src++);
+		v = (v << 8) | ((unsigned long)*src++);
+		pdu_io_write32(addr, v);
+		addr += 4;
+	}
 }
 
 void pdu_from_dev32_big(unsigned char *dst, void *addr, unsigned long nword)
 {
-   unsigned long v;
-   while (nword--) {
-      v = pdu_io_read32(addr);
-      addr += 4;
-      *dst++ = (v >> 24) & 0xFF; v <<= 8;
-      *dst++ = (v >> 24) & 0xFF; v <<= 8;
-      *dst++ = (v >> 24) & 0xFF; v <<= 8;
-      *dst++ = (v >> 24) & 0xFF; v <<= 8;
-   }
+	unsigned long v;
+
+	while (nword--) {
+		v = pdu_io_read32(addr);
+		addr += 4;
+		*dst++ = (v >> 24) & 0xFF; v <<= 8;
+		*dst++ = (v >> 24) & 0xFF; v <<= 8;
+		*dst++ = (v >> 24) & 0xFF; v <<= 8;
+		*dst++ = (v >> 24) & 0xFF; v <<= 8;
+	}
 }
 
 void pdu_to_dev32_little(void *addr, const unsigned char *src, unsigned long nword)
 {
-   unsigned long v;
+   	unsigned long v;
 
-   while (nword--) {
-     v = 0;
-     v = (v >> 8) | ((unsigned long)*src++ << 24UL);
-     v = (v >> 8) | ((unsigned long)*src++ << 24UL);
-     v = (v >> 8) | ((unsigned long)*src++ << 24UL);
-     v = (v >> 8) | ((unsigned long)*src++ << 24UL);
-     pdu_io_write32(addr, v);
-     addr += 4;
-   }
+	while (nword--) {
+		v = 0;
+		v = (v >> 8) | ((unsigned long)*src++ << 24UL);
+		v = (v >> 8) | ((unsigned long)*src++ << 24UL);
+		v = (v >> 8) | ((unsigned long)*src++ << 24UL);
+		v = (v >> 8) | ((unsigned long)*src++ << 24UL);
+		pdu_io_write32(addr, v);
+		addr += 4;
+	}
 }
 
 void pdu_from_dev32_little(unsigned char *dst, void *addr, unsigned long nword)
 {
-   unsigned long v;
-   while (nword--) {
-      v = pdu_io_read32(addr);
-      addr += 4;
-      *dst++ = v & 0xFF; v >>= 8;
-      *dst++ = v & 0xFF; v >>= 8;
-      *dst++ = v & 0xFF; v >>= 8;
-      *dst++ = v & 0xFF; v >>= 8;
-   }
+	unsigned long v;
+
+	while (nword--) {
+		v = pdu_io_read32(addr);
+		addr += 4;
+		*dst++ = v & 0xFF; v >>= 8;
+		*dst++ = v & 0xFF; v >>= 8;
+		*dst++ = v & 0xFF; v >>= 8;
+		*dst++ = v & 0xFF; v >>= 8;
+	}
 }
 
 void pdu_to_dev32_s(void *addr, const unsigned char *src, unsigned long nword, int endian)
 {
-   if (endian) {
-      pdu_to_dev32_big(addr, src, nword);
-   } else {
-      pdu_to_dev32_little(addr, src, nword);
-   }
+	if (endian)
+		pdu_to_dev32_big(addr, src, nword);
+	else
+		pdu_to_dev32_little(addr, src, nword);
 }
 
 void pdu_from_dev32_s(unsigned char *dst, void *addr, unsigned long nword, int endian)
 {
-   if (endian) {
-      pdu_from_dev32_big(dst, addr, nword);
-   } else {
-      pdu_from_dev32_little(dst, addr, nword);
-   }
+	if (endian)
+		pdu_from_dev32_big(dst, addr, nword);
+	else
+		pdu_from_dev32_little(dst, addr, nword);
+
 }
 
 /* Convert SDK error codes to corresponding kernel error codes. */
 int pdu_error_code(int code)
 {
-   return code;
+   	return code;
 }
 
