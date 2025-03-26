@@ -14,6 +14,10 @@
 #define EFUSE_DRAM_INFO_OFFSET_0	(EFUSE_DRAM_INFO_INDEX * EFUSE_CELL_SIZE)
 #define EFUSE_DRAM_INFO_OFFSET_1	((EFUSE_DRAM_INFO_INDEX + 1) * EFUSE_CELL_SIZE)
 
+#define EFUSE_MISC_INFO_INDEX		(94)
+#define EFUSE_MISC_INFO_OFFSET_0	(EFUSE_MISC_INFO_INDEX * EFUSE_CELL_SIZE)
+#define EFUSE_MISC_INFO_OFFSET_1	((EFUSE_MISC_INFO_INDEX + 1) * EFUSE_CELL_SIZE)
+
 #define GB(n)	((n) * 1024 * 1024 * 1024)
 #define MT(n)	((n) * 1000 * 1000)
 
@@ -42,6 +46,22 @@ int get_dram_info(struct dram_info *dram_info)
 		return -ENODEV;
 	}
 
+	nvmem_read(nvmem, EFUSE_MISC_INFO_OFFSET_0, sizeof(flags0), &flags0);
+	nvmem_read(nvmem, EFUSE_MISC_INFO_OFFSET_1, sizeof(flags1), &flags1);
+
+	flags = flags0 | flags1;
+
+	/* check if SN is burn to DDR information area by mistake */
+	if ((flags >> 14) & 1) {
+		/* yes, SN is burn to DDR information area by mistake */
+		dram_info->vendor = "Micron";
+		dram_info->capacity = GB(16UL);
+		dram_info->data_rate = MT(8533UL);
+		dram_info->channel_number = 8;
+		dram_info->channel_map = 0xff;
+		return 0;
+	}
+
 	nvmem_read(nvmem, EFUSE_DRAM_INFO_OFFSET_0, sizeof(flags0), &flags0);
 	nvmem_read(nvmem, EFUSE_DRAM_INFO_OFFSET_1, sizeof(flags1), &flags1);
 
@@ -50,8 +70,8 @@ int get_dram_info(struct dram_info *dram_info)
 	/* check valid */
 	if (((flags >> 12) & 0x03) == 0 || ((flags >> 12) & 0x03) == 0x03) {
 		pr_info("No DRAM information in eFuse, using defaults\n");
-		dram_info->vendor = "Hynix";
-		dram_info->capacity = GB(8UL);
+		dram_info->vendor = "Micron";
+		dram_info->capacity = GB(16UL);
 		dram_info->data_rate = MT(8533UL);
 		dram_info->channel_number = 8;
 		dram_info->channel_map = 0xff;
