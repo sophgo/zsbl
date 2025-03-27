@@ -31,14 +31,14 @@
 static void hw0_down(void)
 {
 #if 1
-	TOP_CLOCK_ENABLE_1 &= ~(1 << 15);	//disable clock
+	TOP_CLOCK_ENABLE_1 &= ~(1 << 16);	//disable clock
 	TOP_SOFT_RESET_1 &= ~(1 << 29);		//deactive reset
 #endif 
 }
 static void hw0_up(void)
 {
 #if 1
-	TOP_CLOCK_ENABLE_1 |= 1 << 15;		//enable clock
+	TOP_CLOCK_ENABLE_1 |= 1 << 16;		//enable clock
 	TOP_SOFT_RESET_1 |= 1 << 29;		//release reset
 #endif
 }

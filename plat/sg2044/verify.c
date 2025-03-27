@@ -4,7 +4,7 @@
 #include <framework/common.h>
 #include <string.h>
 #include <stdint.h>
-#include <verify.h>
+#include "verify.h"
 #include <driver/nvmem.h>
 #include <driver/alg.h>
 
