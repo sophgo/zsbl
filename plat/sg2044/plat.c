@@ -17,7 +17,7 @@
 #include "config.h"
 #include "efuse.h"
 #include "fdt_pcie.h"
-#include <verify.h>
+#include "verify.h"
 
 #define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
 
