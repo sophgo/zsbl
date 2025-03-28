@@ -57,6 +57,46 @@ enum {
 	CHIP_WORK_MODE_PCIE,
 };
 
+/* code depends on the sequence of these elements, don't change it */
+enum CHIP_CONNER_TYPE {
+	CHIP_CONNER_TT = 0,
+	CHIP_CONNER_FF,
+	CHIP_CONNER_FS,
+	CHIP_CONNER_SF,
+	CHIP_CONNER_SS,
+	CHIP_CONNER_MAX,
+};
+
+/* tpu has two status, enabled or disabled
+ * when tpu is enabled, eg. ReservedMemory is set by customers, we need check
+ *     struct condition->tpu[1] to see if such condition matches "TPU working" mode.
+ * otherwise, we need check
+ *     struct condition->tpu[0].
+ */
+struct condition {
+	int tpu[2];
+	int conner[CHIP_CONNER_MAX];
+};
+
+#define DVFS_ENTRY_MAX	16
+
+struct dvfs_entry {
+	uint64_t min;
+	uint64_t max;
+	uint64_t vol;
+};
+
+struct op_point {
+	const char *name;
+	uint64_t vddr; /* unit is mV */
+	uint64_t cpu_freq; /* unit is Hz */
+	uint64_t tpu_freq; /* unit is Hz */
+	uint64_t noc_freq; /* unit is Hz */
+	struct condition cond;
+
+	struct dvfs_entry dvfs[DVFS_ENTRY_MAX];
+};
+
 #define PCIE_MAX	(10)
 
 struct config {
@@ -68,6 +108,9 @@ struct config {
 	int mode;
 	char *bootargs;
 	unsigned long reserved_memory_size;
+	int tpu_avl;
+	int conner;
+	const struct op_point *op;
 
 	struct boot_file sbi;
 	struct boot_file kernel;

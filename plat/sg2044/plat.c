@@ -155,16 +155,28 @@ static const char *mode2str(int mode)
 	return mode_names[mode];
 }
 
+static const char *conner_names[] = {"TT", "FF", "FS", "SF", "SS"};
+static const char *conner2str(int conner)
+{
+	return conner_names[conner];
+}
+
 static void show_config(struct config *cfg)
 {
 	/* include 0 terminator */
-	char mac[7];
 	int i;
+	const struct op_point *op;
+
+	op = cfg->op;
 
 	pr_info("\n");
-	pr_info("%-16s %s\n", "Mode", mode2str(cfg->mode));
-	pr_info("%-16s %s\n", "eth0 MAC", mac2str(cfg->mac0, mac));
-	pr_info("%-16s %s\n", "eth1 MAC", mac2str(cfg->mac1, mac));
+	pr_info("%-16s %s %s\n", "Chip Type",
+		conner2str(cfg->conner), cfg->tpu_avl ? "CPU-TPU" : "CPU-ONLY");
+	pr_info("%-16s %s\n", "Working Mode", mode2str(cfg->mode));
+	pr_info("%-16s %lluMHz\n", "Max CPU Freq", op->cpu_freq / 1000 / 1000);
+	pr_info("%-16s %lluMHz\n", "Max TPU Freq", op->tpu_freq / 1000 / 1000);
+	pr_info("%-16s %lluMHz\n", "Max NoC Freq", op->noc_freq / 1000 / 1000);
+	pr_info("%-16s %llumV\n", "Core Voltage", op->vddr);
 
 	pr_info("%-16s %s %lluGiB %lluMT/s\n", "DRAM Chip",
 			cfg->dram.vendor,
@@ -186,11 +198,16 @@ static void show_config(struct config *cfg)
 	pr_info("]\n");
 
 
-	pr_info("%-16s %s\n", "SN", cfg->sn ? cfg->sn : "[null]");
+	if (cfg->sn)
+		pr_info("%-16s %s\n", "SN", cfg->sn);
+
 	show_boot_file("SBI", &cfg->sbi);
 	show_boot_file("Kernel", &cfg->kernel);
 	show_boot_file("Device tree", &cfg->dtb);
-	show_boot_file("Ramfs", &cfg->ramfs);
+
+	if (cfg->ramfs.addr)
+		show_boot_file("Ramfs", &cfg->ramfs);
+
 	pr_info("\n");
 }
 
@@ -210,6 +227,86 @@ static void init_pcie_win(struct pcie_win *w, uint64_t pci, uint64_t cpu, uint64
 	w->cpu = cpu;
 	w->len = len;
 }
+
+#define KHz(f)	(((uint64_t)f) * 1000)
+#define MHz(f)	(KHz(f) * 1000)
+
+/* dvfs.vol is 0 is the terminator */
+
+const struct op_point op_point_list[] = {
+	{
+		/* on tt, ff, fs, sf conner chips, when tpu is disabled */
+		"[CPU] [TT FF FS SF]",
+		850, MHz(2600), 0, MHz(2000),
+		{{1, 0}, {1, 1, 1, 1, 0}},
+		{
+			{0, MHz(2600) + 1, 850},
+			{0, 0, 0},
+		}
+	},
+	{
+		/* on ss conner chips, when tpu is disabled */
+		"[CPU] [SS]",
+		900, MHz(2600), 0, MHz(2000),
+		{{1, 0}, {0, 0, 0, 0, 1}},
+		{
+			{0, MHz(2600) + 1, 900},
+			{0, 0, 0},
+		}
+	},
+	{
+		/* on all kinde of conner chips, when tpu is enabled */
+		"[SOC]",
+		800, MHz(2000), MHz(1000), MHz(2000),
+		{{0, 1}, {1, 1, 1, 1, 1}},
+		{
+			{0, MHz(2000) + 1, 800},
+			{0, 0, 0},
+		}
+	},
+	/* the default one, always match, it should sets a safe operating point */
+	{
+		/* on all kinde of conner chips, when tpu is enabled */
+		"[DEFAULT]",
+		800, MHz(1000), 0, MHz(1000),
+		{{1, 1}, {1, 1, 1, 1, 1}},
+		{
+			{0, MHz(1000) + 1, 800},
+			{0, 0, 0},
+		}
+	},
+};
+
+static int condition_match(const struct condition *c, int conner, int mode)
+{
+	int index;
+
+	index = (mode == CHIP_WORK_MODE_CPU) ? 0 : 1;
+
+	if (!c->tpu[index])
+		return false;
+
+	/* tpu status condition matches, check conner */
+	/* correct invalid parameter */
+	index = ((conner < 0) || (conner >= CHIP_CONNER_MAX)) ? CHIP_CONNER_TT : conner;
+
+	return c->conner[index];
+}
+
+static const struct op_point *get_op_point(int conner, int mode)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(op_point_list); ++i) {
+		if (condition_match(&op_point_list[i].cond, conner, mode))
+			return &op_point_list[i];
+	}
+
+	/* should not reach here, the last one(default operating point) should always match */
+	return NULL;
+}
+
+
 
 static void config_init(struct config *cfg)
 {
@@ -240,6 +337,9 @@ static void config_init(struct config *cfg)
 	cfg->cfg.name = "conf.ini";
 	cfg->cfg.addr = ram_base + CFG_FILE_OFFSET;
 
+	cfg->conner = CHIP_CONNER_TT;
+	cfg->tpu_avl = true;
+
 	if (secure_boot()) {
 		/* pubkey */
 		cfg->pub_key.name = "public_key.der";
@@ -266,7 +366,7 @@ static void config_init(struct config *cfg)
 		cfg->dtb_sig.addr = (uint64_t)dtb_sig;
 	}
 
-	get_dram_info(&cfg->dram);
+	get_info_in_efuse(cfg);
 
 	/* init pcie config */
 	for (i = 0; i < PCIE_MAX; ++i, ++p) {
@@ -583,6 +683,42 @@ static void modify_memory_node(struct config *cfg)
 	}
 }
 
+static void add_cppc_node(struct config *cfg)
+{
+	const struct op_point *op;
+	void *fdt;
+	int off;
+	struct dvfs_entry dvfs[DVFS_ENTRY_MAX];
+	int i;
+
+	op = cfg->op;
+	fdt = (void *)cfg->dtb.addr;
+
+	off = fdt_path_offset(fdt, "/soc");
+	if (off < 0) {
+		pr_err("Cannot find \"/soc\" node\n");
+		return;
+	}
+
+	off = fdt_add_subnode(fdt, off, "cppc@0");
+	fdt_setprop_string(fdt, off, "compatible", "sophgo,sg2044-cppc");
+	fdt_setprop_u64(fdt, off, "min-frequency", MHz(1000));
+	fdt_setprop_u64(fdt, off, "max-frequency", op->cpu_freq);
+	fdt_setprop_u64(fdt, off, "step", MHz(25));
+	fdt_setprop_string(fdt, off, "clock-names", "mpll1-clock");
+
+	for (i = 0; op->dvfs[i].vol; ++i) {
+		/* convert endian */
+		dvfs[i].min = cpu_to_fdt64(op->dvfs[i].min);
+		dvfs[i].max = cpu_to_fdt64(op->dvfs[i].max);
+		dvfs[i].vol = cpu_to_fdt64(op->dvfs[i].vol);
+	}
+
+	if (i)
+		fdt_setprop(fdt, off, "frequency-voltage-relationship",
+			    dvfs, i * sizeof(struct dvfs_entry));
+}
+
 static int of_get_chosen(void *fdt)
 {
 	int node;
@@ -662,6 +798,7 @@ static void modify_dtb(struct config *cfg)
 	modify_eth_node(cfg);
 	modify_memory_node(cfg);
 	modify_pcie_node(cfg);
+	add_cppc_node(cfg);
 	modify_initramfs(cfg);
 	modify_bootargs(cfg);
 }
@@ -675,18 +812,18 @@ int plat_main(void)
 	if (cfg.mode != CHIP_WORK_MODE_PCIE) {
 		parse_config_file(&cfg);
 		parse_efi_variable(&cfg);
+		cfg.op = get_op_point(cfg.conner, cfg.mode);
 		show_config(&cfg);
 		cli_loop(100000);
 		load_images(&cfg);
-	
+
 		if (secure_boot()) {
 			if (do_verify()) {
 				pr_err("verify failed\n");
 				return 0;
-			} 
-		}	
+			}
+		}
 		modify_dtb(&cfg);
-
 	} else {
 		show_config(&cfg);
 	}

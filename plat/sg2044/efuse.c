@@ -32,12 +32,15 @@ static const uint64_t channel_map[] = {
 	0,
 };
 
-int get_dram_info(struct dram_info *dram_info)
+int get_info_in_efuse(struct config *cfg)
 {
 	uint32_t flags = 0;
 	uint32_t flags0 = 0;
 	uint32_t flags1 = 0;
 	struct nvmem *nvmem;
+	struct dram_info *dram_info;
+
+	dram_info = &cfg->dram;
 
 	nvmem = nvmem_find_by_name("efuse1");
 	if (!nvmem) {
@@ -51,6 +54,14 @@ int get_dram_info(struct dram_info *dram_info)
 
 	flags = flags0 | flags1;
 
+	/* get conner */
+	cfg->conner = (flags >> 16) & 0xf;
+	if (cfg->conner < 0 || cfg->conner >= CHIP_CONNER_MAX)
+		cfg->conner = CHIP_CONNER_TT;
+
+	/* tpu available */
+	cfg->tpu_avl = ((flags >> 15) & 1) ? false : true;
+
 	/* check if SN is burn to DDR information area by mistake */
 	if ((flags >> 14) & 1) {
 		/* yes, SN is burn to DDR information area by mistake */
@@ -59,34 +70,32 @@ int get_dram_info(struct dram_info *dram_info)
 		dram_info->data_rate = MT(8533UL);
 		dram_info->channel_number = 8;
 		dram_info->channel_map = 0xff;
-		return 0;
+	} else {
+		nvmem_read(nvmem, EFUSE_DRAM_INFO_OFFSET_0, sizeof(flags0), &flags0);
+		nvmem_read(nvmem, EFUSE_DRAM_INFO_OFFSET_1, sizeof(flags1), &flags1);
+
+		flags = flags0 | flags1;
+
+		/* check valid */
+		if (((flags >> 12) & 0x03) == 0 || ((flags >> 12) & 0x03) == 0x03) {
+			pr_info("No DRAM information in eFuse, using defaults\n");
+			dram_info->vendor = "Micron";
+			dram_info->capacity = GB(16UL);
+			dram_info->data_rate = MT(8533UL);
+			dram_info->channel_number = 8;
+			dram_info->channel_map = 0xff;
+		} else {
+			dram_info->vendor = vendor[flags & 0x03];
+			dram_info->capacity = capacity[(flags >> 2) & 0x03];
+			dram_info->data_rate = data_rate[(flags >> 4) & 0x03];
+			dram_info->channel_number = channel_number[(flags >> 6) & 0x03];
+
+			if (dram_info->channel_number == 4)
+				dram_info->channel_map = channel_map[(flags >> 10) & 0x03];
+			else
+				dram_info->channel_map = 0xff;
+		}
 	}
-
-	nvmem_read(nvmem, EFUSE_DRAM_INFO_OFFSET_0, sizeof(flags0), &flags0);
-	nvmem_read(nvmem, EFUSE_DRAM_INFO_OFFSET_1, sizeof(flags1), &flags1);
-
-	flags = flags0 | flags1;
-
-	/* check valid */
-	if (((flags >> 12) & 0x03) == 0 || ((flags >> 12) & 0x03) == 0x03) {
-		pr_info("No DRAM information in eFuse, using defaults\n");
-		dram_info->vendor = "Micron";
-		dram_info->capacity = GB(16UL);
-		dram_info->data_rate = MT(8533UL);
-		dram_info->channel_number = 8;
-		dram_info->channel_map = 0xff;
-		return 0;
-	}
-
-	dram_info->vendor = vendor[flags & 0x03];
-	dram_info->capacity = capacity[(flags >> 2) & 0x03];
-	dram_info->data_rate = data_rate[(flags >> 4) & 0x03];
-	dram_info->channel_number = channel_number[(flags >> 6) & 0x03];
-
-	if (dram_info->channel_number == 4)
-		dram_info->channel_map = channel_map[(flags >> 10) & 0x03];
-	else
-		dram_info->channel_map = 0xff;
 
 	return 0;
 }

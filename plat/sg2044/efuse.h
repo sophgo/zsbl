@@ -3,7 +3,7 @@
 
 #include "config.h"
 
-int get_dram_info(struct dram_info *dram_info);
+int get_info_in_efuse(struct config *cfg);
 void show_dram_info(struct dram_info *dram_info);
 
 #endif
