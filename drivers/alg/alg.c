@@ -9,31 +9,31 @@
 static LIST_HEAD(alg_list);
 static int alg_count;
 
-void alg_release(struct akchipher_alg *alg)
+void alg_release(struct akcipher_alg *alg)
 {
 	alg->ops->release(alg);	
 }
 
-struct akchipher_alg *alg_alloc()
+struct akcipher_alg *alg_alloc()
 {
-	struct akchipher_alg *alg;
+	struct akcipher_alg *alg;
 
-	alg = malloc(sizeof(struct akchipher_alg));
+	alg = malloc(sizeof(struct akcipher_alg));
 	if (!alg) {
 		return NULL;
 	}
 	return alg;
 }
 
-struct akchipher_alg *alg_find_by_name(const char *name)
+struct akcipher_alg *alg_find_by_name(const char *name)
 {
 	struct list_head *p;
 	struct base_alg *bp;
-	struct akchipher_alg *alg;
+	struct akcipher_alg *alg;
 
 	list_for_each(p, &alg_list) {
 		bp = container_of(p, struct base_alg, list_head);
-		alg = container_of(bp, struct akchipher_alg, base);
+		alg = container_of(bp, struct akcipher_alg, base);
 		if (strcmp(alg->name, name) == 0) {
 			return alg;
 		}
@@ -42,12 +42,12 @@ struct akchipher_alg *alg_find_by_name(const char *name)
 
 }
 
-void alg_add(struct akchipher_alg *alg)
+void alg_add(struct akcipher_alg *alg)
 {
 	list_add_tail(&alg->base.list_head, &alg_list);
 }
 
-int alg_register(struct akchipher_alg *alg)
+int alg_register(struct akcipher_alg *alg)
 {
 	if (!alg->ops) {
 		pr_err("failed: no alg ops\n");
@@ -58,18 +58,18 @@ int alg_register(struct akchipher_alg *alg)
 	return 0;
 }
 
-void alg_remove(struct akchipher_alg *alg)
+void alg_remove(struct akcipher_alg *alg)
 {
 	list_del(&alg->base.list_head);
 }
 
-void alg_unregister(struct akchipher_alg *alg)
+void alg_unregister(struct akcipher_alg *alg)
 {
 	alg_remove(alg);
 	alg_count--;
 }
 
-int alg_verify(struct akchipher_alg *alg, union akchipher_param *param)
+int alg_verify(struct akcipher_alg *alg, union akcipher_param *param)
 {
 	return alg->ops->verify(alg, param);
 }
@@ -78,7 +78,7 @@ static void command_show_algs(struct command *c, int argc, const char *argv[])
 {
 	struct list_head *p;
 	struct base_alg *bp;
-	struct akchipher_alg *alg;
+	struct akcipher_alg *alg;
 	int i;
 
 	console_printf(command_get_console(c),
@@ -88,7 +88,7 @@ static void command_show_algs(struct command *c, int argc, const char *argv[])
 	i = 0;
 	list_for_each(p, &alg_list) {
 		bp = container_of(p, struct base_alg, list_head);
-		alg = container_of(bp, struct akchipher_alg, base);
+		alg = container_of(bp, struct akcipher_alg, base);
 		console_printf(command_get_console(c),
 			       "%6d %14s %14s\n", i, alg->name, alg->base.name);
 		++i;

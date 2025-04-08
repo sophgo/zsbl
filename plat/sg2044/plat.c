@@ -559,7 +559,7 @@ static int do_verify(void)
 	}
 
 	/* openSBI verify */
-	ret = akchipher_verify(&der_info, (unsigned char *)cfg.sbi.addr,
+	ret = akcipher_verify(&der_info, (unsigned char *)cfg.sbi.addr,
 			(unsigned char *)cfg.sbi_sig.addr, (unsigned long)cfg.sbi.size);
 	if (ret) {
 		pr_err("sbi verify failed\n");
@@ -567,7 +567,7 @@ static int do_verify(void)
 	}
 
 	/* kernel verify */
-	ret = akchipher_verify(&der_info, (unsigned char *)cfg.kernel.addr,
+	ret = akcipher_verify(&der_info, (unsigned char *)cfg.kernel.addr,
 			(unsigned char *)cfg.kernel_sig.addr, (unsigned long)cfg.kernel.size);
 	if (ret) {
 		pr_err("kernel verify failed\n");
@@ -575,7 +575,7 @@ static int do_verify(void)
 	}
 
 	/* dtb verify */
-	ret = akchipher_verify(&der_info, (unsigned char *)cfg.dtb.addr,
+	ret = akcipher_verify(&der_info, (unsigned char *)cfg.dtb.addr,
 			(unsigned char *)cfg.dtb_sig.addr, (unsigned long)cfg.dtb.size);
 	if (ret) {
 		pr_err("dtb verify failed\n");
@@ -584,7 +584,7 @@ static int do_verify(void)
 
 	/* initramfs verify */
 	if (cfg.ramfs.addr) {
-		ret = akchipher_verify(&der_info, (unsigned char *)cfg.ramfs.addr,
+		ret = akcipher_verify(&der_info, (unsigned char *)cfg.ramfs.addr,
 				(unsigned char *)cfg.ramfs_sig.addr, (unsigned long)cfg.ramfs.size);
 		if (ret) {
 			pr_err("ramfs verify failed\n");

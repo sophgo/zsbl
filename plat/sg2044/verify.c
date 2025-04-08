@@ -331,12 +331,12 @@ int pubkey_verify(uint8_t *pubkey_hash, struct DER_INFO *der_info, unsigned long
 	}
 }
 
-static int rsa_verify(union akchipher_param *param, uint8_t *msg, uint8_t *sig, 
+static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig, 
 			uint64_t msg_len, uint32_t modulus_len)
 {
 	int ret = 0;
 	uint8_t hmsg[32], out[32] = {0};
-	struct akchipher_alg *alg;
+	struct akcipher_alg *alg;
 
 	alg = alg_find_by_name("rsa");
 	if (!alg) {
@@ -365,12 +365,12 @@ static int rsa_verify(union akchipher_param *param, uint8_t *msg, uint8_t *sig,
 	return 0;
 }
 
-static int sm2_verify(union akchipher_param *param, uint8_t *msg, uint8_t *sig, 
+static int sm2_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig, 
 			uint64_t msg_len, uint32_t modulus_len)
 {
 	int ret = 0;
 	uint8_t hmsg[32], s[32], r[32], za[32];
-	struct akchipher_alg *alg;
+	struct akcipher_alg *alg;
 
 	alg = alg_find_by_name("sm2");
 	if (!alg) {
@@ -400,23 +400,23 @@ static int sm2_verify(union akchipher_param *param, uint8_t *msg, uint8_t *sig,
 	return 0;
 }
 
-static int (*akchipher_algs[])(union akchipher_param *, uint8_t *, uint8_t *, uint64_t, uint32_t) = {
+static int (*akcipher_algs[])(union akcipher_param *, uint8_t *, uint8_t *, uint64_t, uint32_t) = {
 	[RSA] = rsa_verify,
 	[SM2] = sm2_verify,
 };
 
-int akchipher_verify(struct DER_INFO *der_info, uint8_t *msg,  uint8_t *sig, unsigned long msg_len)
+int akcipher_verify(struct DER_INFO *der_info, uint8_t *msg,  uint8_t *sig, unsigned long msg_len)
 {
 	int ret = 0;
-	union akchipher_param *param;
+	union akcipher_param *param;
 
-	param = malloc(sizeof(union akchipher_param));
+	param = malloc(sizeof(union akcipher_param));
 	if (!param) {
 		pr_err("param alloc failed\n");
 		return -1;
 	}
 
-	ret = akchipher_algs[der_info->alg](param, msg, sig,
+	ret = akcipher_algs[der_info->alg](param, msg, sig,
 			msg_len, der_info->m_len);
 
 	free(param);

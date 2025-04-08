@@ -5,7 +5,7 @@
 #include <framework/common.h>
 #include <framework/module.h>
 
-static int do_modexp(struct akchipher_alg *alg, struct rsa_ctx *ctx)
+static int do_modexp(struct akcipher_alg *alg, struct rsa_ctx *ctx)
 {
 	struct pka_dev *pka_dev = alg->priv;
 
@@ -35,7 +35,7 @@ static int do_modexp(struct akchipher_alg *alg, struct rsa_ctx *ctx)
 	return 0;
 }
 
-int rsa_verify(struct akchipher_alg *alg, union akchipher_param *param)
+int rsa_verify(struct akcipher_alg *alg, union akcipher_param *param)
 {
 	int ret;
 	memset(param->rsa_ctx.y, 0x00, param->rsa_ctx.size);
@@ -49,18 +49,18 @@ int rsa_verify(struct akchipher_alg *alg, union akchipher_param *param)
 	return 0;
 }
 
-void rsa_release(struct akchipher_alg *alg)
+void rsa_release(struct akcipher_alg *alg)
 {
 	alg_unregister(alg);
 	free(alg);
 }
 
-struct akchipher_ops rsa_ops = {
+struct akcipher_ops rsa_ops = {
 	.verify = rsa_verify,
 	.release = rsa_release,
 };
 
-static int rsa_alg_init(struct akchipher_alg *rsa, struct pka_dev *dev)
+static int rsa_alg_init(struct akcipher_alg *rsa, struct pka_dev *dev)
 {
 	/* init alg name */
 	strncpy(rsa->name, "rsa", 4);
@@ -76,7 +76,7 @@ static int rsa_alg_init(struct akchipher_alg *rsa, struct pka_dev *dev)
 
 int rsa_register(struct pka_dev *dev)
 {
-	struct akchipher_alg *rsa_alg;
+	struct akcipher_alg *rsa_alg;
 	int ret;
 
 	rsa_alg = alg_alloc();
