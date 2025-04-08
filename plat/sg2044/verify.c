@@ -312,7 +312,7 @@ static int get_s_r(uint8_t *sig, uint8_t *s, uint8_t *r)
 	return  0;
 }
 
-int pubkey_verify(uint8_t *pubkey_hash, struct DER_INFO *der_info, unsigned long len)
+int pubkey_verify(uint8_t *pubkey_hash, struct der_info *der_info, unsigned long len)
 {
 	uint8_t hmsg[32];
 
@@ -405,7 +405,7 @@ static int (*akcipher_algs[])(union akcipher_param *, uint8_t *, uint8_t *, uint
 	[SM2] = sm2_verify,
 };
 
-int akcipher_verify(struct DER_INFO *der_info, uint8_t *msg,  uint8_t *sig, unsigned long msg_len)
+int akcipher_verify(struct der_info *der_info, uint8_t *msg,  uint8_t *sig, unsigned long msg_len)
 {
 	int ret = 0;
 	union akcipher_param *param;

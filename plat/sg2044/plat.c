@@ -32,7 +32,7 @@
 #define PUBKEY_DIG_SIZE		32
 #define SIG_SIZE		256
 
-struct DER_INFO der_info;
+struct der_info der_info;
 static uint8_t sbi_sig[SIG_SIZE], kernel_sig[SIG_SIZE], dtb_sig[SIG_SIZE];
 static uint8_t __attribute__((unused)) ramfs_sig[SIG_SIZE];
 
