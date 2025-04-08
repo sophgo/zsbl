@@ -24,8 +24,17 @@ struct rsa_parameter {
 	unsigned char exponent[256];
 } rsa;
 
-static uint8_t rsa_oid[RSA_OID_SIZE] = {0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00};
-static uint8_t sm2_oid[SM2_OID_SIZE] = {0x06, 0x08, 0x2a, 0x81, 0x1c, 0xcf, 0x55, 0x01, 0x82, 0x2d, 0x06, 0x08, 0x2a, 0x81, 0x1c, 0xcf, 0x55, 0x01, 0x82, 0x2d};
+static uint8_t rsa_oid[RSA_OID_SIZE] = {
+	0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d,
+	0x01, 0x01, 0x01, 0x05, 0x00
+};
+
+static uint8_t sm2_oid[SM2_OID_SIZE] = {
+	0x06, 0x08, 0x2a, 0x81, 0x1c, 0xcf, 0x55, 0x01,
+	0x82, 0x2d, 0x06, 0x08, 0x2a, 0x81, 0x1c, 0xcf,
+	0x55, 0x01, 0x82, 0x2d
+};
+
 static unsigned char y[256];
 
 int secure_boot(void)
@@ -43,7 +52,7 @@ int secure_boot(void)
 	if (secure_boot_enable) {
 		pr_info("secure boot start!\n");
 		return 1;
-	}	
+	}
 	return 0;
 }
 
@@ -73,9 +82,10 @@ static uint32_t parse_seq_length(uint8_t *data, uint32_t *ctx_len)
 {
 	uint32_t offset = 0;
 	int i;
+	uint32_t length_bytes;
 
 	if (data[offset] & 0x80) {
-		uint32_t length_bytes = data[offset++] & 0x7F;
+		length_bytes = data[offset++] & 0x7F;
 		if (!ctx_len)
 			return offset + length_bytes;
 		for (i = 0; i < length_bytes; i++)
@@ -96,12 +106,14 @@ static int parse_alg_oid(uint8_t *data, uint32_t len, int *flag)
 			*flag = RSA;
 			break;
 		}
+		return -1;
 
 	case SM2_OID_SIZE:
 		if (cmp_alg_oid(data, sm2_oid, len)) {
 			*flag = SM2;
 			break;
 		}
+		return -1;
 
 	default:
 		return -1;
@@ -144,7 +156,7 @@ static int extract_rsa_key(uint8_t *data, uint32_t *modulus_length)
 	for (i = 0; i < (*modulus_length); i++) {
 		rsa.modulus[i] = data[offset + i];
 		pr_debug("%02X", data[offset + i]);
-		pr_debug((i + 1)%16 ? "" : "\n");
+		pr_debug((i + 1) % 16 ? "" : "\n");
 	}
 
 	offset += *modulus_length;
@@ -163,15 +175,15 @@ static int extract_rsa_key(uint8_t *data, uint32_t *modulus_length)
 	for (i = 0; i < 256 - exponent_length; i++) {
 		rsa.exponent[i] = 0;
 		pr_debug("%02X", rsa.exponent[i]);
-		pr_debug((i + 1)%16 ? "" : "\n");
+		pr_debug((i + 1) % 16 ? "" : "\n");
 	}
 
 	for (; i < 256 ; i++) {
 		rsa.exponent[i] = data[offset + i + exponent_length - 256];
 		pr_debug("%02X", rsa.exponent[i]);
-		pr_debug((i + 1)%16 ? "" : "\n");
+		pr_debug((i + 1) % 16 ? "" : "\n");
 	}
-	
+
 	return 0;
 }
 
@@ -189,7 +201,7 @@ static int extract_sm2_key(uint8_t *data, uint32_t *modulus_length)
 	for (int i = 0; i < 32; i++) {
 		sm2.pubx[i] = data[offset++];
 		pr_debug("%02X", sm2.pubx[i]);
-		pr_debug((i + 1)%16 ? "" : "\n");
+		pr_debug((i + 1) % 16 ? "" : "\n");
 	}
 	pr_debug("\n");
 
@@ -198,7 +210,7 @@ static int extract_sm2_key(uint8_t *data, uint32_t *modulus_length)
 	for (int i = 0; i < 32; i++) {
 		sm2.puby[i] = data[offset++];
 		pr_debug("%02X", sm2.puby[i]);
-		pr_debug((i + 1)%16 ? "" : "\n");
+		pr_debug((i + 1) % 16 ? "" : "\n");
 	}
 	pr_debug("\n");
 
@@ -248,7 +260,7 @@ int parse_public_key(uint8_t *data, uint32_t len, uint32_t *m_len, int *flag)
 		return -1;
 	}
 
-	offset += oid_len; 
+	offset += oid_len;
 
 	/* skip fixed context */
 	if (data[offset++] != 0x03) {
@@ -285,7 +297,7 @@ static int get_s_r(uint8_t *sig, uint8_t *s, uint8_t *r)
 		for (i = 0; i < r_len - pad; i++) {
 			r[i] = sig[4 + i + pad];
 			pr_debug("%02X", r[i]);
-			pr_debug((i+1)%16 ? "" : "\n");
+			pr_debug((i + 1) % 16 ? "" : "\n");
 		}
 		pr_debug("\n");
 	}
@@ -304,7 +316,7 @@ static int get_s_r(uint8_t *sig, uint8_t *s, uint8_t *r)
 		for (i = 0; i < s_len - pad; i++) {
 			s[i] = sig[pos + i + pad];
 			pr_debug("%02X", s[i]);
-			pr_debug((i+1)%16 ? "" : "\n");
+			pr_debug((i + 1) % 16 ? "" : "\n");
 		}
 		pr_debug("\n");
 	}
@@ -331,8 +343,8 @@ int pubkey_verify(uint8_t *pubkey_hash, struct der_info *der_info, unsigned long
 	}
 }
 
-static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig, 
-			uint64_t msg_len, uint32_t modulus_len)
+static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
+		      uint64_t msg_len, uint32_t modulus_len)
 {
 	int ret = 0;
 	uint8_t hmsg[32], out[32] = {0};
@@ -342,7 +354,7 @@ static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
 	if (!alg) {
 		pr_err("RSA algrithm not found\n");
 		return -1;
-	} 
+	}
 
 	/* compute hash */
 	do_sha256(msg, hmsg, msg_len);
@@ -353,19 +365,19 @@ static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
 	param->rsa_ctx.m = rsa.modulus;
 	param->rsa_ctx.e = rsa.exponent;
 	param->rsa_ctx.y = y;
-	
+
 	ret = alg_verify(alg, param);
-	if (ret) 
+	if (ret)
 		return -1;
-		
+
 	ret = memcmp(hmsg, out, 32);
-	if (ret) 
+	if (ret)
 		return -1;
-	
+
 	return 0;
 }
 
-static int sm2_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig, 
+static int sm2_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
 			uint64_t msg_len, uint32_t modulus_len)
 {
 	int ret = 0;
@@ -376,7 +388,7 @@ static int sm2_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
 	if (!alg) {
 		pr_err("SM2 algrithm not found\n");
 		return -1;
-	} 
+	}
 
 	calculate_za(sm2.pubx, sm2.puby, za);
 	calculate_hmsg(za, msg, msg_len, hmsg);
