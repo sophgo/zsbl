@@ -14,6 +14,8 @@
 #include <of.h>
 #include <lib/cli.h>
 
+#include <driver/dtb.h>
+
 #include "config.h"
 #include "efuse.h"
 #include "fdt_pcie.h"
@@ -27,8 +29,8 @@
 #define RAMFS_OFFSET		0x0b000000
 #define CFG_FILE_OFFSET		0x09000000
 
-#define PUBKEY_DIG_SIZE 	32
-#define SIG_SIZE 		256
+#define PUBKEY_DIG_SIZE		32
+#define SIG_SIZE		256
 
 struct DER_INFO der_info;
 static uint8_t sbi_sig[SIG_SIZE], kernel_sig[SIG_SIZE], dtb_sig[SIG_SIZE];
@@ -124,17 +126,20 @@ static void boot_next_img(struct config *cfg)
 int parse_config_file(struct config *cfg);
 int parse_efi_variable(struct config *cfg);
 
+static void merge_dtbs(struct config *cfg)
+{
+	memcpy((void *)cfg->dtb.addr, dtb_get_base(), dtb_get_size());
+}
+
 static void load_images(struct config *cfg)
 {
 	load(&cfg->sbi);
 	load(&cfg->kernel);
-	load(&cfg->dtb);
 	load(&cfg->ramfs);
 
 	load(&cfg->pub_key);
 	load(&cfg->sbi_sig);
 	load(&cfg->kernel_sig);
-	load(&cfg->dtb_sig);
 	load(&cfg->ramfs_sig);
 }
 
@@ -593,7 +598,7 @@ exit:
 	return -1;
 }
 
-/*Resize fdt to modify some node, eg: bootargs*/
+/* Resize fdt to modify some node, eg: bootargs */
 int resize_dtb(struct config *cfg, int delta)
 {
 	void *fdt;
@@ -603,19 +608,9 @@ int resize_dtb(struct config *cfg, int delta)
 	fdt = (void *)cfg->dtb.addr;
 	size = fdt_totalsize(fdt) + delta;
 
-	fdt = realloc(fdt, size);
-	if (fdt) {
-		ret = fdt_open_into(fdt, fdt, size);
-		if (ret != 0)
-			pr_err("fdt: resize failed, error[%d\n]", ret);
-		else {
-			cfg->dtb.addr = (uint64_t)fdt;
-			cfg->dtb.size = size;
-		}
-	} else {
-		pr_err("fdt: realloc fdt failed\n");
-		ret = -1;
-	}
+	ret = fdt_open_into(fdt, fdt, size);
+	if (ret != 0)
+		pr_err("fdt: resize failed, error[%d\n]", ret);
 
 	return ret;
 }
@@ -794,7 +789,10 @@ static int modify_bootargs(struct config *cfg)
 
 static void modify_dtb(struct config *cfg)
 {
-	resize_dtb(cfg, 8192);
+	merge_dtbs(cfg);
+
+	resize_dtb(cfg, 16 * 1024);
+
 	modify_eth_node(cfg);
 	modify_memory_node(cfg);
 	modify_pcie_node(cfg);
