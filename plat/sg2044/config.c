@@ -4,12 +4,12 @@
 
 #include <lib/ini.h>
 #include <lib/mac.h>
+#include <lib/efi.h>
 #include <driver/bootdev.h>
 #include <driver/mtd.h>
 #include <framework/common.h>
 
 #include "config.h"
-#include "efi.h"
 
 static int handler_img(void* user, const char* section, const char* name,
 				   const char* value)

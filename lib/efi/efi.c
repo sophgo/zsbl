@@ -7,7 +7,7 @@
 
 #include <framework/common.h>
 
-#include "efi.h"
+#include <lib/efi.h>
 
 static void show_guid(struct efi_guid *guid)
 {
