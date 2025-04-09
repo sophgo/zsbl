@@ -35,8 +35,6 @@ static uint8_t sm2_oid[SM2_OID_SIZE] = {
 	0x55, 0x01, 0x82, 0x2d
 };
 
-static unsigned char y[256];
-
 int secure_boot(void)
 {
 	struct nvmem *nvmem;
@@ -48,7 +46,7 @@ int secure_boot(void)
 	secure_boot_enable = (secure_boot_enable & 0xc) >> 2;
 
 	/* test secure boot enable set 1 */
-	//secure_boot_enable = 1;
+	secure_boot_enable = 0;
 	if (secure_boot_enable) {
 		pr_info("secure boot start!\n");
 		return 1;
@@ -344,11 +342,12 @@ int pubkey_verify(uint8_t *pubkey_hash, struct der_info *der_info, unsigned long
 }
 
 static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
-		      uint64_t msg_len, uint32_t modulus_len)
+			uint64_t msg_len, uint32_t modulus_len)
 {
 	int ret = 0;
-	uint8_t hmsg[32], out[32] = {0};
+	uint8_t hmsg[32];
 	struct akcipher_alg *alg;
+	uint8_t y[256];
 
 	alg = alg_find_by_name("rsa");
 	if (!alg) {
@@ -370,7 +369,7 @@ static int rsa_verify(union akcipher_param *param, uint8_t *msg, uint8_t *sig,
 	if (ret)
 		return -1;
 
-	ret = memcmp(hmsg, out, 32);
+	ret = memcmp(hmsg, &y[256 - 32], 32);
 	if (ret)
 		return -1;
 
