@@ -2,6 +2,7 @@
 #define __CONFIG_H__
 
 #include <stdint.h>
+#include <verify.h>
 
 struct pcie_win {
 	uint64_t pci, cpu, len;
@@ -111,6 +112,7 @@ struct config {
 	int tpu_avl;
 	int conner;
 	const struct op_point *op;
+	int secure;
 
 	struct boot_file sbi;
 	struct boot_file kernel;
@@ -123,6 +125,8 @@ struct config {
 	struct boot_file kernel_sig;
 	struct boot_file dtb_sig;
 	struct boot_file ramfs_sig;
+
+	struct akcipher_ctx akcipher_ctx;
 };
 
 #endif

@@ -18,6 +18,9 @@
 #define EFUSE_MISC_INFO_OFFSET_0	(EFUSE_MISC_INFO_INDEX * EFUSE_CELL_SIZE)
 #define EFUSE_MISC_INFO_OFFSET_1	((EFUSE_MISC_INFO_INDEX + 1) * EFUSE_CELL_SIZE)
 
+#define SCS_CONFIG 0x804
+#define PUBKEY_HASH 0x830
+
 #define GB(n)	((n) * 1024 * 1024 * 1024)
 #define MT(n)	((n) * 1000 * 1000)
 
@@ -98,5 +101,50 @@ int get_info_in_efuse(struct config *cfg)
 	}
 
 	return 0;
+}
+
+int secure_boot(void)
+{
+#if 0
+	struct nvmem *nvmem;
+	unsigned int secure_boot_enable;
+
+	nvmem = nvmem_find_by_name("efuse1");
+
+	nvmem_read(nvmem, SCS_CONFIG, sizeof(secure_boot_enable), &secure_boot_enable);
+	secure_boot_enable = (secure_boot_enable & 0xc) >> 2;
+
+	/* test secure boot enable set 1 */
+	secure_boot_enable = 0;
+	if (secure_boot_enable) {
+		pr_info("secure boot start!\n");
+		return 1;
+	}
+	return secure_boot_enable;
+#else
+	return false;
+#endif
+}
+
+void read_pubkey_hash(void *pubkey_dig)
+{
+#if 0
+	int i;
+	struct nvmem *nvmem;
+	nvmem = nvmem_find_by_name("efuse1");
+
+	for (i = 0; i < 8; i++)
+		nvmem_read(nvmem,
+			   PUBKEY_HASH + i * 4, sizeof(uint32_t), &((uint32_t *)pubkey_dig)[i]);
+#else
+	const uint8_t pubkey_hash[32] = {
+		0x40, 0xdb, 0xfb, 0x30, 0x89, 0xc4, 0xc7, 0xb6,
+		0x49, 0x2e, 0x15, 0xd3, 0x2d, 0xf3, 0xa4, 0x5f,
+		0x8a, 0x3e, 0xc0, 0xc4, 0xb1, 0x8c, 0xd9, 0x03,
+		0xf0, 0x57, 0x7e, 0xf9, 0x49, 0x13, 0x3c, 0x5c,
+	};
+
+	memcpy(pubkey_dig, pubkey_hash, sizeof(pubkey_hash));
+#endif
 }
 

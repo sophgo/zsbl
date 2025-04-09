@@ -6,23 +6,33 @@
 #include <string.h>
 #include <stdint.h>
 
-struct der_info {
-	uint8_t pubkey[PUBKEY_SIZE];
-	int alg;
-	uint32_t key_size;
-	uint32_t m_len;
-};
-
 enum ALG {
 	RSA = 0,
 	SM2
 };
 
-int secure_boot();
-void read_pubkey_hash(uint32_t *pubkey_dig);
-int parse_public_key(uint8_t *data, uint32_t len, uint32_t *m_len, int *flag) ;
-int akcipher_verify(struct der_info *der_info, unsigned char *msg,
-		    unsigned char *sig, unsigned long len);
-int pubkey_verify(unsigned char *pubkey_hash, struct der_info *der_info, unsigned long len);
+struct sm2_parameter {
+	unsigned char pubx[32];
+	unsigned char puby[32];
+};
+
+struct rsa_parameter {
+	unsigned char modulus[256];
+	unsigned char exponent[256];
+};
+
+struct akcipher_ctx {
+	int alg;
+	int key_len;
+	/* key */
+	union {
+		struct sm2_parameter sm2;
+		struct rsa_parameter rsa;
+	} key;
+};
+
+int akcipher_invoke_key(struct akcipher_ctx *ctx,
+			void *der, int der_len, void *der_hash, int hash_len);
+int akcipher_verify(struct akcipher_ctx *ctx, void *msg, void *sig, unsigned long len);
 
 #endif

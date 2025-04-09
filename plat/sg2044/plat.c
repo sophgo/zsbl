@@ -32,8 +32,7 @@
 #define PUBKEY_DIG_SIZE		32
 #define SIG_SIZE		256
 
-struct der_info der_info;
-static uint8_t sbi_sig[SIG_SIZE], kernel_sig[SIG_SIZE], dtb_sig[SIG_SIZE];
+static uint8_t sbi_sig[SIG_SIZE], kernel_sig[SIG_SIZE], dtb_sig[SIG_SIZE], der[300];
 static uint8_t __attribute__((unused)) ramfs_sig[SIG_SIZE];
 
 static void command_show_csr(struct command *c, int argc, const char *argv[])
@@ -133,11 +132,26 @@ static void merge_dtbs(struct config *cfg)
 
 static void load_images(struct config *cfg)
 {
+	uint8_t pubkey_dig[PUBKEY_DIG_SIZE];
+	int err;
+
 	load(&cfg->sbi);
 	load(&cfg->kernel);
 	load(&cfg->ramfs);
 
 	load(&cfg->pub_key);
+	/* invoke key */
+	read_pubkey_hash(pubkey_dig);
+	err = akcipher_invoke_key(&cfg->akcipher_ctx,
+				  (void *)cfg->pub_key.addr, cfg->pub_key.size,
+				  pubkey_dig, sizeof(pubkey_dig));
+	if (err) {
+		pr_err("Invoke public key failed\n");
+		/* must hang here */
+		while (1)
+			;
+	}
+
 	load(&cfg->sbi_sig);
 	load(&cfg->kernel_sig);
 	load(&cfg->ramfs_sig);
@@ -152,7 +166,7 @@ static void show_boot_file(const char *name, struct boot_file *p)
 
 static const char *mode_names[] = {
 	"CPU",
-	"SOC",
+	"SoC",
 	"PCIe"
 };
 static const char *mode2str(int mode)
@@ -177,7 +191,8 @@ static void show_config(struct config *cfg)
 	pr_info("\n");
 	pr_info("%-16s %s %s\n", "Chip Type",
 		conner2str(cfg->conner), cfg->tpu_avl ? "CPU-TPU" : "CPU-ONLY");
-	pr_info("%-16s %s\n", "Working Mode", mode2str(cfg->mode));
+	pr_info("%-16s %s %s\n", "Working Mode",
+		mode2str(cfg->mode), cfg->secure ? "Secure" : "Normal");
 	pr_info("%-16s %lluMHz\n", "Max CPU Freq", op->cpu_freq / 1000 / 1000);
 	pr_info("%-16s %lluMHz\n", "Max TPU Freq", op->tpu_freq / 1000 / 1000);
 	pr_info("%-16s %lluMHz\n", "Max NoC Freq", op->noc_freq / 1000 / 1000);
@@ -311,8 +326,6 @@ static const struct op_point *get_op_point(int conner, int mode)
 	return NULL;
 }
 
-
-
 static void config_init(struct config *cfg)
 {
 	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
@@ -346,12 +359,14 @@ static void config_init(struct config *cfg)
 	cfg->tpu_avl = true;
 
 	if (secure_boot()) {
+		cfg->secure = true;
+
 		/* pubkey */
 		cfg->pub_key.name = "public_key.der";
-		cfg->pub_key.addr = (uint64_t)der_info.pubkey;
+		cfg->pub_key.addr = (uint64_t)der;
 
 		/* sbi sig */
-		cfg->sbi_sig.name = "fw_dynamic.sig";
+		cfg->sbi_sig.name = "fw_dynamic.bin.sig";
 		cfg->sbi_sig.addr = (uint64_t)sbi_sig;
 
 		/* kernel & ramfs sig */
@@ -360,14 +375,14 @@ static void config_init(struct config *cfg)
 			cfg->ramfs_sig.name = "initrd.sig";
 			cfg->ramfs_sig.addr = (uint64_t)ramfs_sig;
 		} else {
-			cfg->kernel_sig.name = "SG2044.sig";
+			cfg->kernel_sig.name = "SG2044.fd.sig";
 			cfg->ramfs_sig.name = NULL;
 			cfg->ramfs_sig.addr = 0;
 		}
 		cfg->kernel_sig.addr = (uint64_t)kernel_sig;
 
 		/* dtb sig */
-		cfg->dtb_sig.name = "sg2044-evb.sig";
+		cfg->dtb_sig.name = "sg2044-evb.dtb.sig";
 		cfg->dtb_sig.addr = (uint64_t)dtb_sig;
 	}
 
@@ -541,51 +556,44 @@ static void config_init(struct config *cfg)
 
 }
 
-static int do_verify(void)
+static int do_verify(struct config *cfg)
 {
 	int ret;
-	uint8_t pubkey_dig[PUBKEY_DIG_SIZE];
-	int pubkey_len = cfg.pub_key.size;
-
-	der_info.key_size = pubkey_len;
-	parse_public_key(der_info.pubkey, der_info.key_size, &der_info.m_len, &der_info.alg);
-
-	/* verify pubkey */
-	read_pubkey_hash((uint32_t *)pubkey_dig);
-	ret = pubkey_verify(pubkey_dig, &der_info, (unsigned long)cfg.pub_key.size);
-	if (ret) {
-		pr_err("pubkey verify failed\n");
-		goto exit;
-	}
 
 	/* openSBI verify */
-	ret = akcipher_verify(&der_info, (unsigned char *)cfg.sbi.addr,
-			(unsigned char *)cfg.sbi_sig.addr, (unsigned long)cfg.sbi.size);
+	ret = akcipher_verify(&cfg->akcipher_ctx,
+			      (void *)cfg->sbi.addr, (void *)cfg->sbi_sig.addr,
+			      cfg->sbi.size);
 	if (ret) {
 		pr_err("sbi verify failed\n");
 		goto exit;
 	}
 
 	/* kernel verify */
-	ret = akcipher_verify(&der_info, (unsigned char *)cfg.kernel.addr,
-			(unsigned char *)cfg.kernel_sig.addr, (unsigned long)cfg.kernel.size);
+	ret = akcipher_verify(&cfg->akcipher_ctx,
+			      (void *)cfg->kernel.addr, (void *)cfg->kernel_sig.addr,
+			      cfg->kernel.size);
 	if (ret) {
 		pr_err("kernel verify failed\n");
 		goto exit;
 	}
 
+#if 0
 	/* dtb verify */
-	ret = akcipher_verify(&der_info, (unsigned char *)cfg.dtb.addr,
-			(unsigned char *)cfg.dtb_sig.addr, (unsigned long)cfg.dtb.size);
+	ret = akcipher_verify(&cfg->akcipher_ctx,
+			      (void *)cfg->dtb.addr, (void *)cfg->dtb_sig.addr,
+			      cfg->dtb.size);
 	if (ret) {
 		pr_err("dtb verify failed\n");
 		goto exit;
 	}
+#endif
 
 	/* initramfs verify */
-	if (cfg.ramfs.addr) {
-		ret = akcipher_verify(&der_info, (unsigned char *)cfg.ramfs.addr,
-				(unsigned char *)cfg.ramfs_sig.addr, (unsigned long)cfg.ramfs.size);
+	if (cfg->ramfs.addr) {
+		ret = akcipher_verify(&cfg->akcipher_ctx,
+				      (void *)cfg->ramfs.addr, (void *)cfg->ramfs_sig.addr,
+				      cfg->ramfs.size);
 		if (ret) {
 			pr_err("ramfs verify failed\n");
 			goto exit;
@@ -815,8 +823,8 @@ int plat_main(void)
 		cli_loop(100000);
 		load_images(&cfg);
 
-		if (secure_boot()) {
-			if (do_verify()) {
+		if (cfg.secure) {
+			if (do_verify(&cfg)) {
 				pr_err("verify failed\n");
 				return 0;
 			}

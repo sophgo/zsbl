@@ -6,4 +6,7 @@
 int get_info_in_efuse(struct config *cfg);
 void show_dram_info(struct dram_info *dram_info);
 
+int secure_boot(void);
+void read_pubkey_hash(void *pubkey_dig);
+
 #endif
