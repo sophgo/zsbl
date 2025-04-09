@@ -2,7 +2,7 @@
 #define __CONFIG_H__
 
 #include <stdint.h>
-#include <verify.h>
+#include <lib/akcipher.h>
 
 struct pcie_win {
 	uint64_t pci, cpu, len;

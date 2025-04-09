@@ -13,13 +13,13 @@
 #include <fdt_dump.h>
 #include <of.h>
 #include <lib/cli.h>
+#include <lib/akcipher.h>
 
 #include <driver/dtb.h>
 
 #include "config.h"
 #include "efuse.h"
 #include "fdt_pcie.h"
-#include "verify.h"
 
 #define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
 

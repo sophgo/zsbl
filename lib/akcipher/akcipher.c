@@ -1,10 +1,10 @@
 #include <driver/pka/pka.h>
 #include <lib/hash/sha256.h>
 #include <lib/hash/sm3.h>
+#include <lib/akcipher.h>
 #include <framework/common.h>
 #include <string.h>
 #include <stdint.h>
-#include "verify.h"
 #include <driver/alg.h>
 
 #define RSA_OID_SIZE 13
