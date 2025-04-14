@@ -120,7 +120,6 @@ struct config {
 	struct boot_file ramfs;
 	struct boot_file cfg;
 
-	struct boot_file pub_key;
 	struct boot_file sbi_sig;
 	struct boot_file kernel_sig;
 	struct boot_file dtb_sig;

@@ -84,6 +84,8 @@ static int extract_rsa_key(void *param, uint8_t *data, uint32_t *modulus_length)
 	int i;
 	struct rsa_parameter *rsa = param;
 
+	*modulus_length = 0;
+
 	/* checkout sequence flag */
 	if (data[offset++] != 0x30) {
 		pr_err("failed: not a sequence!\n");

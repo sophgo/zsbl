@@ -221,20 +221,63 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	int plen;
 	const char *compatible;
 	const char *node_name;
+	int address_cells, size_cells, parent_node_offset;
+	uint64_t reg_base, reg_size;
 
 	prop = fdt_get_property(dtb, node_offset, "compatible", &plen);
 
 	compatible = prop->data;
 
-	/* only 64bit version is supported, aka, address-cells = 2, size-cells = 2*/
 	prop = fdt_get_property(dtb, node_offset, "reg", &plen);
 	if (!prop) {
 		pr_warn("%s no register address specified\n", compatible);
 		return NULL;
 	}
 
-	if (plen < 8) {
-		pr_err("only support 64bit address\n");
+	parent_node_offset = fdt_parent_offset(dtb, node_offset);
+	if (parent_node_offset < 0) {
+		pr_err("no parent node, incorrect reg property\n");
+		return NULL;
+	}
+
+	address_cells = fdt_address_cells(dtb, parent_node_offset);
+
+	if (address_cells < 0) {
+		pr_warn("parent node doesn't specific address cells, assume address cells is 2\n");
+		address_cells = 2;
+	}
+
+	size_cells = fdt_size_cells(dtb, parent_node_offset);
+
+	if (size_cells < 0) {
+		pr_warn("parent node doesn't specific size cells, assume size cells is 2\n");
+		size_cells = 2;
+	}
+
+	if ((address_cells + size_cells) * 4 != plen && address_cells * 4 != plen) {
+		pr_err("invalid reg property\n");
+		return NULL;
+	}
+
+	if (address_cells == 2) {
+		reg_base = fdt64_to_cpu(*(volatile uint64_t *)prop->data);
+	} else if (address_cells == 1) {
+		reg_base = fdt32_to_cpu(*(volatile uint32_t *)prop->data);
+	} else {
+		pr_err("address_cells %d is not supported\n", address_cells);
+		return NULL;
+	}
+
+	if (address_cells * 4 == plen || size_cells == 0) {
+		reg_size = 0;
+	} if (size_cells == 2) {
+		reg_size = fdt64_to_cpu(*(volatile uint64_t *)
+					((uint32_t *)prop->data + address_cells));
+	} else if (size_cells == 1) {
+		reg_size = fdt32_to_cpu(*(volatile uint32_t *)
+					((uint32_t *)prop->data + address_cells));
+	} else {
+		pr_err("size_cells %d is not supported\n", size_cells);
 		return NULL;
 	}
 
@@ -249,15 +292,8 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	pdev->of = dtb;
 	pdev->of_node_offset  = node_offset;
 
-
-	pdev->reg_base = fdt64_to_cpu(*(volatile uint64_t *)prop->data);
-
-	if (plen < 16) {
-		pr_warn("no register space size specified, assume 4KiB");
-		pdev->reg_size = 4 * 1024;
-	} else {
-		pdev->reg_size = fdt64_to_cpu(*(volatile uint64_t *)(prop->data + 8));
-	}
+	pdev->reg_base = reg_base;
+	pdev->reg_size = reg_size;
 
 	plen = sizeof(pdev->device.name);
 	node_name = fdt_get_name(dtb, node_offset, &plen);
