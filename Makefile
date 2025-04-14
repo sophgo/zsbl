@@ -417,6 +417,7 @@ LINUXINCLUDE    := \
 		-I$(srctree)/include/lib/fdt \
 		-I$(srctree)/include/lib/libc \
 		-I$(objtree)/arch/$(SRCARCH)/boot/dts \
+		-I$(objtree)/arch/$(SRCARCH)/boot/dtso \
 		--include=autoconf.h
 
 
@@ -822,7 +823,7 @@ prepare0: archprepare
 	$(Q)$(MAKE) $(build)=.
 
 # All the preparing..
-prepare: prepare0 prepare-objtool dtbs
+prepare: prepare0 prepare-objtool dtbs dtbos
 
 PHONY += prepare-objtool
 prepare-objtool: $(objtool_target)
@@ -917,14 +918,37 @@ include $(dtstree)/Makefile
 
 %.dtb: %.dts
 	@echo "  DC      $@"
-	@mkdir -p $(dir $@)
-	@dtc $^ > $@
+	$(Q)mkdir -p $(dir $@)
+	$(Q)dtc -@ -I dts -O dtb -o $@ $^
 
 dtb-real-y = $(foreach dtb, $(dtb-y), $(objtree)/$(dtstree)/$(dtb))
 
 dtbs: $(dtb-real-y)
 
 endif
+
+# ---------------------------------------------------------------------------
+# Devicetree overlay files
+ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/boot/dtso/),)
+dtsotree := arch/$(SRCARCH)/boot/dtso
+endif
+
+ifneq ($(dtsotree),)
+
+include $(dtsotree)/Makefile
+
+%.dtbo: %.dtso
+	@echo "  DO      $@"
+	$(Q)mkdir -p $(dir $@)
+	$(Q)dtc -@ -I dts -O dtb -o $@ $^
+
+dtbo-real-y = $(foreach dtbo, $(dtbo-y), $(objtree)/$(dtsotree)/$(dtbo))
+
+dtbos: $(dtbo-real-y)
+
+endif
+
+
 
 # Brief documentation of the typical targets used
 # ---------------------------------------------------------------------------
@@ -1040,6 +1064,7 @@ clean: $(clean-dirs)
 		\( -name '*.[aios]' -o -name '*.ko' -o -name '.*.cmd' \
 		-o -name '*.ko.*' \
 		-o -name '*.dtb' -o -name '*.dtb.S' -o -name '*.dt.yaml' \
+		-o -name '*.dtbo' -o -name '*.dtbo.S' -o -name '*.dt.yaml' \
 		-o -name '*.dwo' -o -name '*.lst' \
 		-o -name '*.su' -o -name '*.mod' -o -name '*.ns_deps' \
 		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \

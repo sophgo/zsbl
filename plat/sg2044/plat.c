@@ -26,8 +26,8 @@
 #define OPENSBI_OFFSET		0x00000000
 #define KERNEL_OFFSET		0x00200000
 #define DEVICETREE_OFFSET	0x08000000
-#define RAMFS_OFFSET		0x0b000000
 #define CFG_FILE_OFFSET		0x09000000
+#define RAMFS_OFFSET		0x0b000000
 
 #define PUBKEY_DIG_SIZE		32
 #define SIG_SIZE		256
@@ -152,7 +152,30 @@ int parse_efi_variable(struct config *cfg);
 
 static void merge_dtbs(struct config *cfg)
 {
-	memcpy((void *)cfg->dtb.addr, dtb_get_base(), dtb_get_size());
+	int err;
+	void *dtbo = (void *)cfg->dtb.addr;
+	void *dtbo_tmp;
+	void *dtb = dtb_get_base();
+	uint32_t dtbo_size;
+	uint32_t dtb_size;
+
+
+	dtbo_size = fdt_totalsize(dtbo);
+	dtb_size = fdt_totalsize(dtb);
+
+	dtbo_tmp = malloc(dtbo_size);
+	if (!dtbo_tmp)
+		pr_err("Allocate memory for overlay dtb failed (%u Bytes)\n", dtbo_size);
+
+	memcpy(dtbo_tmp, dtbo, dtbo_size);
+
+	err = fdt_open_into(dtb, dtbo, ROUND_UP(dtb_size + dtbo_size + (16 * 1024), 8));
+	if (err)
+		pr_err("Failed to move core dtb to the destination\n");
+
+	err = fdt_overlay_apply(dtbo, dtbo_tmp);
+	if (err)
+		pr_err("Overlay core dtb and extended dtb failed with error code %d\n", err);
 }
 
 static void load_images(struct config *cfg)
@@ -179,6 +202,7 @@ static void load_images(struct config *cfg)
 		}
 	}
 
+	load(cfg, &cfg->dtb, true);
 	load(cfg, &cfg->sbi, true);
 	load(cfg, &cfg->kernel, true);
 	load(cfg, &cfg->ramfs, true);
@@ -366,7 +390,7 @@ static void config_init(struct config *cfg)
 
 	cfg->sbi.name = "fw_dynamic.bin";
 	cfg->sbi.addr = ram_base + OPENSBI_OFFSET;
-	cfg->dtb.name = "sg2044-evb.dtb";
+	cfg->dtb.name = "sg2044-evb.dtbo";
 	cfg->dtb.addr = ram_base + DEVICETREE_OFFSET;
 #ifdef USE_LINUX_BOOT
 	cfg->kernel.name = "riscv64_Image";
@@ -747,8 +771,6 @@ static int modify_bootargs(struct config *cfg)
 static void modify_dtb(struct config *cfg)
 {
 	merge_dtbs(cfg);
-
-	resize_dtb(cfg, 16 * 1024);
 
 	modify_eth_node(cfg);
 	modify_memory_node(cfg);

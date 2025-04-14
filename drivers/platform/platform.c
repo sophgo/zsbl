@@ -270,7 +270,7 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 
 	if (address_cells * 4 == plen || size_cells == 0) {
 		reg_size = 0;
-	} if (size_cells == 2) {
+	} else if (size_cells == 2) {
 		reg_size = fdt64_to_cpu(*(volatile uint64_t *)
 					((uint32_t *)prop->data + address_cells));
 	} else if (size_cells == 1) {

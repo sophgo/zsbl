@@ -3238,11 +3238,6 @@
 			reg = <0x70 0x40006000 0x0 0x1000>;
 			clock-frequency = <100000>;
 			alias = "i2c1";
-
-			sg2044_srst: sg2044-reset@17 {
-				compatible = "sophgo,sg2042-hwmon-mcu";
-				reg = <0x17>;
-			};
 		};
 
 		i2c2: i2c@7040007000 {
