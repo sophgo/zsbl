@@ -268,19 +268,9 @@ char *strstr (const char *hs, const char *ne)
 	return NULL;
 }
 
-int insspace(char c) __attribute__((alias("my_isspace")));
-
-int my_isspace(char c)
+int isspace(int c)
 {
-	if(c =='\t'|| c =='\n'|| c ==' ')
-		return 1;
-	else
-		return 0;
-}
-
-int zsbl_isspace(int c)
-{
-	if(c =='\t'|| c =='\n'|| c ==' ')
+	if(c == ' ' || c =='\f'|| c =='\n'|| c =='\r' || c == '\t' || c == '\v')
 		return 1;
 	else
 		return 0;

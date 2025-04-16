@@ -10,7 +10,6 @@ home page for more info:
 https://github.com/benhoyt/inih
 
 */
-int zsbl_isspace(int c);
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -48,7 +47,7 @@ typedef struct {
 static char* rstrip(char* s)
 {
 	char* p = s + strlen(s);
-	while (p > s && zsbl_isspace((unsigned char)(*--p)))
+	while (p > s && isspace((unsigned char)(*--p)))
 		*p = '\0';
 	return s;
 }
@@ -56,7 +55,7 @@ static char* rstrip(char* s)
 /* Return pointer to first non-whitespace char in given string. */
 static char* lskip(const char* s)
 {
-	while (*s && zsbl_isspace((unsigned char)(*s)))
+	while (*s && isspace((unsigned char)(*s)))
 		s++;
 	return (char*)s;
 }
@@ -70,7 +69,7 @@ static char* find_chars_or_comment(const char* s, const char* chars)
 	int was_space = 0;
 	while (*s && (!chars || !strchr(chars, *s)) &&
 			!(was_space && strchr(INI_INLINE_COMMENT_PREFIXES, *s))) {
-		was_space = zsbl_isspace((unsigned char)(*s));
+		was_space = isspace((unsigned char)(*s));
 		s++;
 	}
 #else
@@ -136,7 +135,8 @@ int ini_parse_stream(ini_reader reader, void* stream, ini_handler handler,
 	while (reader(line, (int)max_line, stream) != NULL) {
 #if INI_ALLOW_REALLOC && !INI_USE_STACK
 		offset = strlen(line);
-		while (offset == max_line - 1 && line[offset - 1] != '\n') {
+		while (offset == max_line - 1 &&
+		       (line[offset - 1] != '\n' || line[offset - 1] != '\r')) {
 			max_line *= 2;
 			if (max_line > INI_MAX_LINE)
 				max_line = INI_MAX_LINE;
@@ -282,7 +282,7 @@ static char* ini_reader_string(char* str, int num, void* stream) {
 		c = *ctx_ptr++;
 		ctx_num_left--;
 		*strp++ = c;
-		if (c == '\n')
+		if (c == '\n' || c == '\r')
 			break;
 		num--;
 	}
