@@ -382,7 +382,6 @@ static void config_init(struct config *cfg)
 	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
 	struct pcie_config *p = cfg->pcie;
 	int i;
-	static uint32_t domain;
 
 	pr_debug("ZSBL is loaded at 0x%010lx\n", (unsigned long)__ld_program_start);
 
@@ -417,14 +416,12 @@ static void config_init(struct config *cfg)
 		p->bus_start = 0;
 		p->bus_end = 255;
 		p->coherent = true;
+		p->domain = i;
 		init_pcie_win(&p->ib, 0x80000000, 0x80000000, 0x4000000000UL - 0x80000000);
 		if ((i % 2)  == 1)
 			p->enable = false;
-		else {
-			p->domain = domain;
+		else
 			p->enable = true;
-			domain++;
-		}
 	}
 
 	/* pcie0 c2c0-w0-p0 */
