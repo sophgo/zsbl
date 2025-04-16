@@ -3299,5 +3299,146 @@
 				reg = <0>;
 			};
 		};
+
+		top_misc: top_misc_ctrl@7050000000 {
+			compatible = "syscon";
+			reg = <0x70 0x50000000 0x0 0x8000>;
+		};
+
+		clocks@0 {
+			reg = <0 0 0 0>;
+			#address-cells = <2>;
+			#size-cells = <2>;
+			ranges;
+			cgi: ctrystal {
+				compatible = "fixed-clock";
+				clock-frequency = <25000000>;
+				clock-output-names = "cgi";
+				#clock-cells = <0>;
+			};
+			/* pll clock */
+			mpll0: mpll0 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "mpll0_clock";
+			};
+			mpll1: mpll1 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "mpll1_clock";
+			};
+			mpll2: mpll2 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "mpll2_clock";
+			};
+			mpll3: mpll3 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "mpll3_clock";
+			};
+			mpll4: mpll4 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "mpll4_clock";
+			};
+			mpll5: mpll5 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "mpll5_clock";
+			};
+			fpll0: fpll0 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "fpll0_clock";
+			};
+			fpll1: fpll1 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "fpll1_clock";
+			};
+			dpll0: dpll0 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll0_clock";
+			};
+			dpll1: dpll1 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll1_clock";
+			};
+			dpll2: dpll2 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll2_clock";
+			};
+			dpll3: dpll3 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll3_clock";
+			};
+			dpll4: dpll4 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll4_clock";
+			};
+			dpll5: dpll5 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll5_clock";
+			};
+			dpll6: dpll6 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll6_clock";
+			};
+			dpll7: dpll7 {
+				compatible = "sg2044, pll-clock";
+				#clock-cells = <0>;
+				subctrl-syscon = <&top_misc>;
+				clocks = <&cgi>;
+				clock-output-names = "dpll7_clock";
+			};
+			div_clk: div_clk {
+				compatible = "sg2044, pll-child-clock";
+				#clock-cells = <1>;
+				subctrl-syscon = <&top_misc>;
+			};
+			mux_clk: mux_clk {
+				compatible = "sg2044, pll-mux-clock";
+				#clock-cells = <1>;
+				subctrl-syscon = <&top_misc>;
+			};
+		};
 	};
 };
