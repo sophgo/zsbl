@@ -300,3 +300,21 @@ char *strcat (char *__restrict s1,
 	return s;
 }
 
+size_t strcspn(const char *s, const char *reject) {
+	unsigned char table[256] = {0};
+	const unsigned char *r = (const unsigned char *)reject;
+
+	while (*r) {
+	    table[*r] = 1;
+	    r++;
+	}
+	const unsigned char *p = (const unsigned char *)s;
+	while (*p) {
+	    if (table[*p]) {
+		break;
+	    }
+	    p++;
+	}
+
+	return (size_t)(p - (const unsigned char *)s);
+}

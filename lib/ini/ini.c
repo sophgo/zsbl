@@ -288,6 +288,7 @@ static char* ini_reader_string(char* str, int num, void* stream) {
 	}
 
 	*strp = '\0';
+	str[strcspn(str, "\r\n")] = '\0';
 	ctx->ptr = ctx_ptr;
 	ctx->num_left = ctx_num_left;
 	return str;
