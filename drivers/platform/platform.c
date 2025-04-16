@@ -334,6 +334,13 @@ static int platform_probe(void)
 		if (offset < 0)
 			break;
 
+		/* filter out nodes without reg property */
+		prop = fdt_get_property(dtb, offset, "reg", &plen);
+		if (!prop) {
+			pr_debug("offset: %d, no reg property\n", offset);
+			continue;
+		}
+
 		prop = fdt_get_property(dtb, offset, "compatible", &plen);
 		if (!prop) {
 			pr_debug("offset: %d, no compatible property\n", offset);
