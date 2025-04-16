@@ -37,25 +37,20 @@ static const uint64_t channel_map[] = {
 
 static int secure_boot(void)
 {
-#if 0
 	struct nvmem *nvmem;
 	unsigned int secure_boot_enable;
 
-	nvmem = nvmem_find_by_name("efuse1");
+	nvmem = nvmem_find_by_name("efuse0");
 
 	nvmem_read(nvmem, SCS_CONFIG, sizeof(secure_boot_enable), &secure_boot_enable);
 	secure_boot_enable = (secure_boot_enable & 0xc) >> 2;
 
 	/* test secure boot enable set 1 */
-	secure_boot_enable = 0;
 	if (secure_boot_enable) {
 		pr_info("secure boot start!\n");
 		return 1;
 	}
 	return secure_boot_enable;
-#else
-	return false;
-#endif
 }
 
 int get_info_in_efuse(struct config *cfg)
@@ -130,15 +125,14 @@ int get_info_in_efuse(struct config *cfg)
 
 void read_pubkey_hash(void *data)
 {
-#if 0
 	int i;
 	struct nvmem *nvmem;
-	nvmem = nvmem_find_by_name("efuse1");
+	nvmem = nvmem_find_by_name("efuse0");
 
 	for (i = 0; i < 8; i++)
 		nvmem_read(nvmem,
 			   PUBKEY_HASH + i * 4, sizeof(uint32_t), &((uint32_t *)data)[i]);
-#else
+
 	const uint8_t pubkey_hash[32] = {
 		0x40, 0xdb, 0xfb, 0x30, 0x89, 0xc4, 0xc7, 0xb6,
 		0x49, 0x2e, 0x15, 0xd3, 0x2d, 0xf3, 0xa4, 0x5f,
@@ -147,6 +141,5 @@ void read_pubkey_hash(void *data)
 	};
 
 	memcpy(data, pubkey_hash, sizeof(pubkey_hash));
-#endif
 }
 
