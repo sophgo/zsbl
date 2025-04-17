@@ -1,0 +1,19 @@
+/dts-v1/;
+/plugin/;
+
+&port1a {
+
+	gpio_poweroff: gpio-poweroff {
+		compatible = "gpio-poweroff";
+		gpios = <&port1a 0 0>;
+		active-delay-ms = <300>;
+		inactive-delay-ms = <300>;
+	};
+
+	gpio_restart: gpio-restart {
+		compatible = "gpio-restart";
+		gpios = <&port0a 6 0>;
+		active-delay-ms = <300>;
+		inactive-delay-ms = <300>;
+	};
+};
