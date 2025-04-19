@@ -16,7 +16,6 @@ static int handler_img(void* user, const char* section, const char* name,
 {
 	struct config *pconfig = user;
 	uint32_t ctrl_id = 0;
-	static uint32_t domain;
 	static uint32_t pcie_use_ini;
 	const char *pcie_section_prefix = "pcie";
 
@@ -53,8 +52,7 @@ static int handler_img(void* user, const char* section, const char* name,
 		ctrl_id = strtoul((section + strlen(pcie_section_prefix)), NULL, 0);
 		if (strcmp(name, "width") == 0) {
 			pconfig->pcie[ctrl_id].enable = true;
-			pconfig->pcie[ctrl_id].domain = domain;
-			domain++;
+			pconfig->pcie[ctrl_id].domain = ctrl_id;
 		} else if (strcmp(name, "io-addr") == 0) {
 			pconfig->pcie[ctrl_id].io.cpu = strtoul(value, NULL, 0);
 		} else if (strcmp(name, "io-transl") == 0) {
