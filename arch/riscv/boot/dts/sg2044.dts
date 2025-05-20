@@ -3249,6 +3249,15 @@
 			alias = "i2c2";
 		};
 
+		i2c3: i2c@7040008000 {
+			#address-cells = <1>;
+			#size-cells = <0>;
+			compatible = "snps,designware-i2c";
+			reg = <0x70 0x40008000 0x0 0x1000>;
+			clock-frequency = <100000>;
+			alias = "i2c3";
+		};
+
 		gpio0: gpio@7040009000 {
 			compatible = "snps,dw-apb-gpio";
 			reg = <0x70 0x40009000 0x0 0x1000>;
