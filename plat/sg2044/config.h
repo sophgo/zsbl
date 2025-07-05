@@ -117,12 +117,14 @@ struct config {
 	struct boot_file sbi;
 	struct boot_file kernel;
 	struct boot_file dtb;
+	struct boot_file dtbo;
 	struct boot_file ramfs;
 	struct boot_file cfg;
 
 	struct boot_file sbi_sig;
 	struct boot_file kernel_sig;
 	struct boot_file dtb_sig;
+	struct boot_file dtbo_sig;
 	struct boot_file ramfs_sig;
 
 	struct akcipher_ctx akcipher_ctx;

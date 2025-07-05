@@ -16,6 +16,7 @@
 #include <lib/akcipher.h>
 
 #include <driver/dtb.h>
+#include <stdint.h>
 
 #include "config.h"
 #include "efuse.h"
@@ -26,6 +27,7 @@
 #define OPENSBI_OFFSET		0x00000000
 #define KERNEL_OFFSET		0x00200000
 #define DEVICETREE_OFFSET	0x08000000
+#define DEVICETREE_OVERLAY_OFFSET	0x08800000
 #define CFG_FILE_OFFSET		0x09000000
 #define RAMFS_OFFSET		0x0b000000
 
@@ -150,30 +152,39 @@ static void boot_next_img(struct config *cfg)
 int parse_config_file(struct config *cfg);
 int parse_efi_variable(struct config *cfg);
 
-static void merge_dtbs(struct config *cfg)
+static void load_dtbs(struct config *cfg)
 {
 	int err;
-	void *dtbo = (void *)cfg->dtb.addr;
-	void *dtbo_tmp;
-	void *dtb = dtb_get_base();
-	uint32_t dtbo_size;
+	void *dtbi;
+	void *dtb = (void *)cfg->dtb.addr;
+	void *dtbo = (void *)cfg->dtbo.addr;
 	uint32_t dtb_size;
+	uint32_t dtbo_size;
 
+	if (cfg->dtb.name)
+		dtbi = (void *)cfg->dtb.addr;
+	else
+		dtbi = dtb_get_base();
 
-	dtbo_size = fdt_totalsize(dtbo);
-	dtb_size = fdt_totalsize(dtb);
+	dtb_size = fdt_totalsize(dtbi);
+	dtbo_size = dtbo ? fdt_totalsize(dtbo) : 0;
 
-	dtbo_tmp = malloc(dtbo_size);
-	if (!dtbo_tmp)
-		pr_err("Allocate memory for overlay dtb failed (%u Bytes)\n", dtbo_size);
-
-	memcpy(dtbo_tmp, dtbo, dtbo_size);
-
-	err = fdt_open_into(dtb, dtbo, ROUND_UP(dtb_size + dtbo_size + (16 * 1024), 8));
+	err = fdt_open_into(dtbi, dtb, ROUND_UP(dtb_size + dtbo_size + (16 * 1024), 8));
 	if (err)
 		pr_err("Failed to move core dtb to the destination\n");
 
-	err = fdt_overlay_apply(dtbo, dtbo_tmp);
+}
+
+static void merge_dtbs(struct config *cfg)
+{
+	int err;
+	void *dtbo = (void *)cfg->dtbo.addr;
+	void *dtb = (void *)cfg->dtb.addr;
+
+	if (!dtbo || !cfg->dtbo.name || !cfg->dtbo.name[0])
+		return;
+
+	err = fdt_overlay_apply(dtb, dtbo);
 	if (err)
 		pr_err("Overlay core dtb and extended dtb failed with error code %d\n", err);
 }
@@ -203,6 +214,7 @@ static void load_images(struct config *cfg)
 	}
 
 	load(cfg, &cfg->dtb, true);
+	load(cfg, &cfg->dtbo, true);
 	load(cfg, &cfg->sbi, true);
 	load(cfg, &cfg->kernel, true);
 	load(cfg, &cfg->ramfs, true);
@@ -389,8 +401,10 @@ static void config_init(struct config *cfg)
 
 	cfg->sbi.name = "fw_dynamic.bin";
 	cfg->sbi.addr = ram_base + OPENSBI_OFFSET;
-	cfg->dtb.name = "sg2044-evb.dtbo";
+	cfg->dtb.name = NULL;
 	cfg->dtb.addr = ram_base + DEVICETREE_OFFSET;
+	cfg->dtbo.name = "sg2044-evb.dtbo";
+	cfg->dtbo.addr = ram_base + DEVICETREE_OVERLAY_OFFSET;
 #ifdef USE_LINUX_BOOT
 	cfg->kernel.name = "riscv64_Image";
 	cfg->ramfs.name = "initrd";
@@ -767,6 +781,7 @@ static int modify_bootargs(struct config *cfg)
 
 static void modify_dtb(struct config *cfg)
 {
+	load_dtbs(cfg);
 	merge_dtbs(cfg);
 
 	modify_eth_node(cfg);
