@@ -794,7 +794,7 @@ $(TARGET).bin: $(TARGET).elf
 $(TARGET).dis: $(TARGET).elf
 	$(Q)echo "  DS      $@"
 	$(Q)$(READELF) -e $< > $@
-	$(Q)$(OBJDUMP) -D $< >> $@
+	$(Q)$(OBJDUMP) -d $< >> $@
 
 targets := $(TARGET).elf
 
