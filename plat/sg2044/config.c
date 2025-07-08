@@ -25,7 +25,7 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->dtb.name = strdup(value);
 	else if (MATCH("devicetree", "addr"))
 		pconfig->dtb.addr = strtoul(value, NULL, 16);
-	if (MATCH("devicetree-overlay", "name"))
+	else if (MATCH("devicetree-overlay", "name"))
 		pconfig->dtbo.name = strdup(value);
 	else if (MATCH("devicetree-overlay", "addr"))
 		pconfig->dtbo.addr = strtoul(value, NULL, 16);

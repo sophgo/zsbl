@@ -189,12 +189,41 @@ static void merge_dtbs(struct config *cfg)
 		pr_err("Overlay core dtb and extended dtb failed with error code %d\n", err);
 }
 
+/* check if a file is a device tree overlay or not, by file extension */
+static int file_is_dtbo(const char *name)
+{
+	int namelen, extlen;
+	const char *ext = ".dtbo";
+
+	if (!name)
+		return false;
+
+	namelen = strlen(name);
+	extlen = strlen(ext);
+
+	if (namelen < strlen(ext))
+		return false;
+
+	return strcmp(&name[namelen - extlen], ext) == 0;
+}
+
 static void load_images(struct config *cfg)
 {
 	uint8_t pubkey_dgst[PUBKEY_DIG_SIZE];
 	uint8_t pubkey_der[512];
 	struct boot_file pubkey = {0};
 	int err;
+
+	if (file_is_dtbo(cfg->dtb.name)) {
+		/* check if dtbo is set */
+		if (cfg->dtbo.name) {
+			/* we cannot set two dtbo at the same time */
+			pr_debug("We cannot set two dtbo at the same time\n");
+			pr_debug("Ignore dtbo specified by devicetree-overlay command\n");
+		}
+		cfg->dtbo.name = cfg->dtb.name;
+		cfg->dtb.name = NULL;
+	}
 
 	if (cfg->secure) {
 		pubkey.name = "public_key.der";
