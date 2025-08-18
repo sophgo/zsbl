@@ -145,7 +145,9 @@ void *_sbrk(unsigned long inc)
 
 void _exit(int n)
 {
-	printf("riscv terminated with code %d\n", n);
+	/* disable all interrupts */
+	csr_write(CSR_MSTATUS, csr_read(CSR_MSTATUS) & ~(1 << 3));
+	printf("RISC-V terminated with code %d\n", n);
 	while (true)
 		;
 }

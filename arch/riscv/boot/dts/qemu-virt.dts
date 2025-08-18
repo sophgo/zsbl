@@ -14,5 +14,10 @@
 			reg-io-width = <1>;
 			stdio;
  		};
+
+		clint@2000000 {
+			reg = <0x00 0x2000000 0x00 0x10000>;
+			compatible = "riscv,clint0";
+		};
 	};
 };

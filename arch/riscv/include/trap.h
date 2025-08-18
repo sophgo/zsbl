@@ -179,23 +179,6 @@ struct trap_regs {
 	unsigned long mstatusH;
 } __packed;
 
-/** Representation of trap details */
-struct trap_info {
-	/** epc Trap program counter */
-	unsigned long epc;
-	/** cause Trap exception cause */
-	unsigned long cause;
-	/** tval Trap value */
-	unsigned long tval;
-	/** tval2 Trap value 2 */
-	unsigned long tval2;
-	/** tinst Trap instruction */
-	unsigned long tinst;
-};
-
-int trap_redirect(struct trap_regs *regs,
-		      struct trap_info *trap);
-
 void trap_handler(struct trap_regs *regs);
 
 #endif

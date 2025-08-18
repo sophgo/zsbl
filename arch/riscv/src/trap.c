@@ -2,33 +2,11 @@
 #include <encoding.h>
 #include <trap.h>
 #include <stdio.h>
+#include <timer.h>
 
 #include <framework/common.h>
 
-static int misa_extension_imp(char ext)
-{
-	unsigned long misa = csr_read(CSR_MISA);
-
-	if (misa) {
-		if ('A' <= ext && ext <= 'Z')
-			return misa & (1 << (ext - 'A'));
-		if ('a' <= ext && ext <= 'z')
-			return misa & (1 << (ext - 'a'));
-
-	}
-	return 0;
-}
-
-#define misa_extension(c)\
-({\
-	_Static_assert(((c >= 'A') && (c <= 'Z')),\
-		"The parameter of misa_extension must be [A-Z]");\
-	misa_extension_imp(c);\
-})
-
-static void trap_error(const char *msg,
-		ulong mcause, ulong mtval, ulong mtval2,
-		ulong mtinst, struct trap_regs *regs)
+static void trap_error(ulong exception_code, struct trap_regs *regs)
 {
 	const char *exception_cause_list[] = {
 		"Instruction address misaligned",
@@ -50,21 +28,19 @@ static void trap_error(const char *msg,
 	};
 
 	u32 hartid = current_hartid();
-
+	ulong mtval = csr_read(CSR_MTVAL);
 	const char *cause;
 
-	if (mcause & (1UL << 63))
-		cause = "Interrupt";
-	else if (mcause >= ARRAY_SIZE(exception_cause_list))
+	if (exception_code >= ARRAY_SIZE(exception_cause_list))
 		cause = "Unknown Cause";
 	else
-		cause = exception_cause_list[mcause];
+		cause = exception_cause_list[exception_code];
 
-	printf("\n%s\n", msg);
+	printf("\nException Occur\n");
 
 	printf("Hart%d, %s\n", hartid, cause);
 
-	printf("%8s 0x%016lx    %8s 0x%016lx\n", "mcause", mcause, "mstatus", regs->mstatus);
+	printf("%8s 0x%016lx    %8s 0x%016lx\n", "mcause", exception_code, "mstatus", regs->mstatus);
 	printf("%8s 0x%016lx    %8s 0x%016lx\n", "mepc", regs->mepc, "mtval", mtval);
 	printf("%8s 0x%016lx    %8s 0x%016lx\n", "ra", regs->ra, "sp", regs->sp);
 	printf("%8s 0x%016lx    %8s 0x%016lx\n", "gp", regs->gp, "tp", regs->tp);
@@ -87,14 +63,73 @@ static void trap_error(const char *msg,
 		wfi();
 }
 
+void __attribute__((weak)) sswi_isr(void)
+{
+	printf("Supervisor Software Interrupt Happen without Setup Before\n");
+}
+
+void __attribute__((weak)) mswi_isr(void)
+{
+	printf("Machine Software Interrupt Happen without Setup Before\n");
+}
+
+void __attribute__((weak)) stimer_isr(void)
+{
+	printf("Supervisor Timer Interrupt Happen without Setup Before\n");
+}
+
+void __attribute__((weak)) mtimer_isr(void)
+{
+	printf("Machine Timer Interrupt Happen without Setup Before\n");
+}
+
+void __attribute__((weak)) sei_isr(void)
+{
+	printf("Supervisor External Interrupt Happen without Setup Before\n");
+}
+
+void __attribute__((weak)) mei_isr(void)
+{
+	printf("Machine External Interrupt Happen without Setup Before\n");
+}
+
+static void unknown_isr(void)
+{
+	printf("Unknown Interrupt Happen\n");
+}
+
+static void trap_interrupt(ulong exception_code, struct trap_regs *regs)
+{
+	const void (*(isr_table[]))(void) = {
+		[1] = sswi_isr,
+		[3] = mswi_isr,
+		[5] = stimer_isr,
+		[7] = mtimer_isr,
+		[9] = sei_isr,
+		[11] = mei_isr,
+	};
+	void (*isr)(void);
+
+	if (exception_code < ARRAY_SIZE(isr_table))
+		isr = isr_table[exception_code];
+	else
+		isr = NULL;
+
+	if (isr)
+		isr();
+	else
+		unknown_isr();
+}
+
 void trap_handler(struct trap_regs *regs)
 {
 	ulong mcause = csr_read(CSR_MCAUSE);
-	ulong mtval = csr_read(CSR_MTVAL), mtval2 = 0, mtinst = 0;
+	ulong is_interrupt = mcause & (1UL << 63);
+	ulong exception_code = mcause & ~(1UL << 63);
 
-	if (misa_extension('H')) {
-		mtval2 = csr_read(CSR_MTVAL2);
-		mtinst = csr_read(CSR_MTINST);
-	}
+	if (is_interrupt)
+		trap_interrupt(exception_code, regs);
+	else
+		trap_error(exception_code, regs);
+}
 
-	trap_error("Exception Occur", mcause, mtval, mtval2, mtinst, regs); }
