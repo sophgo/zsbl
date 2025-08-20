@@ -18,4 +18,4 @@ KBUILD_CFLAGS += -nostdinc -fstack-protector -fshort-wchar
 KBUILD_LDFLAGS += -nostdlib
 KBUILD_CFLAGS += -fno-pie -no-pie -fPIE -pie -march=rv64imafdc_zicbom -misa-spec=2.2
 KBUILD_LDFLAGS += -g -Wl,--no-dynamic-linker -Wl,-pie -Wl,--no-warn-rwx-segments
-KBUILD_AFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2 -fstack-protector
+KBUILD_AFLAGS += -g -march=rv64imafdc_zicbom -misa-spec=2.2 -fstack-protector
