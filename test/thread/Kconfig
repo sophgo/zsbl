@@ -1,0 +1,5 @@
+config TEST_MULTI_THREAD
+	bool "Multi Thread"
+	depends on MULTI_THREAD
+	help
+	Test multi thread

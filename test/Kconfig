@@ -16,5 +16,6 @@ source "test/riscv_exception/Kconfig"
 source "test/blkdev/Kconfig"
 source "test/bootdev/Kconfig"
 source "test/c2clat/Kconfig"
+source "test/thread/Kconfig"
 endif
 

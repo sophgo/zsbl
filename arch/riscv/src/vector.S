@@ -234,7 +234,6 @@ _trap_handler:
 	/* Re-use current SP as exception stack */
 	add	sp, sp, -(TRAP_REGS_SIZE)
 
-_trap_handler_all_mode:
 	/* Save T0 on stack */
 	REG_S	t0, TRAP_REGS_OFFSET(t0)(sp)
 
@@ -242,15 +241,11 @@ _trap_handler_all_mode:
 	/* Save original SP (from T0) on stack */
 	REG_S	t0, TRAP_REGS_OFFSET(sp)(sp)
 
-	/* Swap TP and MSCRATCH */
-	csrrw	tp, CSR_MSCRATCH, tp
-
 	/* Save MEPC and MSTATUS CSRs */
 	csrr	t0, CSR_MEPC
 	REG_S	t0, TRAP_REGS_OFFSET(mepc)(sp)
 	csrr	t0, CSR_MSTATUS
 	REG_S	t0, TRAP_REGS_OFFSET(mstatus)(sp)
-	REG_S	zero, TRAP_REGS_OFFSET(mstatusH)(sp)
 
 	/* Save all general regisers except SP and T0 */
 	REG_S	zero, TRAP_REGS_OFFSET(zero)(sp)
@@ -287,6 +282,8 @@ _trap_handler_all_mode:
 	/* Call C routine */
 	add	a0, sp, zero
 	call	trap_handler
+	/* update stack */
+	add	sp, a0, zero
 
 	/* Restore all general regisers except SP and T0 */
 	REG_L	ra, TRAP_REGS_OFFSET(ra)(sp)
@@ -324,15 +321,6 @@ _trap_handler_all_mode:
 	csrw	CSR_MEPC, t0
 	REG_L	t0, TRAP_REGS_OFFSET(mstatus)(sp)
 	csrw	CSR_MSTATUS, t0
-#if __riscv_xlen == 32
-	csrr	t0, CSR_MISA
-	srli	t0, t0, ('H' - 'A')
-	andi	t0, t0, 0x1
-	beq	t0, zero, _skip_mstatush_restore
-	REG_L	t0, TRAP_REGS_OFFSET(mstatusH)(sp)
-	csrw	CSR_MSTATUSH, t0
-_skip_mstatush_restore:
-#endif
 
 	/* Restore T0 */
 	REG_L	t0, TRAP_REGS_OFFSET(t0)(sp)

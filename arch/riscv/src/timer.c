@@ -129,7 +129,7 @@ void mtimer_isr(void)
 		return;
 
 	ctx->isr[idx].func(ctx->isr[idx].data);
-	writel(timer_get_tick() + ctx->isr[idx].tick, ctx->isr[idx].mtimecmp);
+	writeq(timer_get_tick() + ctx->isr[idx].tick, ctx->isr[idx].mtimecmp);
 }
 
 int timer_enable_irq(uint64_t tick, void (*isr)(void *data), void *data)
@@ -144,10 +144,10 @@ int timer_enable_irq(uint64_t tick, void (*isr)(void *data), void *data)
 	ctx->isr[idx].data = data;
 	ctx->isr[idx].mtimecmp = ctx->mtimecmp.base + idx * 8;
 
-	writel(timer_get_tick() + tick, ctx->isr[idx].mtimecmp);
+	writeq(timer_get_tick() + tick, ctx->isr[idx].mtimecmp);
 
 	/* enable timer interrupt */
-	csr_write(CSR_MIE, (csr_read(CSR_MIE) | (1 << 7)));
+	arch_enable_local_timer_irq();
 
 	return 0;
 }
@@ -157,7 +157,7 @@ int timer_disable_irq(void)
 	if (!ctx)
 		return -ENODEV;
 
-	csr_write(CSR_MIE, (csr_read(CSR_MIE) & ~(1 << 7)));
+	arch_disable_local_timer_irq();
 
 	return 0;
 }
@@ -185,9 +185,9 @@ static int timer_probe(struct platform_device *pdev)
 	}
 
 	/* enable global interrupt, MSTATUS.MIE */
-	csr_write(CSR_MSTATUS, csr_read(CSR_MSTATUS) | (1 << 3));
+	arch_enable_local_irq();
 	/* disable timer interrupt on reset */
-	csr_write(CSR_MIE, (csr_read(CSR_MIE) & ~(1 << 7)));
+	arch_disable_local_timer_irq();
 
 	return 0;
 }

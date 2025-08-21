@@ -5,6 +5,7 @@
 #include <timer.h>
 
 #include <framework/common.h>
+#include <framework/thread.h>
 
 static void trap_error(ulong exception_code, struct trap_regs *regs)
 {
@@ -121,7 +122,32 @@ static void trap_interrupt(ulong exception_code, struct trap_regs *regs)
 		unknown_isr();
 }
 
-void trap_handler(struct trap_regs *regs)
+#ifdef CONFIG_MULTI_THREAD
+#include <arch_thread.h>
+struct trap_regs *trap_handler(struct trap_regs *regs)
+{
+	struct arch_cpu_ctx ctx;
+
+	ulong mcause = csr_read(CSR_MCAUSE);
+	ulong is_interrupt = mcause & (1UL << 63);
+	ulong exception_code = mcause & ~(1UL << 63);
+
+	if (is_interrupt)
+		trap_interrupt(exception_code, regs);
+	else if (exception_code != 11) { /* filter out machine call */
+		trap_error(exception_code, regs); /* never return */
+		/* ecall exception is synchronous, it means error pc is the address where
+		 * causes this exception, we need multiple of 4 (size of ecall instruction)
+		 */
+		regs->mepc += 4;
+	}
+
+	ctx.regs = regs;
+
+	return sched_thread(&ctx)->regs;
+}
+#else
+struct trap_regs *trap_handler(struct trap_regs *regs)
 {
 	ulong mcause = csr_read(CSR_MCAUSE);
 	ulong is_interrupt = mcause & (1UL << 63);
@@ -131,5 +157,8 @@ void trap_handler(struct trap_regs *regs)
 		trap_interrupt(exception_code, regs);
 	else
 		trap_error(exception_code, regs);
+
+	return regs;
 }
+#endif
 
