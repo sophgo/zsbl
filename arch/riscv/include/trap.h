@@ -70,24 +70,9 @@
 /** Index of mepc member in trap_regs */
 #define TRAP_REGS_mepc			32
 /** Index of mstatus member in trap_regs */
-#define TRAP_REGS_mstatus			33
-/** Index of mstatusH member in trap_regs */
-#define TRAP_REGS_mstatusH			34
+#define TRAP_REGS_mstatus		33
 /** Last member index in trap_regs */
-#define TRAP_REGS_last			35
-
-/** Index of epc member in trap_info */
-#define TRAP_INFO_epc			0
-/** Index of cause member in trap_info */
-#define TRAP_INFO_cause			1
-/** Index of tval member in trap_info */
-#define TRAP_INFO_tval			2
-/** Index of tval2 member in trap_info */
-#define TRAP_INFO_tval2			3
-/** Index of tinst member in trap_info */
-#define TRAP_INFO_tinst			4
-/** Last member index in trap_info */
-#define TRAP_INFO_last			5
+#define TRAP_REGS_last			34
 
 /* clang-format on */
 
@@ -175,11 +160,9 @@ struct trap_regs {
 	unsigned long mepc;
 	/** mstatus register state */
 	unsigned long mstatus;
-	/** mstatusH register state (only for 32-bit) */
-	unsigned long mstatusH;
 } __packed;
 
-void trap_handler(struct trap_regs *regs);
+struct trap_regs *trap_handler(struct trap_regs *regs);
 
 #endif
 

@@ -34,6 +34,11 @@ typedef __uint128_t uint128_t;
 #error "smp not supported yet"
 #endif
 
+void arch_disable_local_irq(void);
+void arch_enable_local_irq(void);
+void arch_disable_local_timer_irq(void);
+void arch_enable_local_timer_irq(void);
+
 #endif
 
 #endif

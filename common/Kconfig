@@ -90,4 +90,10 @@ config MMIO
 	want access such regions using normal memset, memcpy or memmove. it
 	may speedup operations in most conditions.
 
+config MULTI_THREAD
+	bool "Multi Thread"
+	default n
+	help
+	support multi thread.
+
 endmenu
