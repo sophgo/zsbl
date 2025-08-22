@@ -5,7 +5,7 @@
 
 #include <lib/console.h>
 #include <lib/cli.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 /* memory read */
 static void command_mr(struct command *c, int argc, const char *argv[])

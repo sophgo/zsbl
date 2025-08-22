@@ -1,8 +1,8 @@
 #include <errno.h>
 #include <string.h>
 
-#include <framework/common.h>
-#include <framework/module.h>
+#include <common/common.h>
+#include <common/module.h>
 #include <driver/serial.h>
 #include <lib/console.h>
 #include <lib/cli.h>

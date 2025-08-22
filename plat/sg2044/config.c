@@ -7,7 +7,7 @@
 #include <lib/efi.h>
 #include <driver/bootdev.h>
 #include <driver/mtd.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 #include "config.h"
 

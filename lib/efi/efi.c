@@ -5,7 +5,7 @@
 #include <stddef.h>
 #include <wchar.h>
 
-#include <framework/common.h>
+#include <common/common.h>
 
 #include <lib/efi.h>
 

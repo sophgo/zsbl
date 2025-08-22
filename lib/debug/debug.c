@@ -1,4 +1,4 @@
-#include <framework/common.h>
+#include <common/common.h>
 
 void dump_hex(void *addr, int len)
 {

@@ -2,8 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <driver/pka/pka.h>
-#include <framework/common.h>
-#include <framework/module.h>
+#include <common/common.h>
+#include <common/module.h>
 
 static int do_modexp(struct akcipher_alg *alg, struct rsa_ctx *ctx)
 {

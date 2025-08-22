@@ -6,7 +6,7 @@
 #include <timer.h>
 #include <arch.h>
 
-#include <framework/common.h>
+#include <common/common.h>
 #include <platform.h>
 
 int plat_main(void);

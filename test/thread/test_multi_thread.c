@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <timer.h>
-#include <framework/module.h>
-#include <framework/common.h>
-#include <framework/thread.h>
+#include <common/module.h>
+#include <common/common.h>
+#include <common/thread.h>
 
 unsigned char stack_a[4096];
 unsigned char stack_b[4096];

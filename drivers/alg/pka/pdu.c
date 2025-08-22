@@ -18,7 +18,7 @@
 // ------------------------------------------------------------------------
 
 #include <driver/pka/elppdu.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 
 /* Platform Specific I/O */

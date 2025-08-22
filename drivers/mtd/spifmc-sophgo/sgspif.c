@@ -6,11 +6,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <timer.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 #include <driver/mtd.h>
 #include <driver/platform.h>
-#include <framework/module.h>
+#include <common/module.h>
 
 #define SPI_CMD_WREN		0x06
 #define SPI_CMD_WRDI		0x04

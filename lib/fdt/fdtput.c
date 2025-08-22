@@ -10,7 +10,7 @@
 #include <string.h>
 
 #include <libfdt.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 static inline void *xmalloc(size_t len)
 {

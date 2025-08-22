@@ -52,7 +52,7 @@ static int MMC_disk_read(BYTE *buff,	DWORD sector,	UINT count)
 #include <stdlib.h>
 
 #include <lib/fatio_dev.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 struct fatio_dev *fatio_list[FF_VOLUMES];
 

@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <timer.h>
 
-#include <framework/common.h>
-#include <framework/thread.h>
+#include <common/common.h>
+#include <common/thread.h>
 
 static void trap_error(ulong exception_code, struct trap_regs *regs)
 {

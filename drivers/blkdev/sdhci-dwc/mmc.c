@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <timer.h>
 
-#include <framework/common.h>
+#include <common/common.h>
 #include <driver/sd/mmc.h>
 
 #define MMC_DEFAULT_MAX_RETRIES		5

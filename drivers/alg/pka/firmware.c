@@ -21,7 +21,7 @@
 #include <driver/pka/elppka_hw.h>
 #include <driver/pka/elppka.h>
 #include <driver/pka/elppka_elf.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <string.h>
 
 struct elppka_fw_priv {

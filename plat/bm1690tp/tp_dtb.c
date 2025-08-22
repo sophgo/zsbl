@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <lib/libc/errno.h>
 #include <platform.h>
 #include <memmap.h>

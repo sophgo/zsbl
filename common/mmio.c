@@ -2,8 +2,8 @@
 #include <stddef.h>
 #include <assert.h>
 #include <arch.h>
-#include <framework/common.h>
-#include <framework/mmio.h>
+#include <common/common.h>
+#include <common/mmio.h>
 
 int is_normal_memory(const void *addr);
 

@@ -7,8 +7,8 @@
 #include <timer.h>
 #include <arch_thread.h>
 #include <atomic.h>
-#include <framework/common.h>
-#include <framework/thread.h>
+#include <common/common.h>
+#include <common/thread.h>
 
 static LIST_HEAD(thread_list);
 

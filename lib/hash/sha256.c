@@ -3,7 +3,7 @@
 
 #include <lib/hash/tomcrypt_private.h>
 #include <string.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 /**
   @file sha256.c

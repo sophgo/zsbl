@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <timer.h>
 #include <arch.h>
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 
 enum {
 	FAB_TEST_NT		= 0,

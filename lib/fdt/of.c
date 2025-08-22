@@ -6,7 +6,7 @@
 #include <string.h>
 #include <libfdt.h>
 
-#include <framework/common.h>
+#include <common/common.h>
 #include <of.h>
 
 int of_property_read_string(void *blob, char *path,

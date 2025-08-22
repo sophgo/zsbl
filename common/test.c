@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <arch.h>
 
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 
 extern unsigned long __ld_test_case_start[0], __ld_test_case_end[0];
 
