@@ -2,8 +2,8 @@
 #include <timer.h>
 #include <string.h>
 #include <cdefs.h>
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 #include <lib/libc/errno.h>
 
 #include <spinlock.h>

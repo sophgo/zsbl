@@ -1,4 +1,4 @@
-#include <framework/common.h>
+#include <common/common.h>
 #include <driver/nvmem.h>
 #include <driver/platform.h>
 #include <stdio.h>

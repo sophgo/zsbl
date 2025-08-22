@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <errno.h>
 #include <arch.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 #include "ns16550.h"
 

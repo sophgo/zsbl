@@ -2,10 +2,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <irq.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <arch.h>
 #include <memmap.h>
-#include <framework/module.h>
+#include <common/module.h>
 /*
  * GIC driver
  */

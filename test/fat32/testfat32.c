@@ -4,9 +4,9 @@
 #include <assert.h>
 #include <errno.h>
 
-#include <framework/module.h>
-#include <framework/common.h>
-#include <framework/debug.h>
+#include <common/module.h>
+#include <common/common.h>
+#include <common/debug.h>
 #include <lib/fatio_dev.h>
 #include <driver/blkdev.h>
 

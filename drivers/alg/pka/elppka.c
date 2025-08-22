@@ -21,7 +21,7 @@
 #include <driver/pka/elppka_hw.h>
 #include <string.h>
 #include <types.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 /*
  * Determine the base radix for the given operand size,

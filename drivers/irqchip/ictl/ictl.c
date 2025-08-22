@@ -1,5 +1,5 @@
 #include <arch.h>
-#include <framework/ictl.h>
+#include <common/ictl.h>
 
 /* constants */
 #define ICTL_PRIORITY_MAX	16

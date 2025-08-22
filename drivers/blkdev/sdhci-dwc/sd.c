@@ -1,6 +1,6 @@
 #include <assert.h>
 #include <stdio.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <lib/libc/errno.h>
 #include <driver/sd/sd.h>
 #include <memmap.h>
@@ -758,8 +758,8 @@ int bm_sd_init(uint32_t flags)
 
 #include <driver/platform.h>
 #include <driver/blkdev.h>
-#include <framework/common.h>
-#include <framework/module.h>
+#include <common/common.h>
+#include <common/module.h>
 
 static long read(struct blkdev *blkdev, unsigned long offset, unsigned long size, void *buf)
 {

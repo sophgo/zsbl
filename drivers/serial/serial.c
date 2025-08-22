@@ -3,7 +3,7 @@
 #include <errno.h>
 
 #include <lib/container_of.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <driver/serial.h>
 
 #include <lib/cli.h>

@@ -1,7 +1,7 @@
 #include <libfdt.h>
 #include <fdt_dump.h>
 
-#include <framework/common.h>
+#include <common/common.h>
 
 #include "config.h"
 

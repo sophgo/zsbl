@@ -2,8 +2,8 @@
 #include <stdint.h>
 
 #include <lib/mmio.h>
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 
 #define UART_REG_WIDTH 32
 #define UART_BASE	0x7030002000

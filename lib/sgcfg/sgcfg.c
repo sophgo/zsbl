@@ -6,8 +6,8 @@
 #include <errno.h>
 #include <libfdt.h>
 
-#include <framework/common.h>
-#include <framework/module.h>
+#include <common/common.h>
+#include <common/module.h>
 #include <lib/container_of.h>
 #include <driver/platform.h>
 #include <driver/bootdev.h>

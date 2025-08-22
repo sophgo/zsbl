@@ -1,5 +1,5 @@
-#include <framework/ictl.h>
-#include <framework/module.h>
+#include <common/ictl.h>
+#include <common/module.h>
 #include <irq.h>
 #include <arch.h>
 #include <memmap.h>

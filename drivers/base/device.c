@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include <framework/common.h>
+#include <common/common.h>
 #include <driver/device.h>
 #include <lib/container_of.h>
 

@@ -5,7 +5,7 @@
 #include <lib/ini.h>
 #include <lib/mac.h>
 #include <driver/bootdev.h>
-#include <framework/common.h>
+#include <common/common.h>
 
 #include "config.h"
 

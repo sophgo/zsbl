@@ -1,6 +1,6 @@
 #include <stdint.h>
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 
 int plat_main(void)
 {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <timer.h>
 #include <errno.h>
-#include <framework/module.h>
+#include <common/module.h>
 
 static int __attribute__((unused)) test_timer_delay(void)
 {

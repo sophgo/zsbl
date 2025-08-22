@@ -2,8 +2,8 @@
 #include <errno.h>
 #include <arch.h>
 #include <libfdt.h>
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 #include <driver/platform.h>
 #include <driver/serial.h>
 

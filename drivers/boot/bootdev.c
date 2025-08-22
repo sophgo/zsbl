@@ -5,7 +5,7 @@
 #include <cache.h>
 
 #include <driver/bootdev.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <lib/container_of.h>
 
 #include <lib/cli.h>

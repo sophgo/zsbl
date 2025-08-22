@@ -1,5 +1,5 @@
 #include <spinlock.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <string.h>
 #include <stdbool.h>
 

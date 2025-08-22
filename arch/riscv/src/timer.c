@@ -6,7 +6,7 @@
 #include <arch.h>
 #include <timer.h>
 
-#include <framework/module.h>
+#include <common/module.h>
 #include <driver/platform.h>
 
 uint64_t timer_frequency(void)

@@ -2,7 +2,7 @@
 #include <string.h>
 #include <errno.h>
 #include <lib/container_of.h>
-#include <framework/common.h>
+#include <common/common.h>
 #include <driver/alg.h>
 #include <lib/cli.h>
 

@@ -7,8 +7,8 @@
 #include <arch.h>
 #include <timer.h>
 
-#include <framework/module.h>
-#include <framework/common.h>
+#include <common/module.h>
+#include <common/common.h>
 
 /* #define DEBUG_IRQ */
 /* #define DEBUG_FIQ */

@@ -2,8 +2,8 @@
 #include <driver/pka/pka.h>
 #include <stdio.h>
 #include <string.h>
-#include <framework/common.h>
-#include <framework/module.h>
+#include <common/common.h>
+#include <common/module.h>
 #include <lib/hash/ec.h>
 
 static void param_last_init(union akcipher_param *param)

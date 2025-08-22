@@ -1,4 +1,4 @@
-#include <framework/common.h>
+#include <common/common.h>
 #include <platform.h>
 #include <memmap.h>
 #include <asm.h>
