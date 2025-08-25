@@ -25,14 +25,10 @@ static void thread_end_point(int exit_code)
 {
 	pr_info("Thread %s end\n", current->name);
 
-	current->exit_code = exit_code;
-	current->state = THREAD_STATE_DEAD;
-
 	spin_lock(&thread_lock);
 
-	list_del(&current->list);
-
-	current = NULL;
+	current->exit_code = exit_code;
+	current->state = THREAD_STATE_DEAD;
 
 	spin_unlock(&thread_lock);
 
@@ -50,6 +46,8 @@ struct thread *thread_create(const char *name, void *stack_base, unsigned long s
 	if (!t)
 		return NULL;
 
+	memset(t, 0, sizeof(struct thread));
+
 	t->cpu_ctx = arch_thread_create_cpu_ctx(stack_base, stack_size,
 						func, arg, thread_end_point);
 	if (!t->cpu_ctx) {
@@ -63,7 +61,7 @@ struct thread *thread_create(const char *name, void *stack_base, unsigned long s
 	t->stack_size = stack_size;
 	t->func = func;
 	t->arg = arg;
-	t->state = THREAD_STATE_NEW;
+	t->state = THREAD_STATE_RUNNABLE;
 
 	spin_lock(&thread_lock);
 	list_add_tail(&t->list, &thread_list);
@@ -87,37 +85,53 @@ int thread_destroy(struct thread *t)
 	return exit_code;
 }
 
+static struct thread *next_thread(struct thread *t)
+{
+	if (list_is_last(&t->list, &thread_list))
+		return list_first_entry(&thread_list, struct thread, list);
+	else
+		return list_next_entry(t, list);
+}
+
 struct arch_cpu_ctx *sched_thread(struct arch_cpu_ctx *cpu_ctx)
 {
-	struct thread *next = NULL;
+	struct thread *next = NULL, *t = NULL;
+	int hp;
 
-	/* we are now in init context, are not in any thread context */
-	if (!current) {
-		/* select 1st thread and schedule it on cpu */
-		current = list_first_entry(&thread_list, struct thread, list);
-		current->state = THREAD_STATE_RUNNING;
-		return current->cpu_ctx;
+	if (current->state == THREAD_STATE_RUNNING || current->state == THREAD_STATE_BLOCK)
+		arch_thread_save_ctx(current->cpu_ctx, cpu_ctx);
+
+	/* select the highest priority thread and is runnable */
+	/* idle thread always runnable */
+	hp = -1;
+
+	for(t = next_thread(current); (t != current); t = next_thread(t)) {
+		if (!(t->state == THREAD_STATE_RUNNABLE || t->state == THREAD_STATE_RUNNING))
+			continue;
+
+		if (t->priority > hp) {
+			next = t;
+			hp = t->priority;
+		}
 	}
 
-	/* save context to the previous thread */
-	arch_thread_save_ctx(current->cpu_ctx, cpu_ctx);
+	if (t->state == THREAD_STATE_RUNNABLE || t->state == THREAD_STATE_RUNNING)
+		if (t->priority > hp)
+			next = t;
 
-	if (list_is_last(&current->list, &thread_list))
-		next = list_first_entry(&thread_list, struct thread, list);
-	else
-		next = list_next_entry(current, list);
 
-	/* this thread has finished all jobs */
-	/* remove it from list */
-	/* we should have an idle thread, and idle thread never exit */
+	/* clean up finished thread */
 	if (current->state == THREAD_STATE_DEAD)
 		list_del(&current->list);
+	else if (current->state == THREAD_STATE_RUNNING)
+		current->state = THREAD_STATE_RUNNABLE;
 
-	current->state = THREAD_STATE_RUNNABLE;
 	next->state = THREAD_STATE_RUNNING;
 
 	/* new current */
 	current = next;
+
+	// printf("running %s\n", current->name);
 
 	return current->cpu_ctx;
 }
@@ -126,11 +140,12 @@ static int sched_idle_thread(void *data)
 {
 	int i = 0;
 
+	i = i;
+
 	/* idle thread never exit */
 	while (true) {
-		mdelay(1000);
-		printf("reschedule in idle %d\n", i++);
-		sched_yield();
+		// printf("idle thread on cpu%d %d times\n", current_hartid(), i++);
+		wfi();
 	}
 
 	return 0;
@@ -141,8 +156,35 @@ void sched_yield(void)
 	arch_thread_yield();
 }
 
-void sched_tick(void *unused)
+static const unsigned int sched_tick_hz = 100;
+static uint64_t sched_tick_counter;
+
+static void sched_tick(void *unused)
 {
+	struct thread *t;
+
+	++sched_tick_counter;
+
+	list_for_each_entry(t, &thread_list, list) {
+		if (t->sleep_time) {
+			--t->sleep_time;
+			if (t->sleep_time == 0)
+				t->state = THREAD_STATE_RUNNABLE;
+		}
+	}
+}
+
+/* must be called in thread context, and only apply for current thread */
+void sched_msleep(unsigned long time)
+{
+	if (time) {
+		sched_preempt_disable();
+		current->sleep_time = time * sched_tick_hz / 1000;
+		current->state = THREAD_STATE_BLOCK;
+		sched_preempt_enable();
+	}
+
+	sched_yield();
 }
 
 /* scheduler start and never return */
@@ -153,7 +195,10 @@ int sched_start(void)
 	struct thread *idle_thread;
 	void *idle_thread_stack_base;
 	const unsigned int idle_thread_stack_size = 4096;
-	const unsigned int sched_tick_hz = 100;
+
+	/* check if thread list is empty */
+	if (list_empty(&thread_list))
+		return -EINVAL;
 
 	idle_thread_stack_base = malloc(idle_thread_stack_size);
 	if (!idle_thread_stack_base) {
@@ -167,6 +212,8 @@ int sched_start(void)
 		err = -ENOMEM;
 		goto error_create_thread;
 	}
+
+	current = idle_thread;
 
 	/* start timer */
 	err = timer_enable_irq(timer_frequency() / sched_tick_hz, sched_tick, NULL);

@@ -9,6 +9,7 @@ struct thread {
 	struct list_head list;
 	int priority;
 	int state;
+	uint64_t sleep_time;
 	int exit_code;
 	const char *name;
 	void *stack_base;
@@ -18,8 +19,6 @@ struct thread {
 };
 
 /*
- * NEW: thread_create
- * NEW->RUNNING: sched_thread schedule newly created thread
  * RUNNING->RUNNABLE: sched_thread schedule a thread out of cpu
  * RUNNABLE->RUNNING: sched_thread schedule a thread on cpu
  * RUNNING->BLOCK: thread_sleep put current thread in sleep mode
@@ -28,7 +27,6 @@ struct thread {
  * RUNNING->DEAD: exited from its routine
  */
 enum {
-	THREAD_STATE_NEW,
 	THREAD_STATE_RUNNABLE,
 	THREAD_STATE_RUNNING,
 	THREAD_STATE_BLOCK,
@@ -45,5 +43,7 @@ struct thread *sched_get_current(void);
 
 void sched_preempt_disable(void);
 void sched_preempt_enable(void);
+
+void sched_msleep(unsigned long time);
 
 #endif

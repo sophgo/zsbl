@@ -132,15 +132,18 @@ struct trap_regs *trap_handler(struct trap_regs *regs)
 	ulong is_interrupt = mcause & (1UL << 63);
 	ulong exception_code = mcause & ~(1UL << 63);
 
+
+	/*
+	 * filter out machine call
+	 * ecall exception is synchronous, it means error pc is the address where
+	 * causes this exception, we need multiple of 4 (size of ecall instruction)
+	 */
 	if (is_interrupt)
 		trap_interrupt(exception_code, regs);
-	else if (exception_code != 11) { /* filter out machine call */
-		trap_error(exception_code, regs); /* never return */
-		/* ecall exception is synchronous, it means error pc is the address where
-		 * causes this exception, we need multiple of 4 (size of ecall instruction)
-		 */
+	else if (exception_code != 11)
+		trap_error(exception_code, regs);
+	else
 		regs->mepc += 4;
-	}
 
 	ctx.regs = regs;
 

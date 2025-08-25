@@ -16,6 +16,7 @@ static int func_a(void *arg)
 
 	for (i = 0; true; ++i) {
 		printf("a thread running %d round\n", i);
+		sched_msleep(1000);
 	}
 
 	return 0;
@@ -27,6 +28,7 @@ static int func_b(void *arg)
 
 	for (i = 0; true; ++i) {
 		printf("b thread running %d round\n", i);
+		sched_msleep(1000);
 	}
 
 	return 0;
