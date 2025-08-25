@@ -1,4 +1,4 @@
-#include <spinlock.h>
+#include <common/spinlock.h>
 #include <common/common.h>
 #include <string.h>
 #include <stdbool.h>
