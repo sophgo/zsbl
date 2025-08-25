@@ -9,8 +9,10 @@
 #include <atomic.h>
 #include <common/common.h>
 #include <common/thread.h>
+#include <common/spinlock.h>
 
 static LIST_HEAD(thread_list);
+static spinlock_t thread_lock = SPIN_LOCK_INITIALIZER;
 
 static struct thread *current;
 
@@ -26,9 +28,13 @@ static void thread_end_point(int exit_code)
 	current->exit_code = exit_code;
 	current->state = THREAD_STATE_DEAD;
 
+	spin_lock(&thread_lock);
+
 	list_del(&current->list);
 
 	current = NULL;
+
+	spin_unlock(&thread_lock);
 
 	/* reschedule, because we have already remove current thread from thread_list
 	 * so this thread will never be scheduled again
@@ -59,7 +65,9 @@ struct thread *thread_create(const char *name, void *stack_base, unsigned long s
 	t->arg = arg;
 	t->state = THREAD_STATE_NEW;
 
+	spin_lock(&thread_lock);
 	list_add_tail(&t->list, &thread_list);
+	spin_unlock(&thread_lock);
 
 	return t;
 }
@@ -71,8 +79,10 @@ int thread_destroy(struct thread *t)
 	/* only dead thread can be destroyed, running or runnable thread can't */
 	assert(t->state == THREAD_STATE_DEAD);
 
+	spin_lock(&thread_lock);
 	free(t->cpu_ctx);
 	free(t);
+	spin_unlock(&thread_lock);
 
 	return exit_code;
 }

@@ -1,12 +1,12 @@
 #include <barrier.h>
-#include <spinlock.h>
+#include <arch_spinlock.h>
 
-int spin_lock_check(spinlock_t *lock)
+int arch_spin_lock_check(struct arch_spinlock *lock)
 {
 	return (lock->lock == __RISCV_SPIN_UNLOCKED) ? 0 : 1;
 }
 
-int spin_trylock(spinlock_t *lock)
+int arch_spin_trylock(struct arch_spinlock *lock)
 {
 	int tmp = 1, busy;
 
@@ -19,18 +19,7 @@ int spin_trylock(spinlock_t *lock)
 	return !busy;
 }
 
-void spin_lock(spinlock_t *lock)
-{
-	while (1) {
-		if (spin_lock_check(lock))
-			continue;
-
-		if (spin_trylock(lock))
-			break;
-	}
-}
-
-void spin_unlock(spinlock_t *lock)
+void arch_spin_unlock(struct arch_spinlock *lock)
 {
 	__smp_store_release(&lock->lock, __RISCV_SPIN_UNLOCKED);
 }
