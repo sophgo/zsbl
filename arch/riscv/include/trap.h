@@ -86,6 +86,9 @@
 /** Size (in bytes) of trap_info */
 #define TRAP_INFO_SIZE TRAP_INFO_OFFSET(last)
 
+/** Size of trap stack */
+#define TRAP_STACK_SIZE	4096
+
 #ifndef __ASSEMBLY__
 
 #include <types.h>

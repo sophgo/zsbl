@@ -7,6 +7,8 @@
 #include <common/common.h>
 #include <common/thread.h>
 
+unsigned char __attribute__((aligned(16))) trap_stack[TRAP_STACK_SIZE];
+
 static void trap_error(ulong exception_code, struct trap_regs *regs)
 {
 	const char *exception_cause_list[] = {
