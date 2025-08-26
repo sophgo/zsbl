@@ -179,7 +179,7 @@ void sched_msleep(unsigned long time)
 {
 	if (time) {
 		sched_preempt_disable();
-		current->sleep_time = time * sched_tick_hz / 1000;
+		current->sleep_time = time * sched_tick_hz / 1000 + 1;
 		current->state = THREAD_STATE_BLOCK;
 		sched_preempt_enable();
 	}
