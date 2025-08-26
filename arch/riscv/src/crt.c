@@ -10,12 +10,15 @@
 #include <common/module.h>
 #include <common/common.h>
 
+#include <lib/cli.h>
+
 /* #define DEBUG_IRQ */
 /* #define DEBUG_FIQ */
 
 extern unsigned long __ld_ram_start[0], __ld_ram_end[0];
 extern unsigned long __ld_bss_start[0], __ld_bss_end[0];
 extern unsigned long __ld_data_start[0], __ld_data_end[0];
+extern unsigned long __ld_program_start[0], __ld_program_end[0];
 extern unsigned long __ld_data_load_start[0], __ld_data_load_end[0];
 extern unsigned long __ld_stack_top[0];
 extern unsigned long exception_handler[0];
@@ -122,25 +125,35 @@ void system_init(void)
 static unsigned long heap_start;
 static unsigned long heap_end;
 
-void *_sbrk(unsigned long inc)
+#define MEMALIGN	16
+
+void *_sbrk(intptr_t inc)
 {
 	void *last;
 
 	if (heap_start == 0) {
-		if ((unsigned long)__ld_bss_end & (0x7)) {
-			heap_start = ((unsigned long)__ld_bss_end & ~(unsigned long)(0x7)) + 0x8;
-		} else {
-			heap_start = (unsigned long)__ld_bss_end;
-		}
-
+		heap_start = ROUND_UP((unsigned long)__ld_bss_end, MEMALIGN);
 		heap_end = heap_start;
 	}
+
 	last = (void *)heap_end;
-	if (inc & 0x7) {
-		inc = (inc & ~(0x7)) + 0x8;
-	}
+
+	inc = ROUND_UP(inc, MEMALIGN);
+
 	heap_end += inc;
+
+	if (heap_end > (unsigned long)__ld_ram_end)
+		return (void *)-1;
+
+	memset(last, 0, inc);
+
+
 	return last;
+}
+
+void *sbrk(intptr_t inc)
+{
+	return _sbrk(inc);
 }
 
 void _exit(int n)
@@ -160,3 +173,24 @@ void __stack_chk_fail(void)
 	printf("Stack Overflow\n");
 	asm volatile ("ebreak");
 }
+
+void show_memmap(void)
+{
+#define show_region(name, start, end)	\
+	printf("%-10s %012lx %012lx\n", name, (unsigned long)(start), (unsigned long)(end))
+
+	show_region("RAM",__ld_ram_start, __ld_ram_end);
+	show_region("TEXT", __ld_program_start, __ld_data_start);
+	show_region("DATA", __ld_data_start, __ld_data_end);
+	show_region("BSS", __ld_bss_start, __ld_bss_end);
+	show_region("STACK", __ld_bss_end, __ld_stack_top);
+	show_region("HEAP", heap_start, heap_end);
+}
+
+static void command_show_memmap(struct command *c, int argc, const char *argv[])
+{
+	show_memmap();
+}
+
+cli_command(memmap, command_show_memmap);
+

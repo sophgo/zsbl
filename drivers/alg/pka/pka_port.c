@@ -57,5 +57,3 @@ int pka_sem_wait(struct pka_sem *sem)
 	return 0;
 }
 
-int pka_errno;
-
