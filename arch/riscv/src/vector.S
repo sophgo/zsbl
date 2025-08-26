@@ -279,10 +279,15 @@ _trap_handler:
 	REG_S	t5, TRAP_REGS_OFFSET(t5)(sp)
 	REG_S	t6, TRAP_REGS_OFFSET(t6)(sp)
 
-	/* Call C routine */
+	/* Prepare parameter of trap_handler */
 	add	a0, sp, zero
+	/* Move from thread stack to trap stack */
+	la	sp, trap_stack
+	li	t0, TRAP_STACK_SIZE
+	add	sp, sp, t0
+	/* Call C routine */
 	call	trap_handler
-	/* update stack */
+	/* Load next thread stack */
 	add	sp, a0, zero
 
 	/* Restore all general regisers except SP and T0 */
