@@ -9,4 +9,5 @@ obj-$(CONFIG_TEST_SMP) += smp/
 obj-$(CONFIG_TEST_RISCV_EXCEPTION) += riscv_exception/
 obj-$(CONFIG_TEST_BLKDEV) += blkdev/
 obj-$(CONFIG_TEST_BOOTDEV) += bootdev/
+obj-$(CONFIG_TEST_C2CLAT) += c2clat/
 
