@@ -39,5 +39,7 @@ void spin_lock(spinlock_t *lock)
 void spin_unlock(spinlock_t *lock)
 {
 	arch_spin_unlock(&lock->lock);
+#ifdef CONFIG_MULTI_THREAD
 	sched_preempt_enable();
+#endif
 }

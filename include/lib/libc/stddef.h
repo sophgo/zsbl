@@ -11,4 +11,7 @@ typedef unsigned long size_t ;
 typedef size_t uintptr_t;
 typedef uint16_t wchar_t;
 
+typedef signed long intptr_t;
+typedef intptr_t ptrdiff_t;
+
 #endif

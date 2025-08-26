@@ -1,6 +1,8 @@
 #ifndef __PKA_PORT_H__
 #define __PKA_PORT_H__
 
+#include <errno.h>
+
 #define PKA_IRQ_NUM	(291)
 
 struct pka_mutex {
@@ -156,9 +158,6 @@ void pka_atomic_writei(int *x, int v);
 #define EOVERFLOW 139	/* Value too large for defined data type */
 #define EWOULDBLOCK EAGAIN	/* Operation would block */
 #define __ELASTERROR 2000	/* Users can add values starting here */
-
-#define errno	pka_errno
-extern int pka_errno;
 
 #endif
 

@@ -1,0 +1,4 @@
+config TEST_MALLOC
+	bool "Malloc"
+	help
+	Test malloc
