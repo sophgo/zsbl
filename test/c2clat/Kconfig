@@ -1,0 +1,4 @@
+config TEST_C2CLAT
+	bool "Core-to-Core Latency Test"
+	help
+	Core-to-Core Latency testcase
