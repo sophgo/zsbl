@@ -2,11 +2,13 @@ menu "Common Features"
 
 config DEBUG
 	bool "Enable Debug"
+	default n
 	help
 	Generate executable file for debug
 
 config DEBUG_INFO
 	bool "Compile With Debug Info"
+	default y
 	help
 	choosing this option will pass "-g" to your compiler, debug information
 	should be added into final elf file.
@@ -60,7 +62,6 @@ config CC_OPTIMIZE_FOR_PERFORMANCE
 
 config CC_OPTIMIZE_FOR_PERFORMANCE_O3
 	bool "Optimize More for Performance (-O3)"
-	depends on ARC
 	help
 	choosing this option will pass "-O3" to your compiler,
 	yet more for performance.
