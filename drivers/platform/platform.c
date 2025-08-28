@@ -73,6 +73,8 @@ struct platform_device *platform_device_alloc(void)
 	if (pdev)
 		memset(pdev, 0, sizeof(struct platform_device));
 
+	pdev->device.status = DEVICE_STATUS_NEW;
+
 	return pdev;
 }
 
@@ -164,6 +166,7 @@ subsys_init(platform_init);
 static int bind_driver(struct platform_device *pdev, struct platform_driver *pdrv)
 {
 	int i;
+	int err;
 
 	if (!pdrv->of_match_table) {
 		pr_warn("no match table found in driver %s\n", pdrv->driver.name);
@@ -188,9 +191,16 @@ static int bind_driver(struct platform_device *pdev, struct platform_driver *pdr
 	/* bind driver to device */
 	pdev->pdrv = pdrv;
 	pdev->match = &pdrv->of_match_table[i];
+	pdev->device.status = DEVICE_STATUS_BOUND;
 
 	/* customer probe */
-	return pdrv->probe(pdev);
+	err = pdrv->probe(pdev);
+	if (err)
+		pdev->device.status = DEVICE_STATUS_ERROR;
+	else
+		pdev->device.status = DEVICE_STATUS_OK;
+
+	return err;
 }
 
 static const struct of_device_id *match_table(struct platform_device *pdev)
