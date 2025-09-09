@@ -477,8 +477,8 @@ static void config_init(struct config *cfg)
 	init_pcie_win(&p->io, 0, 0x4010000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0, 0, 0x04000000);
 	init_pcie_win(&p->mem32, 0x04000000, 0x04000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x4200000000UL, 0x4200000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x4100000000UL, 0x4100000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x4400000000UL, 0x4400000000UL, 0x400000000UL);
+	init_pcie_win(&p->mem64, 0x4200000000UL, 0x4200000000UL, 0x200000000UL);
 
 	p->irq = 64;
 
@@ -487,13 +487,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c00800000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c00b80000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c00b00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x4400000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x4800000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x4410000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x4810000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x08000000, 0x08000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x0c000000, 0x0c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x4600000000UL, 0x4600000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x4500000000UL, 0x4500000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x4c00000000UL, 0x4c00000000UL, 0x400000000UL);
+	init_pcie_win(&p->mem64, 0x4a00000000UL, 0x4a00000000UL, 0x200000000UL);
 
 	p->irq = 66;
 
@@ -502,13 +502,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c00000000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c000c0000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c00300000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x4800000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x5000000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x4810000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x5010000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x10000000, 0x10000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x14000000, 0x14000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x4a00000000UL, 0x4a00000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x4900000000UL, 0x4900000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x5400000000UL, 0x5400000000UL, 0x400000000UL);
+	init_pcie_win(&p->mem64, 0x5200000000UL, 0x5200000000UL, 0x200000000UL);
 
 	p->irq = 65;
 
@@ -517,13 +517,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c00c00000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c00f80000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c00f00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x4c00000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x5800000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x4c10000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x5810000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x18000000, 0x18000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x1c000000, 0x1c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x4e00000000UL, 0x4e00000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x4d00000000UL, 0x4d00000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x5c00000000UL, 0x5c00000000UL, 0x400000000UL);
+	init_pcie_win(&p->mem64, 0x5a00000000UL, 0x5a00000000UL, 0x200000000UL);
 
 	p->irq = 67;
 
@@ -532,13 +532,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c04400000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c04780000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c04700000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x5000000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x7800000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x5010000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x7810000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x20000000, 0x20000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x24000000, 0x24000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x5200000000UL, 0x5200000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x5100000000UL, 0x5100000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x7900000000UL, 0x7900000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64, 0x7880000000UL, 0x7880000000UL, 0x080000000UL);
 
 	p->irq = 73;
 
@@ -547,13 +547,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c04800000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c04b80000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c04b00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x5400000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x7a00000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x5410000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x7a10000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x28000000, 0x28000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x2c000000, 0x2c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x5600000000UL, 0x5600000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x5500000000UL, 0x5500000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x7b00000000UL, 0x7b00000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64, 0x7a80000000UL, 0x7a80000000UL, 0x080000000UL);
 
 	p->irq = 75;
 
@@ -562,13 +562,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c04000000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c040c0000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c04300000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x5800000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x7c00000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x5810000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x7c10000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x30000000, 0x30000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x34000000, 0x34000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x5a00000000UL, 0x5a00000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x5900000000UL, 0x5900000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x7d00000000UL, 0x7d00000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64, 0x7c80000000UL, 0x7c80000000UL, 0x080000000UL);
 
 	p->irq = 74;
 
@@ -577,13 +577,13 @@ static void config_init(struct config *cfg)
 	init_pcie_res(&p->dbi, 0x6c04c00000UL, 0x1000);
 	init_pcie_res(&p->ctl, 0x6c04f80000UL, 0x1000);
 	init_pcie_res(&p->atu, 0x6c04f00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x5c00000000UL, 0x1000);
+	init_pcie_res(&p->cfg, 0x7e00000000UL, 0x1000);
 
-	init_pcie_win(&p->io, 0, 0x5c10000000UL, 0x00200000);
+	init_pcie_win(&p->io, 0, 0x7e10000000UL, 0x00200000);
 	init_pcie_win(&p->mem32p, 0x38000000, 0x38000000, 0x04000000);
 	init_pcie_win(&p->mem32, 0x3c000000, 0x3c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x5e00000000UL, 0x5e00000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x5d00000000UL, 0x5d00000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64p, 0x7f00000000UL, 0x7f00000000UL, 0x100000000UL);
+	init_pcie_win(&p->mem64, 0x7e80000000UL, 0x7e80000000UL, 0x080000000UL);
 
 	p->irq = 76;
 
