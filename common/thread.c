@@ -98,6 +98,10 @@ struct arch_cpu_ctx *sched_thread(struct arch_cpu_ctx *cpu_ctx)
 	struct thread *next = NULL, *t = NULL;
 	int hp;
 
+	/* no thread created */
+	if (current == NULL)
+		return cpu_ctx;
+
 	if (current->state == THREAD_STATE_RUNNING || current->state == THREAD_STATE_BLOCK)
 		arch_thread_save_ctx(current->cpu_ctx, cpu_ctx);
 
