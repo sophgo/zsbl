@@ -8,6 +8,7 @@
 #include <lib/container_of.h>
 #include <common/common.h>
 #include <common/module.h>
+#include <common/interrupt.h>
 
 #include <lib/cli.h>
 
@@ -123,6 +124,31 @@ void *platform_device_get_user_data(struct platform_device *pdev)
 
 static LIST_HEAD(driver_list);
 
+static void command_show_drivers(struct command *c, int argc, const char *argv[])
+{
+	struct list_head *p;
+	struct driver *drv;
+	struct platform_driver *pdrv;
+	int i;
+
+	console_printf(command_get_console(c),
+		       "%6s %40s %40s\n",
+		       "Index", "Name", "Match");
+
+	i = 0;
+	list_for_each(p, &driver_list) {
+		drv = container_of(p, struct driver, list_head);
+		pdrv = container_of(drv, struct platform_driver, driver);
+		console_printf(command_get_console(c),
+			       "%6d %40s %40s\n",
+			       i, pdrv->driver.name, pdrv->of_match_table->compatible);
+		++i;
+	}
+}
+
+cli_command(lspdrv, command_show_drivers);
+
+
 int platform_driver_register(struct platform_driver *pdrv)
 {
 	if (pdrv->driver.name[0] == 0) {
@@ -163,6 +189,21 @@ int platform_init(void)
 
 subsys_init(platform_init);
 
+/* show debug info when matching */
+#ifdef CONFIG_DEBUG
+static void debug_device_driver_matching(struct platform_device *pdev, struct platform_driver *pdrv)
+{
+
+	const void *prop;
+	int len;
+
+	prop = fdt_getprop(pdev->of, pdev->of_node_offset, "compatible", &len);
+
+	pr_info("Matching device %s with driver %s\n",
+		(const char *)prop, pdrv->of_match_table->compatible);
+}
+#endif
+
 static int bind_driver(struct platform_device *pdev, struct platform_driver *pdrv)
 {
 	int i;
@@ -175,6 +216,9 @@ static int bind_driver(struct platform_device *pdev, struct platform_driver *pdr
 
 
 	for (i = 0; pdrv->of_match_table[i].compatible[0]; ++i) {
+#ifdef CONFIG_DEBUG
+		debug_device_driver_matching(pdev, pdrv);
+#endif
 		if (fdt_node_check_compatible(pdev->of, pdev->of_node_offset,
 					pdrv->of_match_table[i].compatible) == 0)
 			break;
@@ -377,4 +421,76 @@ subsys_probe(platform_probe);
 const struct of_device_id *platform_get_match_id(struct platform_device *pdev)
 {
 	return pdev->match;
+}
+
+struct platform_device *platform_device_find_by_of(int node_offset)
+{
+	struct list_head *p;
+	struct device *dev;
+	struct platform_device *pdev;
+
+	list_for_each(p, &device_list) {
+		dev = container_of(p, struct device, list_head);
+		pdev = container_of(dev, struct platform_device, device);
+		if (pdev->of_node_offset == node_offset)
+			return pdev;
+	}
+
+	return NULL;
+}
+
+int platform_get_irq(struct platform_device *pdev, int n)
+{
+	void *dtb = dtb_get_base();
+	uint32_t irq_chip_phandle;
+	int plen;
+	const struct fdt_property *prop;
+	int irq = -ENODEV, hwirq = -ENODEV;
+	// int i;
+	// int irq_vector[16];
+	int nirq;
+	int irq_chip_of_offset;
+	struct platform_device *irq_chip_pdev;
+	char irq_chip_name[DEVICE_NAME_MAX];
+	struct irq_chip *irq_chip;
+	int err;
+
+	prop = fdt_get_property(dtb, pdev->of_node_offset, "interrupts-extended", &plen);
+	/* check irq count overflow */
+	nirq = plen / 8;
+
+	if (n >= nirq) {
+		pr_err("Requested index out of resource\n");
+		return -ENODEV;
+	}
+
+	/* get phandle of a irq */
+	irq_chip_phandle = fdt32_to_cpu(*(uint32_t *)(((uint64_t *)prop->data) + n));
+	irq_chip_of_offset = fdt_node_offset_by_phandle(dtb, irq_chip_phandle);
+	if (irq_chip_of_offset < 0)
+		return -EINVAL;
+
+	/* get hardware irq number */
+	hwirq = fdt32_to_cpu(*((uint32_t *)(((uint64_t *)prop->data) + n) + 1));
+
+	/* get platform device instance of this of node */
+	irq_chip_pdev = platform_device_find_by_of(irq_chip_of_offset);
+	if (!irq_chip_pdev) {
+		pr_info("Cannot get platform device instance of this irq chip\n");
+		return -ENODEV;
+	}
+
+	err = snprintf(irq_chip_name, sizeof(irq_chip_name), "irq:%s", irq_chip_pdev->device.name);
+	if (err == sizeof(irq_chip_name))
+		pr_warn("Truncated irq chip name\n");
+
+	irq_chip = irq_get_chip_by_name(irq_chip_name);
+	if (!irq_chip) {
+		pr_err("Cannot find irq chip of name %s\n", irq_chip_name);
+		return -ENODEV;
+	}
+
+	irq = irq_get(irq_chip, hwirq);
+
+	return irq;
 }

@@ -1,0 +1,4 @@
+config DRIVER_IRQCHIP_PLIC
+	bool "RISC-V PLIC"
+	help
+	Enable support of RISC-V PLIC interrupt controller.

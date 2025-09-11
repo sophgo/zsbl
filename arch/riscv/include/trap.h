@@ -166,6 +166,7 @@ struct trap_regs {
 } __packed;
 
 struct trap_regs *trap_handler(struct trap_regs *regs);
+void arch_install_external_interrupt_handler(void (*exti_handler));
 
 #endif
 

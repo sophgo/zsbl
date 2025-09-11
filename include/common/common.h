@@ -32,4 +32,7 @@ int stdout_ready(void);
 #define ROUND_UP(x, align)	(((x) + ((align) - 1)) & ~((align) - 1))
 #define TOUPPER(c)      ((c) - 0x20 * (((c) >= 'a') && ((c) <= 'z')))
 
+#define __maybe_unused		__attribute__((unused))
+#define __used			__attribute__((used))
+
 #endif

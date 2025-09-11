@@ -5,7 +5,7 @@
 		#address-cells = <2>;
 		#size-cells = <2>;
 
-		serial@7030001000 {
+		serial@10000000 {
 			compatible = "ns16550a";
 			reg = <0x00000000 0x10000000 0x00000000 0x00001000>;
 			clock-frequency = <0x384000>;

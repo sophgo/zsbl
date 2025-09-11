@@ -41,5 +41,9 @@ int platform_driver_register(struct platform_driver *pdrv);
 int platform_list_drivers(void);
 int platform_list_devices(void);
 const struct of_device_id *platform_get_match_id(struct platform_device *pdev);
+int platform_get_irq(struct platform_device *pdev, int n);
+
+void platform_device_set_user_data(struct platform_device *pdev, void *data);
+void *platform_device_get_user_data(struct platform_device *pdev);
 
 #endif

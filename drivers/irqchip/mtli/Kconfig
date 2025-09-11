@@ -1,0 +1,4 @@
+config DRIVER_IRQCHIP_MTLI
+	bool "SOPHGO MTLI"
+	help
+	Enable support of SOPHGO MTLI
