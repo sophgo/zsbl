@@ -101,16 +101,22 @@ static void unknown_isr(void)
 	printf("Unknown Interrupt Happen\n");
 }
 
+static void (*(isr_table[]))(void) = {
+	[1] = sswi_isr,
+	[3] = mswi_isr,
+	[5] = stimer_isr,
+	[7] = mtimer_isr,
+	[9] = sei_isr,
+	[11] = mei_isr,
+};
+
+void arch_install_external_interrupt_handler(void (*exti_handler))
+{
+	isr_table[11] = exti_handler;
+}
+
 static void trap_interrupt(ulong exception_code, struct trap_regs *regs)
 {
-	const void (*(isr_table[]))(void) = {
-		[1] = sswi_isr,
-		[3] = mswi_isr,
-		[5] = stimer_isr,
-		[7] = mtimer_isr,
-		[9] = sei_isr,
-		[11] = mei_isr,
-	};
 	void (*isr)(void);
 
 	if (exception_code < ARRAY_SIZE(isr_table))

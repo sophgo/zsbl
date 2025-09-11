@@ -3169,6 +3169,13 @@
 			stdio;
  		};
 
+		mtli0: mtli@6d50000000 {
+			compatible = "sophgo,mtli";
+			reg = <0x0000006d 0x50000000 0x00000000 0x00002000>;
+
+			interrupts-extended = <&intc 352 0>;
+		};
+
 		sd0: bm-sd@703000b000 {
 			compatible = "sophgo,sg2044-dwcmshc";
 			reg = <0x70 0x3000b000 0x0 0x2000>;

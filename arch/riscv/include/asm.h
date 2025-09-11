@@ -147,6 +147,8 @@
 /* Get current HART id */
 #define current_hartid()	((unsigned int)csr_read(CSR_MHARTID))
 
+#define get_cpu_id()		current_hartid()
+
 #endif /* !__ASSEMBLY__ */
 
 #define R_RISCV_32		1
