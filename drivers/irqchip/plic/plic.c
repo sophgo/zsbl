@@ -9,7 +9,7 @@
 #include <common/module.h>
 #include <driver/platform.h>
 #include <common/common.h>
-#include <common/interrupt.h>
+#include <driver/interrupt.h>
 
 struct plic {
 	struct device *parent;

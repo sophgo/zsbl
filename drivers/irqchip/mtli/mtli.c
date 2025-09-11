@@ -7,9 +7,9 @@
 #include <arch.h>
 
 #include <common/module.h>
-#include <driver/platform.h>
 #include <common/common.h>
-#include <common/interrupt.h>
+#include <driver/platform.h>
+#include <driver/interrupt.h>
 #include <lib/cli.h>
 
 struct mtli {

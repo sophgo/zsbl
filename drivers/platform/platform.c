@@ -5,10 +5,10 @@
 
 #include <driver/dtb.h>
 #include <driver/platform.h>
+#include <driver/interrupt.h>
 #include <lib/container_of.h>
 #include <common/common.h>
 #include <common/module.h>
-#include <common/interrupt.h>
 
 #include <lib/cli.h>
 

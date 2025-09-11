@@ -1,4 +1,7 @@
+obj-$(CONFIG_DRIVER_INTERRUPT) += interrupt.o
+
 obj-$(CONFIG_DRIVER_IRQCHIP_ICTL) += ictl/
 obj-$(CONFIG_DRIVER_IRQCHIP_INTC) += intc/
 obj-$(CONFIG_DRIVER_IRQCHIP_PLIC) += plic/
 obj-$(CONFIG_DRIVER_IRQCHIP_MTLI) += mtli/
+
