@@ -1,2 +1,0 @@
-config DRIVER_IRQCHIP_GIC
-	bool "ARM GIC"
