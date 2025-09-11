@@ -97,10 +97,4 @@ config MULTI_THREAD
 	help
 	support multi thread.
 
-config INTERRUPT
-	bool "Interrupt"
-	default n
-	help
-	support interrupt.
-
 endmenu

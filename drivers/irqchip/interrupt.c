@@ -1,9 +1,10 @@
-#include <common/interrupt.h>
 #include <common/common.h>
 #include <common/module.h>
 
 #include <lib/console.h>
 #include <lib/cli.h>
+
+#include <driver/interrupt.h>
 
 #include <errno.h>
 #include <string.h>
