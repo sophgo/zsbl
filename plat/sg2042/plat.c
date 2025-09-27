@@ -227,19 +227,11 @@ int resize_dtb(struct config *cfg, int delta)
 	fdt = (void *)cfg->dtb.addr;
 	size = fdt_totalsize(fdt) + delta;
 
-	fdt = realloc(fdt, size);
-	if (fdt) {
-		ret = fdt_open_into(fdt, fdt, size);
-		if (ret != 0)
-			pr_err("fdt: resize failed, error[%d\n]", ret);
-		else {
-			cfg->dtb.addr = (uint64_t)fdt;
-			cfg->dtb.size = size;
-		}
-	} else {
-		pr_err("fdt: realloc fdt failed\n");
-		ret = -1;
-	}
+	ret = fdt_open_into(fdt, fdt, size);
+	if (ret != 0)
+		pr_err("fdt: resize failed, error[%d\n]", ret);
+	else
+		cfg->dtb.size = size;
 
 	return ret;
 }
