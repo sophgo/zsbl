@@ -4,6 +4,7 @@
 #include <asm.h>
 #include <lib/mmio.h>
 #include <lib/mac.h>
+#include <lib/cli.h>
 #include <driver/bootdev.h>
 #include <driver/mtd.h>
 #include <sbi.h>
@@ -482,6 +483,9 @@ int plat_main(void)
 
 	parse_config_file(&cfg);
 	show_config(&cfg);
+
+	cli_loop(100000);
+
 	load_images(&cfg);
 
 	modify_dtb(&cfg);
