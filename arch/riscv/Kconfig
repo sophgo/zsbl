@@ -34,6 +34,15 @@ config ROM_SIZE
 
 endif
 
+config SUPPORT_PIC
+	bool "Support Position Independent Code"
+	default y
+	depends on !ROM_BOOT
+	help
+		On RAM boot, zsbl can be position independent by relocation.
+		But this can't be done on ROM boot. Because we can't modify
+		relocation table.
+
 config ARCH_SET_TIMER_FREQ
 	bool "Setup Arch Timer Frequency"
 	help

@@ -55,24 +55,20 @@ _start:
 	add     sp,  zero, zero
 
 _try_lottery:
-#if 0
-	la	a0, smp_boot_spin_lock
-	li	t1, 1
-	amoadd.w	a0, t1, (a0)
-#else
 	csrr	a0, CSR_MHARTID
-#endif
-	bnez	a0, _wait_relocate_copy_done
 
+	bnez	a0, _secondary_park;
+
+#ifdef CONFIG_SUPPORT_PIC
 	/* Save load address */
 	lla	t0, _load_start
-	lla	t1, _fw_start
+	lla	t1, __ld_program_start
 	REG_S	t1, 0(t0)
 
 	/* relocate the global table content */
 	lla	t0, _link_start
 	REG_L	t0, 0(t0)
-	/* t1 shall has the address of _fw_start */
+	/* t1 shall has the address of __ld_program_start */
 	sub	t2, t1, t0
 	lla	t3, _runtime_offset
 	REG_S	t2, (t3)
@@ -126,6 +122,8 @@ _try_lottery:
 	j	_relocate_done
 
 _relocate_done:
+#endif
+
 	/* Setup trap handler */
 	la	a4, _trap_handler
 	csrw	CSR_MTVEC, a4
@@ -155,6 +153,13 @@ not_support_smp:
 	beqz	zero, not_support_smp
 #else
 
+_secondary_park:
+
+	/* Setup trap handler */
+	la	a4, _trap_handler
+	csrw	CSR_MTVEC, a4
+
+#ifdef CONFIG_SUPPORT_PIC
 _wait_relocate_copy_done:
 	li	t0, BOOT_STATUS_BOOT_HART_DONE
 	lla	t1, _boot_status
@@ -164,10 +169,7 @@ _wait_relocate_copy_done:
 	nop
 	nop
 	bne	t0, t1, _wait_relocate_copy_done
-
-	/* Setup trap handler */
-	la	a4, _trap_handler
-	csrw	CSR_MTVEC, a4
+#endif
 
 #ifdef CONFIG_SUPPORT_SMP
 	la	t0, smp_context
@@ -343,7 +345,7 @@ smp_boot_spin_lock:
 main_boot_core:
 	.dword 0
 _load_start:
-	RISCV_PTR	_fw_start
+	RISCV_PTR	__ld_program_start
 _link_start:
 	RISCV_PTR	CONFIG_RAM_START
 _runtime_offset:

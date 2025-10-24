@@ -11,7 +11,7 @@ SECTIONS
 	.text :
 	{
 		. = ALIGN(16);
-		__ld_program_start = .;
+		PROVIDE(__ld_program_start = .);
 		KEEP (*(.vector));
 		KEEP (*(.exception_handler));
 		*(.text);
@@ -24,41 +24,41 @@ SECTIONS
 	.rodata :
 	{
 		. = ALIGN(16);
-		__ld_early_init_start = .;
+		PROVIDE(__ld_early_init_start = .);
 		KEEP (*(.early_init));
-		__ld_early_init_end = .;
+		PROVIDE(__ld_early_init_end = .);
 
-		__ld_arch_init_start = .;
+		PROVIDE(__ld_arch_init_start = .);
 		KEEP (*(.arch_init));
-		__ld_arch_init_end = .;
+		PROVIDE(__ld_arch_init_end = .);
 
-		__ld_plat_init_start = .;
+		PROVIDE(__ld_plat_init_start = .);
 		KEEP (*(.plat_init));
-		__ld_plat_init_end = .;
+		PROVIDE(__ld_plat_init_end = .);
 
-		__ld_subsys_init_start = .;
+		PROVIDE(__ld_subsys_init_start = .);
 		KEEP (*(.subsys_init));
-		__ld_subsys_init_end = .;
+		PROVIDE(__ld_subsys_init_end = .);
 
-		__ld_module_init_start = .;
+		PROVIDE(__ld_module_init_start = .);
 		KEEP (*(.module_init));
-		__ld_module_init_end = .;
+		PROVIDE(__ld_module_init_end = .);
 
-		__ld_subsys_probe_start = .;
+		PROVIDE(__ld_subsys_probe_start = .);
 		KEEP (*(.subsys_probe));
-		__ld_subsys_probe_end = .;
+		PROVIDE(__ld_subsys_probe_end = .);
 
-		__ld_late_init_start = .;
+		PROVIDE(__ld_late_init_start = .);
 		KEEP (*(.late_init));
-		__ld_late_init_end = .;
+		PROVIDE(__ld_late_init_end = .);
 
-		__ld_cli_command_start = .;
+		PROVIDE(__ld_cli_command_start = .);
 		KEEP (*(.cli_command));
-		__ld_cli_command_end = .;
+		PROVIDE(__ld_cli_command_end = .);
 
-		__ld_test_case_start = .;
+		PROVIDE(__ld_test_case_start = .);
 		KEEP (*(.test_case));
-		__ld_test_case_end = .;
+		PROVIDE(__ld_test_case_end = .);
 
 		. = ALIGN(16);
 		*(.rodata);
@@ -107,41 +107,34 @@ SECTIONS
 	.data :
 	{
 		. = ALIGN(16);
-		__ld_data_start = .;
+		PROVIDE(__ld_data_start = .);
 		*(.data);
 		*(.data*);
 		*(.sdata);
 		*(.sdata*);
 		. = ALIGN(16);
-		__ld_data_end = .;
-		__ld_program_end = .;
+		PROVIDE(__ld_data_end = .);
+		PROVIDE(__ld_program_end = .);
 	} > RAM AT > ROM
 
 	.bss :
 	{
 		. = ALIGN(16);
-		__ld_bss_start = .;
+		PROVIDE(__ld_bss_start = .);
 		*(.bss);
 		*(.bss*);
 		*(.sbss);
 		*(.sbss*);
 		*(COMMON);
 		. = ALIGN(16);
-		__ld_bss_end = .;
+		PROVIDE(__ld_bss_end = .);
 	} > RAM
 
-	/DISCARD/ :
-	{
-		libc.a ( * );
-		libm.a ( * );
-		libgcc.a ( * );
-	}
-
-	__ld_ram_start = ORIGIN(RAM);
-	__ld_ram_end = ORIGIN(RAM) + LENGTH(RAM);
-	__ld_data_load_start = LOADADDR(.data);
-	__ld_data_load_end = __ld_data_load_start + SIZEOF(.data);
-	__ld_stack_top = __ld_ram_end;
+	PROVIDE(__ld_ram_start = ORIGIN(RAM));
+	PROVIDE(__ld_ram_end = ORIGIN(RAM) + LENGTH(RAM));
+	PROVIDE(__ld_data_load_start = LOADADDR(.data));
+	PROVIDE(__ld_data_load_end = __ld_data_load_start + SIZEOF(.data));
+	PROVIDE(__ld_stack_top = __ld_ram_end);
 }
 
 
