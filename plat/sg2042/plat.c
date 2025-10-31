@@ -13,13 +13,16 @@
 
 #include <libfdt.h>
 #include <of.h>
+#include <driver/dtb.h>
+#include <stdint.h>
 
 #include "config.h"
 
-#define OPENSBI_ADDR		0x00000000
-#define KERNEL_ADDR		0x02000000
-#define DEVICETREE_ADDR		0x20000000
-#define RAMFS_ADDR		0x30000000
+#define OPENSBI_ADDR			0x00000000
+#define KERNEL_ADDR			0x02000000
+#define DEVICETREE_ADDR			0x20000000
+#define DEVICETREE_OVERLAY_ADDR		0x28000000
+#define RAMFS_ADDR			0x30000000
 
 
 static void print_core_ctrlreg(void)
@@ -88,11 +91,81 @@ static void boot_next_img(struct config *cfg)
 
 int parse_config_file(struct config *cfg);
 
+static void load_dtbs(struct config *cfg)
+{
+	int err;
+	void *dtbi;
+	void *dtb = (void *)cfg->dtb.addr;
+	void *dtbo = (void *)cfg->dtbo.addr;
+	uint32_t dtb_size;
+	uint32_t dtbo_size;
+
+	if (cfg->dtb.name)
+		dtbi = (void *)cfg->dtb.addr;
+	else
+		dtbi = dtb_get_base();
+
+	dtb_size = fdt_totalsize(dtbi);
+	dtbo_size = dtbo ? fdt_totalsize(dtbo) : 0;
+
+	err = fdt_open_into(dtbi, dtb, ROUND_UP(dtb_size + dtbo_size + (16 * 1024), 8));
+	if (err)
+		pr_err("Failed to move core dtb to the destination\n");
+
+}
+
+static void merge_dtbs(struct config *cfg)
+{
+	int err;
+	void *dtbo = (void *)cfg->dtbo.addr;
+	void *dtb = (void *)cfg->dtb.addr;
+
+	if (!dtbo || !cfg->dtbo.name || !cfg->dtbo.name[0])
+		return;
+
+	err = fdt_overlay_apply(dtb, dtbo);
+	if (err)
+		pr_err("Overlay core dtb and extended dtb failed with error code %d\n", err);
+}
+
+/* check if a file is a device tree overlay or not, by file extension */
+static int file_is_dtbo(const char *name)
+{
+	int namelen, extlen;
+	const char *ext = ".dtbo";
+
+	if (!name)
+		return false;
+
+	namelen = strlen(name);
+	extlen = strlen(ext);
+
+	if (namelen < strlen(ext))
+		return false;
+
+	return strcmp(&name[namelen - extlen], ext) == 0;
+}
+
+
 static void load_images(struct config *cfg)
 {
+#ifndef USE_LINUX_BOOT
+	if (file_is_dtbo(cfg->dtb.name)) {
+		/* check if dtbo is set */
+		if (cfg->dtbo.name) {
+			/* we cannot set two dtbo at the same time */
+			pr_debug("We cannot set two dtbo at the same time\n");
+			pr_debug("Ignore dtbo specified by devicetree-overlay command\n");
+		}
+		cfg->dtbo.name = cfg->dtb.name;
+		cfg->dtb.name = NULL;
+	}
+#endif
+
 	load(&cfg->sbi);
 	load(&cfg->kernel);
 	load(&cfg->dtb);
+	load(&cfg->dtbo);
 	load(&cfg->ramfs);
 }
 
@@ -132,7 +205,9 @@ static void show_config(struct config *cfg)
 	show_boot_file("SBI", &cfg->sbi);
 	show_boot_file("Kernel", &cfg->kernel);
 	show_boot_file("Device tree", &cfg->dtb);
+#ifdef USE_LINUX_BOOT
 	show_boot_file("Ramfs", &cfg->ramfs);
+#endif
 
 	show_ddr_info(cfg->ddr);
 }
@@ -141,12 +216,23 @@ static void config_init(struct config *cfg)
 {
 	cfg->sbi.name = "fw_dynamic.bin";
 	cfg->sbi.addr = OPENSBI_ADDR;
-	cfg->dtb.name = "mango-sophgo-x8evb.dtb";
+	cfg->dtb.name = NULL;
 	cfg->dtb.addr = DEVICETREE_ADDR;
+
+#ifdef USE_LINUX_BOOT
+	cfg->dtbo.name = NULL;
+	cfg->dtbo.addr = 0;
 	cfg->kernel.name = "riscv64_Image";
-	cfg->kernel.addr = KERNEL_ADDR;
 	cfg->ramfs.name = "initrd.img";
 	cfg->ramfs.addr = RAMFS_ADDR;
+#else
+	cfg->dtbo.name = "mango-sophgo-pisces.dtbo";
+	cfg->dtbo.addr = DEVICETREE_OVERLAY_ADDR;
+	cfg->kernel.name = "SRA1-20.fd";
+	cfg->ramfs.name = NULL;
+	cfg->ramfs.addr = 0;
+#endif
+	cfg->kernel.addr = KERNEL_ADDR;
 }
 
 uint64_t get_ddr_size(uint64_t ddr_reg_size, int ddr_channel)
@@ -200,13 +286,14 @@ static void build_board_info(struct config *cfg)
 		pr_info("SG2042 work in single socket mode\n");
 		cfg->multi_socket_mode = false;
 	}
-
+#ifdef USE_LINUX_BOOT
 	cfg->board_type = mmio_read_32(BOARD_TYPE_REG);
 
 	if (cfg->board_type >= BOARD_TYPE_MIN && cfg->board_type <= BOARD_TYPE_MAX)
 		cfg->dtb.name = (char *)dtb_names[cfg->board_type - BOARD_TYPE_MIN];
 	else
 		pr_err("Can not find device tree\n");
+#endif
 
 	for (i = 0; i < MAX_CHIP_NUM; ++i)
 		cfg->ddr[i][0].base = CHIP_ADDR_SPACE * i;
@@ -355,6 +442,10 @@ static int modify_bootargs(struct config *cfg)
 	char bootargs[256] = {0};
 	char append[128] = {0};
 
+#ifdef USE_LINUX_BOOT
+	return 0;
+#endif
+
 	fdt = (void *)cfg->dtb.addr;
 	ramfs = (void*)cfg->ramfs.addr;
 	sprintf(append, "root=/dev/ram0 rw initrd=0x%lx,32M", (unsigned long)ramfs);
@@ -444,7 +535,13 @@ static void modify_dtb(struct config *cfg)
 {
 	int ret = 0;
 
+#ifdef USE_LINUX_BOOT
 	ret = resize_dtb(cfg, 4096);
+#else
+	load_dtbs(cfg);
+	merge_dtbs(cfg);
+#endif
+
 	if (!ret) {
 		modify_ddr_node(cfg);
 		modify_bootargs(cfg);

@@ -20,6 +20,10 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->dtb.name = strdup(value);
 	else if (MATCH("devicetree", "addr"))
 		pconfig->dtb.addr = strtoul(value, NULL, 16);
+	if (MATCH("devicetree-overlay", "name"))
+		pconfig->dtbo.name = strdup(value);
+	else if (MATCH("devicetree-overlay", "addr"))
+		pconfig->dtbo.addr = strtoul(value, NULL, 16);
 	else if (MATCH("kernel", "name"))
 		pconfig->kernel.name = strdup(value);
 	else if (MATCH("kernel", "addr"))
@@ -36,6 +40,8 @@ static int handler_img(void* user, const char* section, const char* name,
 		pconfig->mac0 = str2mac(value);
 	else if (MATCH("mac-address", "mac1"))
 		pconfig->mac1 = str2mac(value);
+	else if (MATCH("boot", "cmdline"))
+		pconfig->bootargs = strdup(value);
 	else
 		return 0;
 

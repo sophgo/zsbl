@@ -23,9 +23,11 @@ struct config {
 	struct boot_file sbi;
 	struct boot_file kernel;
 	struct boot_file dtb;
+	struct boot_file dtbo;
 	struct boot_file ramfs;
 
 	int board_type;
+	char *bootargs;
 
 	int multi_socket_mode;
 
