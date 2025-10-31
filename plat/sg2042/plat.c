@@ -442,7 +442,7 @@ static int modify_bootargs(struct config *cfg)
 	char bootargs[256] = {0};
 	char append[128] = {0};
 
-#ifdef USE_LINUX_BOOT
+#ifndef USE_LINUX_BOOT
 	return 0;
 #endif
 
