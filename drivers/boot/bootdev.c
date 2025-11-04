@@ -19,15 +19,16 @@ int bootdev_list_devices(void)
 	struct bootdev *bootdev;
 	int i;
 
-	pr_info("%6s %40s %14s %8s %20s\n", "Index", "Device", "Size", "Priority", "Alias");
+	pr_info("%6s %40s %14s %8s %20s %8s\n", "Index", "Device", "Size", "Priority", "Alias", "Status");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		bootdev = container_of(dev, struct bootdev, device);
-		pr_info("%6d %40s %14lu %8d %20s\n",
+		pr_info("%6d %40s %14lu %8d %20s %8s\n",
 				i, bootdev->device.name, bootdev->size,
-				bootdev->priority, bootdev->device.alias);
+				bootdev->priority, bootdev->device.alias,
+				bootdev->disabled ? "Disabled" : "Enabled");
 		++i;
 	}
 
@@ -42,17 +43,18 @@ static void command_show_devices(struct command *c, int argc, const char *argv[]
 	int i;
 
 	console_printf(command_get_console(c),
-		       "%6s %40s %14s %8s %20s\n",
-		       "Index", "Device", "Size", "Priority", "Alias");
+		       "%6s %40s %14s %8s %20s %8s\n",
+		       "Index", "Device", "Size", "Priority", "Alias", "Status");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		bootdev = container_of(dev, struct bootdev, device);
 		console_printf(command_get_console(c),
-			       "%6d %40s %14lu %8d %20s\n",
+			       "%6d %40s %14lu %8d %20s %8s\n",
 			       i, bootdev->device.name, bootdev->size,
-			       bootdev->priority, bootdev->device.alias);
+			       bootdev->priority, bootdev->device.alias,
+			       bootdev->disabled ? "Disabled" : "Enabled");
 		++i;
 	}
 }
@@ -201,6 +203,21 @@ static void sort_device(void)
 	}
 }
 
+int bdm_set_disabled(const char *devname, int disabled)
+{
+	struct bootdev *bootdev;
+
+	bootdev = bootdev_find_by_name(devname);
+	if(!bootdev) {
+		pr_err("boot device %s not found\n", devname);
+		return -ENODEV;
+	}
+
+	bootdev->disabled = disabled;
+
+	return 0;
+}
+
 int bdm_set_priority(const char *devname, int priority)
 {
 	struct bootdev *bootdev;
@@ -225,7 +242,8 @@ long bdm_load(const char *file, void *buf)
 	pr_info("Loading %-29s ", file);
 
 	for (bootdev = bootdev_first(); bootdev; bootdev = bootdev_next(bootdev)) {
-
+		if (bootdev->disabled == true)
+			continue;
 		err = bootdev_load(bootdev, file, buf);
 		if (err > 0) {
 			pr_info("[%s] (%ld bytes)\n",
