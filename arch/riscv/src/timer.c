@@ -115,7 +115,7 @@ struct timer_ctx {
 		void *data;
 		uint64_t tick;
 		void *mtimecmp;
-	} isr[CONFIG_SMP_NUM];
+	} isr[ISR_NUM];
 };
 
 /* arch timer always global */

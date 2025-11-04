@@ -147,14 +147,11 @@ _end:
 poll_core:
 	amoswap.w.rl	x0, x0, (a0)
 
-not_support_smp:
+_secondary_park:
 #ifndef CONFIG_SUPPORT_SMP
 	wfi
-	beqz	zero, not_support_smp
+	beqz	zero, _secondary_park
 #else
-
-_secondary_park:
-
 	/* Setup trap handler */
 	la	a4, _trap_handler
 	csrw	CSR_MTVEC, a4
