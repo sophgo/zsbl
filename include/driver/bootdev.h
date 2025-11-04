@@ -19,6 +19,7 @@ struct bootdev {
 	unsigned long size;
 
 	int priority;
+	int status;
 
 	void *data;
 };

@@ -19,15 +19,16 @@ int bootdev_list_devices(void)
 	struct bootdev *bootdev;
 	int i;
 
-	pr_info("%6s %40s %14s %8s %20s\n", "Index", "Device", "Size", "Priority", "Alias");
+	pr_info("%6s %40s %14s %8s %20s %8s\n", "Index", "Device", "Size", "Priority", "Alias", "Status");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		bootdev = container_of(dev, struct bootdev, device);
-		pr_info("%6d %40s %14lu %8d %20s\n",
+		pr_info("%6d %40s %14lu %8d %20s %8s\n",
 				i, bootdev->device.name, bootdev->size,
-				bootdev->priority, bootdev->device.alias);
+				bootdev->priority, bootdev->device.alias,
+				bootdev->status ? "Enabled" : "Disabled");
 		++i;
 	}
 
@@ -42,17 +43,18 @@ static void command_show_devices(struct command *c, int argc, const char *argv[]
 	int i;
 
 	console_printf(command_get_console(c),
-		       "%6s %40s %14s %8s %20s\n",
-		       "Index", "Device", "Size", "Priority", "Alias");
+		       "%6s %40s %14s %8s %20s %8s\n",
+		       "Index", "Device", "Size", "Priority", "Alias", "Status");
 
 	i = 0;
 	list_for_each(p, &device_list) {
 		dev = container_of(p, struct device, list_head);
 		bootdev = container_of(dev, struct bootdev, device);
 		console_printf(command_get_console(c),
-			       "%6d %40s %14lu %8d %20s\n",
+			       "%6d %40s %14lu %8d %20s %8s\n",
 			       i, bootdev->device.name, bootdev->size,
-			       bootdev->priority, bootdev->device.alias);
+			       bootdev->priority, bootdev->device.alias,
+			       bootdev->status ? "Enabled" : "Disabled");
 		++i;
 	}
 }
@@ -212,6 +214,12 @@ int bdm_set_priority(const char *devname, int priority)
 	}
 
 	bootdev->priority = priority;
+	if (bootdev->priority < 0) {
+		bootdev_remove(bootdev);
+		bootdev->status = false;
+	} else {
+		bootdev->status = true;
+	}
 	sort_device();
 
 	return 0;
