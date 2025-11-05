@@ -1,3 +1,9 @@
 dtb-y += sg2044.dtb
 dtb-y += sg2042.dtb
+dtb-y += mango-sophgo-x4evb.dtb
+dtb-y += mango-sophgo-x8evb.dtb
+dtb-y += mango-milkv-pioneer.dtb
+dtb-y += mango-sophgo-pisces.dtb
+dtb-y += mango-yixin-s2110.dtb
+dtb-y += mango-sophgo-capricorn.dtb
 dtb-y += qemu-virt.dtb

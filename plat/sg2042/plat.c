@@ -106,7 +106,7 @@ static void load_dtbs(struct config *cfg)
 		dtbi = dtb_get_base();
 
 	dtb_size = fdt_totalsize(dtbi);
-	dtbo_size = dtbo ? fdt_totalsize(dtbo) : 0;
+	dtbo_size = cfg->dtbo.name ? fdt_totalsize(dtbo) : 0;
 
 	err = fdt_open_into(dtbi, dtb, ROUND_UP(dtb_size + dtbo_size + (16 * 1024), 8));
 	if (err)
@@ -149,18 +149,22 @@ static int file_is_dtbo(const char *name)
 
 static void load_images(struct config *cfg)
 {
-#ifndef USE_LINUX_BOOT
-	if (file_is_dtbo(cfg->dtb.name)) {
-		/* check if dtbo is set */
-		if (cfg->dtbo.name) {
-			/* we cannot set two dtbo at the same time */
-			pr_debug("We cannot set two dtbo at the same time\n");
-			pr_debug("Ignore dtbo specified by devicetree-overlay command\n");
+	if (cfg->dtb.name) {
+		/* if dtb is specified in config.ini, then don't load and overlay dtbo */
+		if (file_is_dtbo(cfg->dtb.name)) {
+			/* check if dtbo is set */
+			if (cfg->dtbo.name) {
+				/* we cannot set two dtbo at the same time */
+				pr_debug("We cannot set two dtbo at the same time\n");
+				pr_debug("Ignore dtbo specified by devicetree-overlay command\n");
+			}
+			cfg->dtbo.name = cfg->dtb.name;
+			cfg->dtb.name = NULL;
+
+		} else {
+			cfg->dtbo.name = NULL;
 		}
-		cfg->dtbo.name = cfg->dtb.name;
-		cfg->dtb.name = NULL;
 	}
-#endif
 
 	load(&cfg->sbi);
 	load(&cfg->kernel);
@@ -205,9 +209,7 @@ static void show_config(struct config *cfg)
 	show_boot_file("SBI", &cfg->sbi);
 	show_boot_file("Kernel", &cfg->kernel);
 	show_boot_file("Device tree", &cfg->dtb);
-#ifdef USE_LINUX_BOOT
 	show_boot_file("Ramfs", &cfg->ramfs);
-#endif
 
 	show_ddr_info(cfg->ddr);
 }
@@ -230,7 +232,7 @@ static void config_init(struct config *cfg)
 	cfg->dtbo.addr = DEVICETREE_OVERLAY_ADDR;
 	cfg->kernel.name = "SRA1-20.fd";
 	cfg->ramfs.name = NULL;
-	cfg->ramfs.addr = 0;
+	cfg->ramfs.addr = RAMFS_ADDR;
 #endif
 	cfg->kernel.addr = KERNEL_ADDR;
 }
@@ -275,6 +277,13 @@ const char *dtb_names[] = {
 	"mango-sophgo-x4evb.dtb",
 };
 
+const char *kernel_names[] = {
+	"SG2042-EVB.fd",
+	"MilkV-Pioneer.fd",
+	"SRA1-20.fd",
+	"SG2042-EVB.fd",
+};
+
 static void build_board_info(struct config *cfg)
 {
 	int i;
@@ -286,14 +295,17 @@ static void build_board_info(struct config *cfg)
 		pr_info("SG2042 work in single socket mode\n");
 		cfg->multi_socket_mode = false;
 	}
-#ifdef USE_LINUX_BOOT
+
 	cfg->board_type = mmio_read_32(BOARD_TYPE_REG);
 
-	if (cfg->board_type >= BOARD_TYPE_MIN && cfg->board_type <= BOARD_TYPE_MAX)
+	if (cfg->board_type >= BOARD_TYPE_MIN && cfg->board_type <= BOARD_TYPE_MAX) {
 		cfg->dtb.name = (char *)dtb_names[cfg->board_type - BOARD_TYPE_MIN];
-	else
-		pr_err("Can not find device tree\n");
+#ifndef USE_LINUX_BOOT
+		cfg->kernel.name = (char *)kernel_names[cfg->board_type - BOARD_TYPE_MIN];
 #endif
+	} else {
+		pr_err("Can not find device tree\n");
+	}
 
 	for (i = 0; i < MAX_CHIP_NUM; ++i)
 		cfg->ddr[i][0].base = CHIP_ADDR_SPACE * i;
@@ -442,10 +454,6 @@ static int modify_bootargs(struct config *cfg)
 	char bootargs[256] = {0};
 	char append[128] = {0};
 
-#ifndef USE_LINUX_BOOT
-	return 0;
-#endif
-
 	fdt = (void *)cfg->dtb.addr;
 	ramfs = (void*)cfg->ramfs.addr;
 	sprintf(append, "root=/dev/ram0 rw initrd=0x%lx,32M", (unsigned long)ramfs);
@@ -533,19 +541,11 @@ static void modify_eth_node(struct config *cfg)
 
 static void modify_dtb(struct config *cfg)
 {
-	int ret = 0;
-
-#ifdef USE_LINUX_BOOT
-	ret = resize_dtb(cfg, 4096);
-#else
 	load_dtbs(cfg);
 	merge_dtbs(cfg);
-#endif
 
-	if (!ret) {
-		modify_ddr_node(cfg);
-		modify_bootargs(cfg);
-	}
+	modify_ddr_node(cfg);
+	modify_bootargs(cfg);
 
 	modify_cpu_node(cfg);
 	modify_eth_node(cfg);
