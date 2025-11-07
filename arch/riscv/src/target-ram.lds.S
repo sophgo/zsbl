@@ -103,6 +103,21 @@ SECTIONS
 		. = ALIGN(16);
 	} > RAM
 
+	.dynsym : {
+		PROVIDE(__dyn_sym_start = .);
+		*(.dynsym)
+		PROVIDE(__dyn_sym_end = .);
+	} > RAM
+
+	.rela.dyn : {
+		PROVIDE(__rel_dyn_start = .);
+		*(.rela*)
+		. = ALIGN(8);
+		PROVIDE(__rel_dyn_end = .);
+		. = ALIGN(16);
+	} > RAM
+
+
 	.data :
 	{
 		. = ALIGN(16);
@@ -127,19 +142,6 @@ SECTIONS
 		*(COMMON);
 		. = ALIGN(16);
 		PROVIDE(__ld_bss_end = .);
-	} > RAM
-
-	.dynsym : {
-		PROVIDE(__dyn_sym_start = .);
-		*(.dynsym)
-		PROVIDE(__dyn_sym_end = .);
-	} > RAM
-
-	.rela.dyn : {
-		PROVIDE(__rel_dyn_start = .);
-		*(.rela*)
-		. = ALIGN(8);
-		PROVIDE(__rel_dyn_end = .);
 	} > RAM
 
 
