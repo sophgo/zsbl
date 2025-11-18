@@ -130,11 +130,33 @@ static void trap_interrupt(ulong exception_code, struct trap_regs *regs)
 		unknown_isr();
 }
 
+#ifdef CONFIG_SMP
+static int core_is_in_irq[CONFIG_SMP_NUM];
+
+int in_irq(void)
+{
+	return core_is_in_irq[current_hartid()];
+}
+#else
+static int core_is_in_irq;
+
+int in_irq(void)
+{
+	return core_is_in_irq;
+}
+#endif
+
 #ifdef CONFIG_MULTI_THREAD
 #include <arch_thread.h>
 struct trap_regs *trap_handler(struct trap_regs *regs)
 {
 	struct arch_cpu_ctx ctx;
+
+#ifdef CONFIG_SMP
+	core_is_in_irq[current_hartid()] = true;
+#else
+	core_is_in_irq = true;
+#endif
 
 	ulong mcause = csr_read(CSR_MCAUSE);
 	ulong is_interrupt = mcause & (1UL << 63);
@@ -155,11 +177,24 @@ struct trap_regs *trap_handler(struct trap_regs *regs)
 
 	ctx.regs = regs;
 
+#ifdef CONFIG_SMP
+	core_is_in_irq[current_hartid()] = false;
+#else
+	core_is_in_irq = false;
+#endif
+
 	return sched_thread(&ctx)->regs;
 }
 #else
 struct trap_regs *trap_handler(struct trap_regs *regs)
 {
+
+#ifdef CONFIG_SMP
+	core_is_in_irq[current_hartid()] = true;
+#else
+	core_is_in_irq = true;
+#endif
+
 	ulong mcause = csr_read(CSR_MCAUSE);
 	ulong is_interrupt = mcause & (1UL << 63);
 	ulong exception_code = mcause & ~(1UL << 63);
@@ -168,6 +203,13 @@ struct trap_regs *trap_handler(struct trap_regs *regs)
 		trap_interrupt(exception_code, regs);
 	else
 		trap_error(exception_code, regs);
+
+#ifdef CONFIG_SMP
+	core_is_in_irq[current_hartid()] = false;
+#else
+	core_is_in_irq = false;
+#endif
+
 
 	return regs;
 }
