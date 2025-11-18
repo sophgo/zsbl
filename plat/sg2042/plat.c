@@ -64,7 +64,9 @@ static long load(struct boot_file *file)
 
 static struct fw_dynamic_info dynamic_info;
 
-static unsigned char secondary_core_stack[CONFIG_SMP_NUM][4096];
+#define SG2042_RP_CORE_NUM	128
+
+static unsigned char secondary_core_stack[SG2042_RP_CORE_NUM][4096];
 
 static void secondary_core_fun(void *priv)
 {
@@ -78,7 +80,7 @@ static void boot_next_img(struct config *cfg)
 	unsigned int hartid = current_hartid();
 	int i;
 
-	for (i = 0; i < CONFIG_SMP_NUM; i++) {
+	for (i = 0; i < SG2042_RP_CORE_NUM; i++) {
 		if (i == hartid)
 			continue;
 
