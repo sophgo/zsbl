@@ -258,7 +258,7 @@ void sched_preempt_enable(void)
 
 	count = atomic_sub_return(&preempt_count, 1);
 
-	if (count == 0)
+	if (count == 0 && !in_irq())
 		arch_preempt_enable();
 }
 
