@@ -1,6 +1,9 @@
 #ifndef __RISCV_ENCODING_H__
 #define __RISCV_ENCODING_H__
 
+#define _UL(n)				(n ## UL)
+#define _ULL(n)				(n ## ULL)
+
 /* clang-format off */
 #define MSTATUS_SIE			_UL(0x00000002)
 #define MSTATUS_MIE			_UL(0x00000008)
@@ -64,6 +67,8 @@
 #define HSTATUS_SPV			_UL(0x00000080)
 #define HSTATUS_GVA			_UL(0x00000040)
 #define HSTATUS_VSBE			_UL(0x00000020)
+
+#define MENVCFG_STCE			_ULL(0x8000000000000000)
 
 #define IRQ_S_SOFT			1
 #define IRQ_VS_SOFT			2
@@ -207,6 +212,7 @@
 #define CSR_SCAUSE			0x142
 #define CSR_STVAL			0x143
 #define CSR_SIP				0x144
+#define CSR_STIMECMP			0x14d
 #define CSR_SATP			0x180
 
 #define CSR_HSTATUS			0x600

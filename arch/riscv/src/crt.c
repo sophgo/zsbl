@@ -87,6 +87,8 @@ static int run_init(const char *name,
 
 void system_init(void)
 {
+	arch_enable_local_irq();
+
 	timer_init();
 
 	run_init("early",

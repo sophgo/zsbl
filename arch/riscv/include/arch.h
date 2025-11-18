@@ -40,6 +40,8 @@ void arch_disable_local_timer_irq(void);
 void arch_enable_local_timer_irq(void);
 void arch_disable_local_external_irq(void);
 void arch_enable_local_external_irq(void);
+void arch_disable_local_stimer_irq(void);
+void arch_enable_local_stimer_irq(void);
 
 #endif
 
