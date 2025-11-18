@@ -121,20 +121,31 @@ struct timer_ctx {
 /* arch timer always global */
 static struct timer_ctx *ctx;
 
+static void setup_next_time(void *reg, uint64_t next)
+{
+	writel(next >> 32, reg + 4);
+	writel(next & 0xffffffff, reg);
+}
+
 void mtimer_isr(void)
 {
 	uint64_t idx = get_isr_index();
+	uint64_t next;
+
+	next = timer_get_tick() + ctx->isr[idx].tick;
+
+	setup_next_time(ctx->isr[idx].mtimecmp, next);
 
 	if (!ctx->isr[idx].func)
 		return;
 
 	ctx->isr[idx].func(ctx->isr[idx].data);
-	writeq(timer_get_tick() + ctx->isr[idx].tick, ctx->isr[idx].mtimecmp);
 }
 
 int timer_enable_irq(uint64_t tick, void (*isr)(void *data), void *data)
 {
 	uint64_t idx = get_isr_index();
+	uint64_t next;
 
 	if (!ctx)
 		return -ENODEV;
@@ -144,7 +155,9 @@ int timer_enable_irq(uint64_t tick, void (*isr)(void *data), void *data)
 	ctx->isr[idx].data = data;
 	ctx->isr[idx].mtimecmp = ctx->mtimecmp.base + idx * 8;
 
-	writeq(timer_get_tick() + tick, ctx->isr[idx].mtimecmp);
+	next = timer_get_tick() + tick;
+
+	setup_next_time(ctx->isr[idx].mtimecmp, next);
 
 	/* enable timer interrupt */
 	arch_enable_local_timer_irq();
@@ -195,6 +208,10 @@ static int timer_probe(struct platform_device *pdev)
 static struct of_device_id match_table[] = {
 	{
 		.compatible = "riscv,clint0",
+		.data = (void *)CLINT_NAME,
+	},
+	{
+		.compatible = "thead,c900-clint-mtimer",
 		.data = (void *)CLINT_NAME,
 	},
 	{
