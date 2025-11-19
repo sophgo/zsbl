@@ -11,6 +11,8 @@
 #include <common/thread.h>
 #include <common/spinlock.h>
 
+#include <lib/cli.h>
+
 static LIST_HEAD(thread_list);
 static spinlock_t thread_lock = SPIN_LOCK_INITIALIZER;
 
@@ -56,7 +58,7 @@ struct thread *thread_create(const char *name, void *stack_base, unsigned long s
 	}
 
 	t->name = name;
-	t->priority = 0;
+	t->priority = 1;
 	t->stack_base = stack_base;
 	t->stack_size = stack_size;
 	t->func = func;
@@ -68,6 +70,20 @@ struct thread *thread_create(const char *name, void *stack_base, unsigned long s
 	spin_unlock(&thread_lock);
 
 	return t;
+}
+
+int thread_set_priority(struct thread *t, int p)
+{
+	if (p <= 0) {
+		pr_err("Thread priority should greater than 0\n");
+		return -EINVAL;
+	}
+
+	t->priority = p;
+
+	sched_yield();
+
+	return 0;
 }
 
 int thread_destroy(struct thread *t)
@@ -109,7 +125,7 @@ struct arch_cpu_ctx *sched_thread(struct arch_cpu_ctx *cpu_ctx)
 	/* idle thread always runnable */
 	hp = -1;
 
-	for(t = next_thread(current); (t != current); t = next_thread(t)) {
+	for (t = next_thread(current); (t != current); t = next_thread(t)) {
 		if (!(t->state == THREAD_STATE_RUNNABLE || t->state == THREAD_STATE_RUNNING))
 			continue;
 
@@ -217,6 +233,9 @@ int sched_start(void)
 		goto error_create_thread;
 	}
 
+	/* set idle thread to the lowest priority */
+	idle_thread->priority = 0;
+
 	current = idle_thread;
 
 	/* start timer */
@@ -262,4 +281,33 @@ void sched_preempt_enable(void)
 		arch_preempt_enable();
 }
 
+static void command_ps(struct command *c, int argc, const char *argv[])
+{
+	struct thread *t = NULL;
+	int i;
+
+	const char *state_name[] = {
+		[THREAD_STATE_RUNNABLE] = "Runnable",
+		[THREAD_STATE_RUNNING] = "Running",
+		[THREAD_STATE_BLOCK] = "Block",
+		[THREAD_STATE_DEAD] = "Dead",
+	};
+
+	console_printf(c->console, "%5s %12s %8s %8s %23s\n",
+		       "Index", "Thread", "Priority", "State", "Stack");
+
+	i = 0;
+
+	sched_preempt_disable();
+	list_for_each_entry(t, &thread_list, list) {
+		console_printf(c->console, "%5d %12s %8d %8s %010lx - %010lx\n",
+			       i, t->name, t->priority, state_name[t->state],
+			       (unsigned long)t->stack_base,
+			       ((unsigned long)t->stack_base) + t->stack_size);
+		++i;
+	}
+	sched_preempt_enable();
+}
+
+cli_command(ps, command_ps);
 

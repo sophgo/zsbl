@@ -3,12 +3,14 @@
 #include <common/module.h>
 #include <common/common.h>
 #include <common/thread.h>
+#include <lib/cli.h>
 
 unsigned char stack_a[4096];
 unsigned char stack_b[4096];
+unsigned char stack_shell[4096];
 unsigned long thread_arg = 0xdeadbeef;
 
-struct thread *thread_a, *thread_b;
+struct thread *thread_a, *thread_b, *thread_shell;
 
 static int func_a(void *arg)
 {
@@ -34,12 +36,20 @@ static int func_b(void *arg)
 	return 0;
 }
 
+static int shell(void *arg)
+{
+	cli_loop(0);
+
+	return 0;
+}
+
 static int test_multi_thread(void)
 {
 	pr_info("Test Multi Thread\n");
 
 	thread_a = thread_create("a", stack_a, sizeof(stack_a), func_a, &thread_arg);
 	thread_b = thread_create("b", stack_b, sizeof(stack_b), func_b, &thread_arg);
+	thread_shell = thread_create("shell", stack_shell, sizeof(stack_shell), shell, NULL);
 
 	sched_start();
 

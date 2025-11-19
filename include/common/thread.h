@@ -38,6 +38,19 @@ void sched_yield(void);
 int sched_start(void);
 struct thread *thread_create(const char *name, void *stack_base, unsigned long stack_size,
 			     int (*func)(void *), void *arg);
+
+/*
+ * negative: invalid priority.
+ * 0: idle thread priority, we should make sure idle thread always use lowest priority, and
+ * no one have the same priority with idle thread.
+ * 1: lowest valid priority and this is the default value when thread just created.
+ * others: the bigger the higher.
+ * so the valid range of p is from 1 to max integer
+ *
+ * This API causes a thread schedule immediately, that means if you set the priority to
+ * a lower one(less one), this thread may be put into background immediately, vice versa.
+ */
+int thread_set_priority(struct thread *t, int p);
 int thread_destroy(struct thread *t);
 struct thread *sched_get_current(void);
 
