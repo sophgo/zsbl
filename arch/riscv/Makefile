@@ -16,6 +16,14 @@ KBUILD_CFLAGS += -march=rv64imafdc_zifencei -mcmodel=medany -DARCH_RISCV
 KBUILD_CFLAGS += -nostdinc -fstack-protector -fshort-wchar
 
 KBUILD_LDFLAGS += -nostdlib
-KBUILD_CFLAGS += -fno-pie -no-pie -fPIE -pie -march=rv64imafdc_zicbom -misa-spec=2.2
-KBUILD_LDFLAGS += -Wl,--no-dynamic-linker -Wl,-pie -Wl,--no-warn-rwx-segments
+KBUILD_CFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2
+KBUILD_LDFLAGS += -Wl,--no-dynamic-linker -Wl,--no-warn-rwx-segments
 KBUILD_AFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2 -fstack-protector
+
+ifeq ($(strip $(CONFIG_SUPPORT_PIC)), y)
+KBUILD_CFLAGS += -fpie
+KBUILD_LDFLAGS += -Wl,-pie
+else
+KBUILD_CFLAGS += -fno-pie
+KBUILD_LDFLAGS += -Wl,-no-pie
+endif
