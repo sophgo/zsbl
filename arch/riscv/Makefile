@@ -10,15 +10,21 @@ else
 KBUILD_LDS := arch/riscv/src/target-ram.lds
 endif
 
+RISCV_CAFLAGS = -march=rv64imac_zicbom_zifencei_zicsr \
+		-mabi=lp64 \
+		-mcmodel=medany \
+		-DARCH_RISCV \
+		-fstack-protector \
+		-fshort-wchar \
+		-nostdinc \
+		-mno-relax
 
-KBUILD_CFLAGS += -march=rv64imafdc_zifencei -mcmodel=medany -DARCH_RISCV
+KBUILD_CFLAGS += $(RISCV_CAFLAGS)
+KBUILD_AFLAGS += $(RISCV_CAFLAGS)
 
-KBUILD_CFLAGS += -nostdinc -fstack-protector -fshort-wchar
-
+KBUILD_CFLAGS += -nostdlib
 KBUILD_LDFLAGS += -nostdlib
-KBUILD_CFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2
 KBUILD_LDFLAGS += -Wl,--no-dynamic-linker -Wl,--no-warn-rwx-segments
-KBUILD_AFLAGS += -march=rv64imafdc_zicbom -misa-spec=2.2 -fstack-protector
 
 ifeq ($(strip $(CONFIG_SUPPORT_PIC)), y)
 KBUILD_CFLAGS += -fpie
