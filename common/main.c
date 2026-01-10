@@ -15,8 +15,8 @@ int plat_main(void);
 
 /* platform version defines in platform.h */
 
-#define VERSION_MAJOR "2"
-#define VERSION_MINOR "1"
+#define VERSION_MAJOR "3"
+#define VERSION_MINOR "0"
 
 #define ZSBL_VERSION	VERSION_MAJOR "." VERSION_MINOR "." VERSION_PLATFORM
 

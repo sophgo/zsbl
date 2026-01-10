@@ -1,7 +1,7 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
-#define VERSION_PLATFORM	"4"
+#define VERSION_PLATFORM	"5"
 
 #define CSR_MCOR         0x7c2
 #define CSR_MHCR         0x7c1
