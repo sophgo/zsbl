@@ -25,7 +25,7 @@
 #define RAMFS_ADDR			0x30000000
 
 
-static void print_core_ctrlreg(void)
+static void __attribute__((unused)) print_core_ctrlreg(void)
 {
 	pr_info("C920 control register information:\n");
 
@@ -290,13 +290,10 @@ static void build_board_info(struct config *cfg)
 {
 	int i;
 
-	if (mmio_read_32(BOOT_SEL_ADDR) & MULTI_SOCKET_MODE) {
-		pr_info("SG2042 work in multi socket mode\n");
+	if (mmio_read_32(BOOT_SEL_ADDR) & MULTI_SOCKET_MODE)
 		cfg->multi_socket_mode = true;
-	} else {
-		pr_info("SG2042 work in single socket mode\n");
+	else
 		cfg->multi_socket_mode = false;
-	}
 
 	cfg->board_type = mmio_read_32(BOARD_TYPE_REG);
 
@@ -569,8 +566,6 @@ static void reset_device(uint32_t index)
 
 int plat_main(void)
 {
-	print_core_ctrlreg();
-
 	config_init(&cfg);
 
 	build_board_info(&cfg);
