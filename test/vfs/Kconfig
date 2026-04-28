@@ -1,0 +1,3 @@
+config TEST_VFS
+	bool "vfs test"
+	depends on TEST && VFS

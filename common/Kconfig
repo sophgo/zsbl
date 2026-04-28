@@ -97,4 +97,10 @@ config MULTI_THREAD
 	help
 	support multi thread.
 
+config VFS
+	bool "Virtual File System"
+	default n
+	help
+	enable minimal VFS core.
+
 endmenu
