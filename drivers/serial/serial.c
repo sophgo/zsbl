@@ -75,10 +75,12 @@ void serial_free(struct serial *serial)
 void serial_add(struct serial *serial)
 {
 	list_add_tail(&serial->device.list_head, &device_list);
+	device_register(&serial->device);
 }
 
 void serial_remove(struct serial *serial)
 {
+	device_unregister(&serial->device);
 	list_del(&serial->device.list_head);
 }
 

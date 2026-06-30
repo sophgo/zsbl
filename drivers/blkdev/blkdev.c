@@ -76,10 +76,12 @@ void blkdev_free(struct blkdev *blkdev)
 void blkdev_add(struct blkdev *blkdev)
 {
 	list_add_tail(&blkdev->device.list_head, &device_list);
+	device_register(&blkdev->device);
 }
 
 void blkdev_remove(struct blkdev *blkdev)
 {
+	device_unregister(&blkdev->device);
 	list_del(&blkdev->device.list_head);
 }
 

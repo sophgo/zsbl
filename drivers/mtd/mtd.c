@@ -76,10 +76,12 @@ void mtd_free(struct mtd *mtd)
 void mtd_add(struct mtd *mtd)
 {
 	list_add_tail(&mtd->device.list_head, &device_list);
+	device_register(&mtd->device);
 }
 
 void mtd_remove(struct mtd *mtd)
 {
+	device_unregister(&mtd->device);
 	list_del(&mtd->device.list_head);
 }
 

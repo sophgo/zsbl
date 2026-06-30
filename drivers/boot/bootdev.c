@@ -81,10 +81,12 @@ void bootdev_free(struct bootdev *bootdev)
 void bootdev_add(struct bootdev *bootdev)
 {
 	list_add_tail(&bootdev->device.list_head, &device_list);
+	device_register(&bootdev->device);
 }
 
 void bootdev_remove(struct bootdev *bootdev)
 {
+	device_unregister(&bootdev->device);
 	list_del(&bootdev->device.list_head);
 }
 

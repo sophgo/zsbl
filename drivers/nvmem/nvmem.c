@@ -78,10 +78,12 @@ void nvmem_free(struct nvmem *nvmem)
 void nvmem_add(struct nvmem *nvmem)
 {
 	list_add_tail(&nvmem->device.list_head, &device_list);
+	device_register(&nvmem->device);
 }
 
 void nvmem_remove(struct nvmem *nvmem)
 {
+	device_unregister(&nvmem->device);
 	list_del(&nvmem->device.list_head);
 }
 

@@ -87,10 +87,12 @@ void platform_device_free(struct platform_device *pdev)
 void platform_device_add(struct platform_device *pdev)
 {
 	list_add_tail(&pdev->device.list_head, &device_list);
+	device_register(&pdev->device);
 }
 
 void platform_device_remove(struct platform_device *pdev)
 {
+	device_unregister(&pdev->device);
 	list_del(&pdev->device.list_head);
 }
 
