@@ -16,4 +16,13 @@ config FS_FATFS
 	  Mount FAT volumes on block devices into the VFS at /fatN, backed by
 	  the FatFs library. Read-only; files are resolved on demand.
 
+config FS_AUTOMOUNT
+	bool "Automount block devices"
+	depends on VFS && DRIVER_BLOCK_DEVICE
+	default n
+	help
+	  Enumerate block devices and mount each at /blkN, auto-detecting the
+	  filesystem among the registered ones. Devices with no recognized
+	  filesystem are skipped.
+
 endmenu

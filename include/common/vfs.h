@@ -87,9 +87,17 @@ struct vfs_super_ops {
  */
 struct vfs_fs_type {
 	const char *name;
+	unsigned int flags;		/* VFS_FS_* */
 	int (*mount)(struct vfs_mount *mnt, const char *source, void *data);
 	struct vfs_fs_type *next;	/* internal: registration list link */
 };
+
+/*
+ * VFS_FS_REQUIRES_DEV: this filesystem lives on a block device and validates
+ * it in mount(). Only such filesystems take part in auto-detect mounting
+ * (vfs_mount with fstype == NULL). Pseudo filesystems (e.g. sysfs) omit it.
+ */
+#define VFS_FS_REQUIRES_DEV	(1u << 0)
 
 struct vfs_mount {
 	struct vfs_node *mountpoint;	/* covered directory in parent ns */
@@ -143,9 +151,11 @@ int vfs_register_filesystem(struct vfs_fs_type *type);
 
 /*
  * Mount filesystem 'fstype' onto the existing directory 'target'.
- * 'source'/'data' are passed through to the fs mount() callback.
- * Errors: -EINVAL, -ENODEV (type), -ENOENT, -ENOTDIR, -EBUSY (already
- * mounted), -ENOMEM, or the fs callback's error.
+ * If 'fstype' is NULL, auto-detect: each registered filesystem is tried in
+ * turn and the first whose mount() accepts the device wins. 'source'/'data'
+ * are passed through to the fs mount() callback.
+ * Errors: -EINVAL, -ENODEV (type / none accepted), -ENOENT, -ENOTDIR,
+ * -EBUSY (already mounted), -ENOMEM, or the fs callback's error.
  */
 int vfs_mount(const char *source, const char *target,
 	      const char *fstype, void *data);

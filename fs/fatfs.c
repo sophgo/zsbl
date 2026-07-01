@@ -184,6 +184,7 @@ err_free:
 
 static struct vfs_fs_type fatfs_type = {
 	.name = "fatfs",
+	.flags = VFS_FS_REQUIRES_DEV,
 	.mount = fatfs_mount,
 };
 

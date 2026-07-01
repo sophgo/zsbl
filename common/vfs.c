@@ -607,29 +607,11 @@ int vfs_register_filesystem(struct vfs_fs_type *type)
 	return 0;
 }
 
-int vfs_mount(const char *source, const char *target,
-	      const char *fstype, void *data)
+static int vfs_try_mount(struct vfs_node *mp, struct vfs_fs_type *type,
+			 const char *source, void *data)
 {
-	struct vfs_fs_type *type;
-	struct vfs_node *mp;
 	struct vfs_mount *mnt;
 	int ret;
-
-	if (!target || !fstype || !vfs_is_path_valid(target))
-		return -EINVAL;
-
-	type = vfs_find_filesystem(fstype);
-	if (!type)
-		return -ENODEV;
-
-	/* resolve the mountpoint itself, not what is mounted on it */
-	mp = vfs_lookup_node_ex(target, 0);
-	if (!mp)
-		return -ENOENT;
-	if (mp->type != VFS_NODE_DIR)
-		return -ENOTDIR;
-	if (mp->mnt)
-		return -EBUSY;
 
 	mnt = malloc(sizeof(*mnt));
 	if (!mnt)
@@ -651,6 +633,42 @@ int vfs_mount(const char *source, const char *target,
 	mp->mnt = mnt;
 
 	return 0;
+}
+
+int vfs_mount(const char *source, const char *target,
+	      const char *fstype, void *data)
+{
+	struct vfs_fs_type *type;
+	struct vfs_node *mp;
+
+	if (!target || !vfs_is_path_valid(target))
+		return -EINVAL;
+
+	/* resolve the mountpoint itself, not what is mounted on it */
+	mp = vfs_lookup_node_ex(target, 0);
+	if (!mp)
+		return -ENOENT;
+	if (mp->type != VFS_NODE_DIR)
+		return -ENOTDIR;
+	if (mp->mnt)
+		return -EBUSY;
+
+	if (fstype) {
+		type = vfs_find_filesystem(fstype);
+		if (!type)
+			return -ENODEV;
+		return vfs_try_mount(mp, type, source, data);
+	}
+
+	/* auto-detect: try each block-backed filesystem until one accepts */
+	for (type = vfs_fs_types; type; type = type->next) {
+		if (!(type->flags & VFS_FS_REQUIRES_DEV))
+			continue;
+		if (vfs_try_mount(mp, type, source, data) == 0)
+			return 0;
+	}
+
+	return -ENODEV;
 }
 
 static int vfs_node_under_root(const struct vfs_node *node,
