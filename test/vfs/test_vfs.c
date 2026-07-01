@@ -252,3 +252,133 @@ static int test_vfs_mount(void)
 }
 
 test_case(test_vfs_mount);
+
+/* ---- mock on-demand filesystem, exercises dynamic lookup ---- */
+
+static ssize_t dynfs_read(struct vfs_file *file, void *buf, size_t len)
+{
+	const char *content = file->private_data;
+	size_t clen;
+	size_t pos = file->pos;
+
+	if (!content)
+		return 0;
+	clen = strlen(content);
+	if (pos >= clen)
+		return 0;
+	if (len > clen - pos)
+		len = clen - pos;
+
+	memcpy(buf, content + pos, len);
+
+	return (ssize_t)len;
+}
+
+static const struct vfs_file_ops dynfs_fops = {
+	.read = dynfs_read,
+};
+
+/*
+ * A filesystem whose entries are NOT pre-built: nodes are materialized into
+ * the tree on demand in lookup(). Layout: /foo (file), /sub/ (dir),
+ * /sub/bar (file).
+ */
+static struct vfs_node *dynfs_lookup(struct vfs_mount *mnt, struct vfs_node *dir,
+				     const char *name)
+{
+	(void)mnt;
+
+	if (!strcmp(dir->name, "dynfs")) {
+		if (!strcmp(name, "foo"))
+			return vfs_mknod(dir, name, VFS_NODE_REG,
+					 &dynfs_fops, strdup("FOO-CONTENT"));
+		if (!strcmp(name, "sub"))
+			return vfs_mkdir(dir, name);
+		return NULL;
+	}
+
+	if (!strcmp(dir->name, "sub")) {
+		if (!strcmp(name, "bar"))
+			return vfs_mknod(dir, name, VFS_NODE_REG,
+					 &dynfs_fops, strdup("BAR-CONTENT"));
+		return NULL;
+	}
+
+	return NULL;
+}
+
+static const struct vfs_super_ops dynfs_sops = {
+	.lookup = dynfs_lookup,
+};
+
+static int dynfs_mount(struct vfs_mount *mnt, const char *source, void *data)
+{
+	struct vfs_node *root;
+
+	(void)source;
+	(void)data;
+
+	root = vfs_alloc_dir_node("dynfs");
+	if (!root)
+		return -ENOMEM;
+
+	mnt->root = root;
+	mnt->sops = &dynfs_sops;
+
+	return 0;
+}
+
+static struct vfs_fs_type dynfs_type = {
+	.name = "dynfs",
+	.mount = dynfs_mount,
+};
+
+static int test_vfs_dynamic(void)
+{
+	struct vfs_node *root;
+	char out[16];
+	int fd;
+	ssize_t n;
+
+	root = vfs_root();
+	if (!root)
+		return -1;
+
+	if (!vfs_mkdir(root, "dyn"))
+		return -1;
+	if (vfs_register_filesystem(&dynfs_type))
+		return -1;
+	if (vfs_mount(NULL, "/dyn", "dynfs", NULL))
+		return -1;
+
+	/* file materialized on demand at the mount root (no pre-built child) */
+	fd = vfs_open("/dyn/foo", 0);
+	if (fd < 0)
+		return -1;
+	n = vfs_read(fd, out, sizeof(out));
+	if (n != 11 || memcmp(out, "FOO-CONTENT", 11) != 0)
+		return -1;
+	if (vfs_close(fd) != 0)
+		return -1;
+
+	/* nested lookup: intermediate dir materialized into tree, target readable */
+	fd = vfs_open("/dyn/sub/bar", 0);
+	if (fd < 0)
+		return -1;
+	n = vfs_read(fd, out, sizeof(out));
+	if (n != 11 || memcmp(out, "BAR-CONTENT", 11) != 0)
+		return -1;
+	if (vfs_close(fd) != 0)
+		return -1;
+
+	/* non-existent entry */
+	if (vfs_open("/dyn/nope", 0) != -ENOENT)
+		return -1;
+
+	printf("vfs dynamic lookup test ok\n");
+
+	return 0;
+}
+
+test_case(test_vfs_dynamic);
+

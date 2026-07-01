@@ -67,9 +67,16 @@ struct vfs_file {
 
 /*
  * Optional per-mount operations. All members may be NULL.
+ *   lookup: resolve 'name' inside directory 'dir' on demand for filesystems
+ *           whose entries are not pre-built (e.g. FAT). It should create the
+ *           node in the tree via vfs_mknod(dir, name, ...) and return it, or
+ *           return NULL if the entry does not exist. The node then lives in
+ *           the tree like any other until umount.
  *   umount: release fs-private state before the core frees the node subtree.
  */
 struct vfs_super_ops {
+	struct vfs_node *(*lookup)(struct vfs_mount *mnt, struct vfs_node *dir,
+				   const char *name);
 	int (*umount)(struct vfs_mount *mnt);
 };
 

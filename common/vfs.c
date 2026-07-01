@@ -31,12 +31,22 @@ static struct vfs_fs_type *vfs_fs_types;
 static int vfs_next_fd;
 static unsigned int vfs_ready;
 
-static struct vfs_node *vfs_follow_mount(struct vfs_node *node)
+static struct vfs_node *vfs_follow_mount_mnt(struct vfs_node *node,
+					     struct vfs_mount **mnt)
 {
-	while (node && node->mnt)
+	while (node && node->mnt) {
+		*mnt = node->mnt;
 		node = node->mnt->root;
+	}
 
 	return node;
+}
+
+static struct vfs_node *vfs_follow_mount(struct vfs_node *node)
+{
+	struct vfs_mount *mnt = NULL;
+
+	return vfs_follow_mount_mnt(node, &mnt);
 }
 
 static struct vfs_node_item *vfs_item_from_node(const struct vfs_node *node)
@@ -126,6 +136,7 @@ static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last)
 	size_t seg_len;
 	char *seg_name;
 	struct vfs_node *cur_node;
+	struct vfs_mount *cur_mnt = NULL;
 
 	if (!vfs_root_node)
 		return NULL;
@@ -133,11 +144,12 @@ static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last)
 	cur_node = &vfs_root_node->node;
 
 	if (!strcmp(path, "/"))
-		return follow_last ? vfs_follow_mount(cur_node) : cur_node;
+		return follow_last ? vfs_follow_mount_mnt(cur_node, &cur_mnt) : cur_node;
 
-	cur_node = vfs_follow_mount(cur_node);
+	cur_node = vfs_follow_mount_mnt(cur_node, &cur_mnt);
 	cursor = path + 1;
 	while (*cursor) {
+		struct vfs_node *next;
 		int last;
 
 		slash = strchr(cursor, '/');
@@ -154,18 +166,22 @@ static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last)
 		memcpy(seg_name, cursor, seg_len);
 		seg_name[seg_len] = '\0';
 
-		cur_node = vfs_find_child_by_name(cur_node, seg_name);
+		next = vfs_find_child_by_name(cur_node, seg_name);
+		/* not pre-built: let the filesystem materialize it into the tree */
+		if (!next && cur_mnt && cur_mnt->sops && cur_mnt->sops->lookup)
+			next = cur_mnt->sops->lookup(cur_mnt, cur_node, seg_name);
 		free(seg_name);
-		if (!cur_node)
+		if (!next)
 			return NULL;
+		cur_node = next;
 
 		if (last) {
 			if (follow_last)
-				cur_node = vfs_follow_mount(cur_node);
+				cur_node = vfs_follow_mount_mnt(cur_node, &cur_mnt);
 			break;
 		}
 
-		cur_node = vfs_follow_mount(cur_node);
+		cur_node = vfs_follow_mount_mnt(cur_node, &cur_mnt);
 		cursor = slash + 1;
 	}
 
