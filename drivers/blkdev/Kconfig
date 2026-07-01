@@ -12,5 +12,11 @@ config DRIVER_BLOCK_DEVICE_SDHCI_DWC
 	default n
 	help
 		Designware SDHCI device driver.
+
+config DRIVER_BLOCK_DEVICE_VIRTIO
+	bool "virtio-blk (virtio-mmio)"
+	default n
+	help
+		virtio-blk block device over virtio-mmio (e.g. QEMU virt).
 endif
 
