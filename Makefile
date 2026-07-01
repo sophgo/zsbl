@@ -470,7 +470,7 @@ ifeq ($(KBUILD_EXTMOD),)
 # Objects we will link into the target / subdirs we need to visit
 drivers-y	:= drivers/ lib/
 plat-y		:= plat/
-core-y		:= common/
+core-y		:= common/ fs/
 test-y		:= test/
 endif # KBUILD_EXTMOD
 

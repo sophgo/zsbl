@@ -1,0 +1,11 @@
+menu "File systems"
+
+config FS_SYSFS
+	bool "sysfs (device tree under /sys)"
+	depends on VFS
+	default y
+	help
+	  Present the unified device registry as empty directories under
+	  /sys/devices/<device-name>.
+
+endmenu
