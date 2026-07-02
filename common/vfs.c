@@ -129,7 +129,8 @@ static int vfs_is_path_valid(const char *path)
 	return 1;
 }
 
-static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last)
+static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last,
+					   struct vfs_mount **out_mnt)
 {
 	const char *cursor;
 	const char *slash;
@@ -138,13 +139,21 @@ static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last)
 	struct vfs_node *cur_node;
 	struct vfs_mount *cur_mnt = NULL;
 
+	if (out_mnt)
+		*out_mnt = NULL;
+
 	if (!vfs_root_node)
 		return NULL;
 
 	cur_node = &vfs_root_node->node;
 
-	if (!strcmp(path, "/"))
-		return follow_last ? vfs_follow_mount_mnt(cur_node, &cur_mnt) : cur_node;
+	if (!strcmp(path, "/")) {
+		if (follow_last)
+			cur_node = vfs_follow_mount_mnt(cur_node, &cur_mnt);
+		if (out_mnt)
+			*out_mnt = cur_mnt;
+		return cur_node;
+	}
 
 	cur_node = vfs_follow_mount_mnt(cur_node, &cur_mnt);
 	cursor = path + 1;
@@ -185,12 +194,15 @@ static struct vfs_node *vfs_lookup_node_ex(const char *path, int follow_last)
 		cursor = slash + 1;
 	}
 
+	if (out_mnt)
+		*out_mnt = cur_mnt;
+
 	return cur_node;
 }
 
 static struct vfs_node *vfs_lookup_node(const char *path)
 {
-	return vfs_lookup_node_ex(path, 1);
+	return vfs_lookup_node_ex(path, 1, NULL);
 }
 
 static int vfs_name_valid(const char *name)
@@ -645,7 +657,7 @@ int vfs_mount(const char *source, const char *target,
 		return -EINVAL;
 
 	/* resolve the mountpoint itself, not what is mounted on it */
-	mp = vfs_lookup_node_ex(target, 0);
+	mp = vfs_lookup_node_ex(target, 0, NULL);
 	if (!mp)
 		return -ENOENT;
 	if (mp->type != VFS_NODE_DIR)
@@ -692,7 +704,7 @@ int vfs_umount(const char *target)
 	if (!target || !vfs_is_path_valid(target))
 		return -EINVAL;
 
-	mp = vfs_lookup_node_ex(target, 0);
+	mp = vfs_lookup_node_ex(target, 0, NULL);
 	if (!mp)
 		return -ENOENT;
 	if (!mp->mnt)
@@ -781,12 +793,18 @@ cli_command(vfstree, command_vfstree);
 static void command_ls(struct command *c, int argc, const char *argv[])
 {
 	const char *path = argc >= 2 ? argv[1] : "/";
-	const struct vfs_node *node;
+	struct vfs_mount *mnt = NULL;
+	struct vfs_node *node;
 	const struct vfs_node *child;
 
 	(void)c;
 
-	node = vfs_lookup(path);
+	if (!vfs_is_path_valid(path)) {
+		printf("ls: %s: invalid path\n", path);
+		return;
+	}
+
+	node = vfs_lookup_node_ex(path, 1, &mnt);
 	if (!node) {
 		printf("ls: %s: not found\n", path);
 		return;
@@ -796,6 +814,10 @@ static void command_ls(struct command *c, int argc, const char *argv[])
 		printf("%s\n", node->name ? node->name : path);
 		return;
 	}
+
+	/* on-demand filesystems: materialize the full listing first */
+	if (mnt && mnt->sops && mnt->sops->iterate)
+		mnt->sops->iterate(mnt, node);
 
 	for (child = node->child; child; child = child->sibling)
 		printf("%s%s\n", child->name ? child->name : "?",

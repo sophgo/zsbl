@@ -72,11 +72,15 @@ struct vfs_file {
  *           node in the tree via vfs_mknod(dir, name, ...) and return it, or
  *           return NULL if the entry does not exist. The node then lives in
  *           the tree like any other until umount.
+ *   iterate: materialize *all* entries of directory 'dir' into the tree (via
+ *           vfs_mknod, skipping ones already present) so the full listing is
+ *           visible. Used by ls on on-demand filesystems.
  *   umount: release fs-private state before the core frees the node subtree.
  */
 struct vfs_super_ops {
 	struct vfs_node *(*lookup)(struct vfs_mount *mnt, struct vfs_node *dir,
 				   const char *name);
+	int (*iterate)(struct vfs_mount *mnt, struct vfs_node *dir);
 	int (*umount)(struct vfs_mount *mnt);
 };
 

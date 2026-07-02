@@ -100,6 +100,21 @@ static const struct vfs_file_ops fatfs_fops = {
 
 /* ---- on-demand lookup ---- */
 
+/* create a tree node whose priv is the malloc'd FatFs path; free path on fail */
+static struct vfs_node *fatfs_make_node(struct vfs_node *dir, const char *name,
+					const char *path, int is_dir)
+{
+	char *p = strdup(path);
+	struct vfs_node *node;
+
+	node = vfs_mknod(dir, name, is_dir ? VFS_NODE_DIR : VFS_NODE_REG,
+			 is_dir ? NULL : &fatfs_fops, p);
+	if (!node)
+		free(p);	/* duplicate or error: reclaim the path */
+
+	return node;
+}
+
 static struct vfs_node *fatfs_lookup(struct vfs_mount *mnt, struct vfs_node *dir,
 				     const char *name)
 {
@@ -115,14 +130,38 @@ static struct vfs_node *fatfs_lookup(struct vfs_mount *mnt, struct vfs_node *dir
 	if (f_stat(path, &info) != FR_OK)
 		return NULL;
 
-	if (info.fattrib & AM_DIR)
-		return vfs_mknod(dir, name, VFS_NODE_DIR, NULL, strdup(path));
+	return fatfs_make_node(dir, name, path, info.fattrib & AM_DIR);
+}
 
-	return vfs_mknod(dir, name, VFS_NODE_REG, &fatfs_fops, strdup(path));
+/* materialize every entry of 'dir' into the tree */
+static int fatfs_iterate(struct vfs_mount *mnt, struct vfs_node *dir)
+{
+	DIR dp;
+	FILINFO info;
+	char path[FATFS_PATH_MAX];
+
+	(void)mnt;
+
+	if (f_opendir(&dp, (const char *)dir->priv) != FR_OK)
+		return -EIO;
+
+	while (f_readdir(&dp, &info) == FR_OK && info.fname[0]) {
+		if (snprintf(path, sizeof(path), "%s/%s",
+			     (const char *)dir->priv, info.fname) >= (int)sizeof(path))
+			continue;
+
+		/* fatfs_make_node / vfs_mknod skip names already present */
+		fatfs_make_node(dir, info.fname, path, info.fattrib & AM_DIR);
+	}
+
+	f_closedir(&dp);
+
+	return 0;
 }
 
 static const struct vfs_super_ops fatfs_sops = {
 	.lookup = fatfs_lookup,
+	.iterate = fatfs_iterate,
 };
 
 /* ---- mount ---- */
