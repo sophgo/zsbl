@@ -778,6 +778,63 @@ static void command_vfstree(struct command *c, int argc, const char *argv[])
 
 cli_command(vfstree, command_vfstree);
 
+static void command_ls(struct command *c, int argc, const char *argv[])
+{
+	const char *path = argc >= 2 ? argv[1] : "/";
+	const struct vfs_node *node;
+	const struct vfs_node *child;
+
+	(void)c;
+
+	node = vfs_lookup(path);
+	if (!node) {
+		printf("ls: %s: not found\n", path);
+		return;
+	}
+
+	if (node->type != VFS_NODE_DIR) {
+		printf("%s\n", node->name ? node->name : path);
+		return;
+	}
+
+	for (child = node->child; child; child = child->sibling)
+		printf("%s%s\n", child->name ? child->name : "?",
+		       child->type == VFS_NODE_DIR ? "/" : "");
+}
+
+cli_command(ls, command_ls);
+
+static void command_cat(struct command *c, int argc, const char *argv[])
+{
+	char buf[128];
+	int fd;
+	ssize_t n;
+
+	(void)c;
+
+	if (argc != 2) {
+		printf("usage: cat /path\n");
+		return;
+	}
+
+	fd = vfs_open(argv[1], 0);
+	if (fd < 0) {
+		printf("cat: %s: error %d\n", argv[1], fd);
+		return;
+	}
+
+	while ((n = vfs_read(fd, buf, sizeof(buf) - 1)) > 0) {
+		buf[n] = '\0';
+		printf("%s", buf);
+	}
+	if (n < 0)
+		printf("\ncat: read error %ld\n", (long)n);
+
+	vfs_close(fd);
+}
+
+cli_command(cat, command_cat);
+
 static int vfs_subsys_init(void)
 {
 	return vfs_init();
