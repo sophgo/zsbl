@@ -453,11 +453,11 @@ static int modify_bootargs(struct config *cfg)
 	char bootargs[256] = {0};
 	char append[128] = {0};
 
-        /* Do not clobber DTB chosen/bootargs when no ramfs is configured.
-         * sg2260 handles this correctly; apply the same guard here.
-         */
-        if (!cfg->ramfs.name)
-                return 0;
+	/* Do not clobber DTB chosen/bootargs when no ramfs is configured.
+	 * sg2260 handles this correctly; apply the same guard here.
+	 */
+	if (!cfg->ramfs.name)
+		return 0;
 
 	fdt = (void *)cfg->dtb.addr;
 	ramfs = (void*)cfg->ramfs.addr;
