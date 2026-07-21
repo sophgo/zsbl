@@ -3,7 +3,6 @@
 #include <memmap.h>
 #include <asm.h>
 #include <lib/mmio.h>
-#include <lib/mac.h>
 #include <driver/bootdev.h>
 #include <driver/platform.h>
 #include <driver/blkdev.h>
@@ -20,7 +19,6 @@
 
 #include "config.h"
 #include "efuse.h"
-#include "fdt_pcie.h"
 
 #define RAM_BASE_MASK		(~(1UL * 1024 * 1024 * 1024 - 1))
 
@@ -327,19 +325,6 @@ static void show_config(struct config *cfg)
 
 extern unsigned long __ld_program_start[0];
 
-static void init_pcie_res(struct pcie_res *r, uint64_t base, uint64_t len)
-{
-	r->base = base;
-	r->len = len;
-}
-
-static void init_pcie_win(struct pcie_win *w, uint64_t pci, uint64_t cpu, uint64_t len)
-{
-	w->pci = pci;
-	w->cpu = cpu;
-	w->len = len;
-}
-
 #define KHz(f)	(((uint64_t)f) * 1000)
 #define MHz(f)	(KHz(f) * 1000)
 
@@ -421,8 +406,6 @@ static const struct op_point *get_op_point(int conner, int mode)
 static void config_init(struct config *cfg)
 {
 	unsigned long ram_base = (unsigned long)__ld_program_start & RAM_BASE_MASK;
-	struct pcie_config *p = cfg->pcie;
-	int i;
 
 	pr_debug("ZSBL is loaded at 0x%010lx\n", (unsigned long)__ld_program_start);
 
@@ -452,171 +435,6 @@ static void config_init(struct config *cfg)
 	cfg->tpu_avl = true;
 
 	get_info_in_efuse(cfg);
-
-	/* init pcie config */
-	for (i = 0; i < PCIE_MAX; ++i, ++p) {
-		p->compatible = "sophgo,sg2044-pcie-host";
-		p->bus_start = 0;
-		p->bus_end = 255;
-		p->coherent = true;
-		p->domain = i;
-		init_pcie_win(&p->ib, 0x80000000, 0x80000000, 0x4000000000UL - 0x80000000);
-		if ((i % 2)  == 1)
-			p->enable = false;
-		else
-			p->enable = true;
-	}
-
-	/* pcie0 c2c0-w0-p0 */
-	p = &cfg->pcie[0];
-	init_pcie_res(&p->dbi, 0x6c00400000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c00780000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c00700000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x4000000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x4010000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0, 0, 0x04000000);
-	init_pcie_win(&p->mem32, 0x04000000, 0x04000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x4400000000UL, 0x4400000000UL, 0x400000000UL);
-	init_pcie_win(&p->mem64, 0x4200000000UL, 0x4200000000UL, 0x200000000UL);
-
-	p->irq = 64;
-
-	/* pcie1 c2c0-w0-p1 */
-	p = &cfg->pcie[1];
-	init_pcie_res(&p->dbi, 0x6c00800000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c00b80000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c00b00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x4800000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x4810000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x08000000, 0x08000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x0c000000, 0x0c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x4c00000000UL, 0x4c00000000UL, 0x400000000UL);
-	init_pcie_win(&p->mem64, 0x4a00000000UL, 0x4a00000000UL, 0x200000000UL);
-
-	p->irq = 66;
-
-	/* pcie2 c2c0-w1-p0 */
-	p = &cfg->pcie[2];
-	init_pcie_res(&p->dbi, 0x6c00000000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c000c0000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c00300000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x5000000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x5010000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x10000000, 0x10000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x14000000, 0x14000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x5400000000UL, 0x5400000000UL, 0x400000000UL);
-	init_pcie_win(&p->mem64, 0x5200000000UL, 0x5200000000UL, 0x200000000UL);
-
-	p->irq = 65;
-
-	/* pcie3 c2c0-w1-p1 */
-	p = &cfg->pcie[3];
-	init_pcie_res(&p->dbi, 0x6c00c00000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c00f80000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c00f00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x5800000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x5810000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x18000000, 0x18000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x1c000000, 0x1c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x5c00000000UL, 0x5c00000000UL, 0x400000000UL);
-	init_pcie_win(&p->mem64, 0x5a00000000UL, 0x5a00000000UL, 0x200000000UL);
-
-	p->irq = 67;
-
-	/* pcie4 c2c1-w0-p0 */
-	p = &cfg->pcie[4];
-	init_pcie_res(&p->dbi, 0x6c04400000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c04780000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c04700000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x7800000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x7810000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x20000000, 0x20000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x24000000, 0x24000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x7900000000UL, 0x7900000000UL, 0x100000000UL);
-	init_pcie_win(&p->mem64, 0x7880000000UL, 0x7880000000UL, 0x080000000UL);
-
-	p->irq = 73;
-
-	/* pcie5 c2c1-w0-p1 */
-	p = &cfg->pcie[5];
-	init_pcie_res(&p->dbi, 0x6c04800000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c04b80000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c04b00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x7a00000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x7a10000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x28000000, 0x28000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x2c000000, 0x2c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x7b00000000UL, 0x7b00000000UL, 0x100000000UL);
-	init_pcie_win(&p->mem64, 0x7a80000000UL, 0x7a80000000UL, 0x080000000UL);
-
-	p->irq = 75;
-
-	/* pcie6 c2c1-w1-p0 */
-	p = &cfg->pcie[6];
-	init_pcie_res(&p->dbi, 0x6c04000000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c040c0000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c04300000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x7c00000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x7c10000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x30000000, 0x30000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x34000000, 0x34000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x7d00000000UL, 0x7d00000000UL, 0x100000000UL);
-	init_pcie_win(&p->mem64, 0x7c80000000UL, 0x7c80000000UL, 0x080000000UL);
-
-	p->irq = 74;
-
-	/* pcie7 c2c1-w1-p1 */
-	p = &cfg->pcie[7];
-	init_pcie_res(&p->dbi, 0x6c04c00000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c04f80000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c04f00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x7e00000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x7e10000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x38000000, 0x38000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x3c000000, 0x3c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x7f00000000UL, 0x7f00000000UL, 0x100000000UL);
-	init_pcie_win(&p->mem64, 0x7e80000000UL, 0x7e80000000UL, 0x080000000UL);
-
-	p->irq = 76;
-
-	/* pcie8 cxp-w0-p0 */
-	p = &cfg->pcie[8];
-	init_pcie_res(&p->dbi, 0x6c08400000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c08780000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c08700000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x6000000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x6010000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x40000000, 0x40000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x44000000, 0x44000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x6200000000UL, 0x6200000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x6100000000UL, 0x6100000000UL, 0x100000000UL);
-
-	p->irq = 125;
-
-	/* pcie9 cxp-w0-p1 */
-	p = &cfg->pcie[9];
-	init_pcie_res(&p->dbi, 0x6c08800000UL, 0x1000);
-	init_pcie_res(&p->ctl, 0x6c08b80000UL, 0x1000);
-	init_pcie_res(&p->atu, 0x6c08b00000UL, 0x4000);
-	init_pcie_res(&p->cfg, 0x6400000000UL, 0x1000);
-
-	init_pcie_win(&p->io, 0, 0x6410000000UL, 0x00200000);
-	init_pcie_win(&p->mem32p, 0x48000000, 0x48000000, 0x04000000);
-	init_pcie_win(&p->mem32, 0x4c000000, 0x4c000000, 0x04000000);
-	init_pcie_win(&p->mem64p, 0x6600000000UL, 0x6600000000UL, 0x200000000UL);
-	init_pcie_win(&p->mem64, 0x6500000000UL, 0x6500000000UL, 0x100000000UL);
-
-	p->irq = 126;
-
 }
 
 /* Resize fdt to modify some node, eg: bootargs */
@@ -634,21 +452,6 @@ int resize_dtb(struct config *cfg, int delta)
 		pr_err("fdt: resize failed, error[%d\n]", ret);
 
 	return ret;
-}
-
-static void modify_eth_node(struct config *cfg)
-{
-	uint8_t byte[6];
-
-	if (cfg->mac0)
-		of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
-				"/soc/ethernet@7030006000/", "local-mac-address",
-				mac2byte(cfg->mac0, byte), 6, PROP_TYPE_U8);
-
-	if (cfg->mac1)
-		of_modify_prop((void *)cfg->dtb.addr, cfg->dtb.size,
-				"/soc/dwcxlg@6c08000000/", "local-mac-address",
-				mac2byte(cfg->mac1, byte), 6, PROP_TYPE_U8);
 }
 
 static void modify_memory_node(struct config *cfg)
@@ -813,9 +616,7 @@ static void modify_dtb(struct config *cfg)
 	load_dtbs(cfg);
 	merge_dtbs(cfg);
 
-	modify_eth_node(cfg);
 	modify_memory_node(cfg);
-	modify_pcie_node(cfg);
 	add_cppc_node(cfg);
 	modify_initramfs(cfg);
 	modify_bootargs(cfg);
