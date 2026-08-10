@@ -1,7 +1,6 @@
 #
 # Generated files
 #
-*.moc
 *conf-cfg
 
 #
@@ -9,6 +8,3 @@
 #
 conf
 mconf
-nconf
-qconf
-gconf
