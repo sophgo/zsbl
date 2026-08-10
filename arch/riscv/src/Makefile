@@ -17,3 +17,11 @@ obj-$(CONFIG_RISCV_CMO) += cache.o
 obj-$(CONFIG_MULTI_THREAD) += arch_thread.o
 
 obj-$(CONFIG_SUPPORT_BUILTIN_DTB) += dtb.o builtin_dtb.o
+
+# builtin_dtb.S uses `.incbin CONFIG_BUILTIN_DTB` to embed the compiled dtb.
+# The assembler's .incbin dependency is invisible to gcc's -MD auto-dep
+# generation, so a rebuilt .dtb never triggers re-assembly of builtin_dtb.o.
+# Add an explicit dependency so editing the .dts (which rebuilds the .dtb)
+# forces builtin_dtb.o to be regenerated.
+builtin-dtb := $(objtree)/arch/riscv/boot/dts/$(patsubst "%",%,$(CONFIG_BUILTIN_DTB))
+$(obj)/builtin_dtb.o: $(builtin-dtb)
