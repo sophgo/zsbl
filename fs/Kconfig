@@ -16,6 +16,16 @@ config FS_FATFS
 	  Mount FAT volumes on block devices into the VFS at /fatN, backed by
 	  the FatFs library. Read-only; files are resolved on demand.
 
+config FS_SGPART
+	bool "sgpart (sophgo partition table via VFS)"
+	depends on VFS && DRIVER_BLOCK_DEVICE
+	default n
+	help
+	  Expose a sophgo flat partition table as a filesystem: each partition
+	  becomes a regular file under the mount point. Not self-describing;
+	  mounted explicitly with a {blkdev, offset} via struct sgpart_data.
+	  Read-only.
+
 config FS_AUTOMOUNT
 	bool "Automount block devices"
 	depends on VFS && DRIVER_BLOCK_DEVICE
