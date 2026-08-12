@@ -18,5 +18,14 @@ config DRIVER_BLOCK_DEVICE_VIRTIO
 	default n
 	help
 		virtio-blk block device over virtio-mmio (e.g. QEMU virt).
+
+config DRIVER_BLOCK_DEVICE_MTDBLOCK
+	bool "mtdblock (MTD as block device)"
+	depends on DRIVER_MTD
+	default n
+	help
+		Expose each registered MTD device as a block device. Reads pass
+		straight through to the MTD (no sector alignment); writes are not
+		supported. Enumerated automatically at init.
 endif
 
