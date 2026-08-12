@@ -1,0 +1,7 @@
+config TEST_MTDBLOCK
+	bool "mtdblock pass-through test"
+	depends on DRIVER_BLOCK_DEVICE_MTDBLOCK
+	help
+	Verify that reading through an mtdblock blkdev returns exactly what
+	reading the underlying MTD returns, at both aligned and unaligned
+	offsets, and that writes are rejected.
