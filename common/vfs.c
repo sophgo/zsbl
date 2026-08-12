@@ -338,6 +338,62 @@ struct vfs_node *vfs_mkdir(struct vfs_node *parent, const char *name)
 	return vfs_create_node(parent, name, VFS_NODE_DIR, NULL, NULL);
 }
 
+/*
+ * Create every directory along an absolute path, reusing existing ones, like
+ * "mkdir -p". Returns the deepest node, or NULL on a bad path or if an
+ * existing component is not a directory. Intended for building mount points;
+ * it walks plain tree links and does not cross into mounted filesystems.
+ */
+struct vfs_node *vfs_mkdir_p(const char *path)
+{
+	struct vfs_node *cur;
+	const char *p = path;
+
+	if (!vfs_is_path_valid(path))
+		return NULL;
+
+	cur = vfs_root();
+	if (!cur)
+		return NULL;
+
+	while (*p) {
+		struct vfs_node *next;
+		char *seg;
+		size_t len;
+
+		while (*p == '/')
+			p++;
+		if (!*p)
+			break;
+
+		len = 0;
+		while (p[len] && p[len] != '/')
+			len++;
+
+		seg = malloc(len + 1);
+		if (!seg)
+			return NULL;
+		memcpy(seg, p, len);
+		seg[len] = '\0';
+		p += len;
+
+		next = vfs_find_child_by_name(cur, seg);
+		if (next) {
+			free(seg);
+			if (next->type != VFS_NODE_DIR)
+				return NULL;
+		} else {
+			next = vfs_mkdir(cur, seg);
+			free(seg);
+			if (!next)
+				return NULL;
+		}
+		cur = next;
+	}
+
+	return cur;
+}
+
 struct vfs_node *vfs_mknod(struct vfs_node *parent, const char *name,
 			   enum vfs_node_type type,
 			   const struct vfs_file_ops *fops, void *priv)

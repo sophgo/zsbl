@@ -253,6 +253,44 @@ static int test_vfs_mount(void)
 
 test_case(test_vfs_mount);
 
+/* ---- vfs_mkdir_p: nested mount-point creation ---- */
+
+static int test_vfs_mkdir_p(void)
+{
+	struct vfs_node *leaf;
+	struct vfs_node *dir;
+
+	/* build a nested path from scratch */
+	leaf = vfs_mkdir_p("/a/b/c");
+	if (!leaf || leaf->type != VFS_NODE_DIR)
+		return -1;
+	if (!vfs_lookup("/a/b/c"))
+		return -1;
+
+	/* idempotent: reusing existing components returns the same leaf */
+	if (vfs_mkdir_p("/a/b/c") != leaf)
+		return -1;
+
+	/* extend an existing prefix */
+	dir = vfs_mkdir_p("/a/b/d");
+	if (!dir)
+		return -1;
+	if (!vfs_lookup("/a/b/d"))
+		return -1;
+
+	/* a component that exists as a file is rejected */
+	if (!vfs_mknod(dir, "f", VFS_NODE_REG, &mock_fops, NULL))
+		return -1;
+	if (vfs_mkdir_p("/a/b/d/f/x"))
+		return -1;
+
+	printf("vfs mkdir_p test ok\n");
+
+	return 0;
+}
+
+test_case(test_vfs_mkdir_p);
+
 /* ---- mock on-demand filesystem, exercises dynamic lookup ---- */
 
 static ssize_t dynfs_read(struct vfs_file *file, void *buf, size_t len)

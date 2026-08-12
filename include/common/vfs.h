@@ -123,6 +123,14 @@ struct vfs_node *vfs_root(void);
 struct vfs_node *vfs_mkdir(struct vfs_node *parent, const char *name);
 
 /*
+ * Create every directory along an absolute path, reusing existing ones, like
+ * "mkdir -p". Returns the deepest node, or NULL on a bad path or if an
+ * existing component is not a directory. Intended for building mount points;
+ * walks plain tree links and does not cross into mounted filesystems.
+ */
+struct vfs_node *vfs_mkdir_p(const char *path);
+
+/*
  * Create a typed node (REG/CHR/BLK require a non-NULL fops; DIR ignores it)
  * under parent, attaching priv. Returns the node, or NULL on failure.
  */
