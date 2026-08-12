@@ -20,5 +20,6 @@ source "test/thread/Kconfig"
 source "test/malloc/Kconfig"
 source "test/vfs/Kconfig"
 source "test/mtdblock/Kconfig"
+source "test/sgpart/Kconfig"
 endif
 

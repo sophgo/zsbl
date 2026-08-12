@@ -1,0 +1,7 @@
+config TEST_SGPART
+	bool "sgpart filesystem test"
+	depends on FS_SGPART
+	help
+	Mount sgpart on a mock block device backed by an in-RAM sophgo
+	partition table and verify partitions surface as files, reads are
+	windowed to each partition, and a table with no magic is rejected.

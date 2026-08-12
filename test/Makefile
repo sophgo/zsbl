@@ -14,4 +14,5 @@ obj-$(CONFIG_TEST_MULTI_THREAD) += thread/
 obj-$(CONFIG_TEST_MALLOC) += malloc/
 obj-$(CONFIG_TEST_VFS) += vfs/
 obj-$(CONFIG_TEST_MTDBLOCK) += mtdblock/
+obj-$(CONFIG_TEST_SGPART) += sgpart/
 
