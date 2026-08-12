@@ -13,4 +13,12 @@ config DRIVER_MTD_SOPHGO_SPIFMC
 	help
 		SOPHGO SPI NOR Flash Memory Controller.
 
+config DRIVER_MTD_CFI_FLASH
+	bool "CFI NOR flash (memory-mapped, read-only)"
+	default n
+	help
+		Read-only driver for memory-mapped CFI parallel NOR flash, such
+		as the pflash exposed by the QEMU RISC-V virt machine (the
+		"cfi-flash" node). Registers the flash window as an MTD device.
+
 endif
