@@ -214,36 +214,37 @@ static int test_vfs_mount(void)
 	if (!root)
 		return -1;
 
-	if (!vfs_mkdir(root, "mnt"))
+	/* private mount point: /mnt may be a real mount (e.g. flashmount) */
+	if (!vfs_mkdir(root, "mnttest"))
 		return -1;
 
 	ret = vfs_register_filesystem(&mockfs_type);
 	if (ret)
 		return ret;
 
-	ret = vfs_mount(NULL, "/mnt", "mockfs", NULL);
+	ret = vfs_mount(NULL, "/mnttest", "mockfs", NULL);
 	if (ret)
 		return ret;
 
 	/* path resolution crosses the mountpoint into the mounted fs */
-	if (!vfs_lookup("/mnt/foo"))
+	if (!vfs_lookup("/mnttest/foo"))
 		return -1;
-	if (!vfs_lookup("/mnt/bar"))
+	if (!vfs_lookup("/mnttest/bar"))
 		return -1;
 
 	/* a file inside the mounted fs is openable */
-	fd = vfs_open("/mnt/bar", 0);
+	fd = vfs_open("/mnttest/bar", 0);
 	if (fd < 0)
 		return -1;
 	if (vfs_close(fd) != 0)
 		return -1;
 
-	ret = vfs_umount("/mnt");
+	ret = vfs_umount("/mnttest");
 	if (ret)
 		return ret;
 
 	/* after umount the mountpoint is an empty directory again */
-	if (vfs_lookup("/mnt/foo"))
+	if (vfs_lookup("/mnttest/foo"))
 		return -1;
 
 	printf("vfs mount test ok\n");

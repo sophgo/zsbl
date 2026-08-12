@@ -21,6 +21,7 @@
 
 #include <driver/mtd.h>
 #include <driver/blkdev.h>
+#include <driver/mtdblock.h>
 #include <common/common.h>
 #include <common/module.h>
 
@@ -42,9 +43,25 @@ static struct blkops mtdblock_blkops = {
 	.write = mtdblock_write,
 };
 
+/* Return the mtdblock already wrapping this MTD, or NULL if none. */
+static struct blkdev *mtdblock_find(struct mtd *mtd)
+{
+	struct blkdev *blkdev;
+
+	for (blkdev = blkdev_first(); blkdev; blkdev = blkdev_next(blkdev))
+		if (blkdev->ops == &mtdblock_blkops && blkdev->data == mtd)
+			return blkdev;
+
+	return NULL;
+}
+
 struct blkdev *mtdblock_create(struct mtd *mtd)
 {
 	struct blkdev *blkdev;
+
+	blkdev = mtdblock_find(mtd);
+	if (blkdev)
+		return blkdev;		/* already wrapped; idempotent */
 
 	blkdev = blkdev_alloc();
 	if (!blkdev)

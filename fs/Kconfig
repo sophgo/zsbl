@@ -26,6 +26,16 @@ config FS_SGPART
 	  mounted explicitly with a {blkdev, offset} via struct sgpart_data.
 	  Read-only.
 
+config FS_FLASHMOUNT
+	bool "Flash sophgo-boot mounter"
+	depends on FS_SGPART && DRIVER_BLOCK_DEVICE_MTDBLOCK
+	default n
+	help
+	  Mount policy for the flash path: for each MTD carrying a "sophgo-boot"
+	  DTB property, read the partition-table offset, wrap the MTD as a block
+	  device, and mount sgpart at /mnt/flash. The one place that reads the
+	  DTB for the flash path.
+
 config FS_AUTOMOUNT
 	bool "Automount block devices"
 	depends on VFS && DRIVER_BLOCK_DEVICE
