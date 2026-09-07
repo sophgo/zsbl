@@ -633,8 +633,8 @@ int plat_main(void)
 		parse_efi_variable(&cfg);
 		cfg.op = get_op_point(cfg.conner, cfg.mode);
 		show_config(&cfg);
-		cli_loop(100000);
 		load_images(&cfg);
+		cli_loop(100000);
 		modify_dtb(&cfg);
 	} else {
 		show_config(&cfg);
