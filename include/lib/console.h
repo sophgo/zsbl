@@ -42,6 +42,8 @@ void console_free_command(struct command *command);
 struct command *console_alloc_list_command(struct console *console,
 					     const char *command_name);
 void console_putc(struct console *console, char c);
+void console_putc_raw(struct console *console, char c);
+int console_getc_raw(struct console *console);
 void console_puts(struct console *console, const char *str);
 int console_printf(struct console *console, const char *format, ...);
 

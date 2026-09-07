@@ -5,6 +5,7 @@
 
 #include <lib/console.h>
 #include <lib/cli.h>
+#include <lib/xmodem.h>
 #include <common/common.h>
 
 /* memory read */
@@ -138,7 +139,7 @@ static unsigned long strtoul_unit(const char *s)
 	return n;
 }
 
-/* memory write */
+/* memory test */
 static void command_mt(struct command *c, int argc, const char *argv[])
 {
 	int i;
@@ -167,4 +168,75 @@ static void command_mt(struct command *c, int argc, const char *argv[])
 }
 
 cli_command(mt, command_mt);
+
+/* download */
+
+struct cmd_xm_ctx {
+	void *start;
+	unsigned long offset;
+};
+
+static int cmd_xm_get_char(struct xmodem *xm)
+{
+	struct command *c = (struct command *)xm->priv;
+
+	return console_getc_raw(c->console);
+}
+
+static int cmd_xm_put_char(struct xmodem *xm, int ch)
+{
+	struct command *c = (struct command *)xm->priv;
+
+	console_putc_raw(c->console, ch);
+
+	return ch;
+}
+
+static int cmd_xm_save(void *priv, void *data, unsigned long len)
+{
+	struct cmd_xm_ctx *cxc = (struct cmd_xm_ctx *)priv;
+
+	memcpy(cxc->start + cxc->offset, data, len);
+
+	cxc->offset += len;
+
+	return 0;
+}
+
+static void command_download(struct command *c, int argc, const char *argv[])
+{
+	struct xmodem xm;
+	struct cmd_xm_ctx cxc;
+	int err;
+	unsigned long start;
+	long len;
+
+	err = xmodem_init(&xm, cmd_xm_get_char, cmd_xm_put_char, c);
+	if (err) {
+		console_printf(c->console, "Failed to init xmodem\n");
+		return;
+	}
+
+	if (argc != 2) {
+		console_printf(c->console, "Invalid arguments\n");
+		console_printf(c->console, "Useage: download ADDRESS\n");
+		return;
+	}
+
+	start = strtoul(argv[1], NULL, 0);
+
+	cxc.offset = 0;
+	cxc.start = (void *)start;
+
+	len = xmodem_receive(&xm, cmd_xm_save, &cxc);
+
+	if (len < 0)
+		console_printf(c->console, "XMODEM receive failed\n");
+	else
+		console_printf(c->console, "%l bytes received\n", len);
+
+	return;
+}
+
+cli_command(download, command_download);
 
