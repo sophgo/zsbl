@@ -5,7 +5,7 @@
 
 int sem_init(struct sem *sem, long value)
 {
-	sem->count = 0;
+	sem->count = value;
 	INIT_LIST_HEAD(&sem->wait_list);
 
 	return 0;
