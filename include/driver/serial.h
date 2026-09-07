@@ -11,6 +11,7 @@ struct serial;
 struct serial_ops {
 	int (*input)(struct serial *serial);
 	int (*output)(struct serial *serial, uint8_t c);
+	int (*set_speed)(struct serial *serial, unsigned long baudrate);
 };
 
 struct serial {
@@ -32,6 +33,8 @@ struct serial *serial_next(struct serial *current);
 
 int serial_input(struct serial *serial);
 int serial_output(struct serial *serial, uint8_t c);
+
+int serial_set_speed(struct serial *serial, unsigned long baudrate);
 
 void serial_free(struct serial *serial);
 

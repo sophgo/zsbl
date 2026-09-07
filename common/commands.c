@@ -240,3 +240,25 @@ static void command_download(struct command *c, int argc, const char *argv[])
 
 cli_command(download, command_download);
 
+/* set serial baudrate */
+static void command_set_speed(struct command *c, int argc, const char *argv[])
+{
+	unsigned long baudrate;
+
+	if (argc != 2) {
+		console_printf(c->console, "Invalid arguments\n");
+		console_printf(c->console, "Useage: speed BAUDRATE\n");
+		return;
+	}
+
+	baudrate = strtoul(argv[1], NULL, 0);
+
+	console_printf(c->console, "Set speed to %lu\n", baudrate);
+
+	console_set_speed(c->console, baudrate);
+
+	return;
+}
+
+cli_command(speed, command_set_speed);
+

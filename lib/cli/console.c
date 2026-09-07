@@ -775,6 +775,12 @@ int console_printf(struct console *console, const char *format, ...)
 	return err;
 }
 
+
+int console_set_speed(struct console *console, unsigned long speed)
+{
+	return serial_set_speed(console->dev, speed);
+}
+
 struct console *command_get_console(struct command *cmd)
 {
 	return cmd->console;

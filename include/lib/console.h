@@ -47,6 +47,8 @@ int console_getc_raw(struct console *console);
 void console_puts(struct console *console, const char *str);
 int console_printf(struct console *console, const char *format, ...);
 
+int console_set_speed(struct console *console, unsigned long speed);
+
 struct console *command_get_console(struct command *cmd);
 
 #endif

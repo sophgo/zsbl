@@ -93,9 +93,11 @@ int ns16550_getc(struct ns16550 *ndev)
 	return read_reg(ndev, RBR);
 }
 
-int ns16550_init(struct ns16550 *ndev)
+void ns16550_set_speed(struct ns16550 *ndev, unsigned long baudrate)
 {
 	unsigned long divisor;
+
+	ndev->baudrate = baudrate;
 
 	divisor = ndev->pclk / (16 * ndev->baudrate);
 
@@ -103,6 +105,11 @@ int ns16550_init(struct ns16550 *ndev)
 	write_reg(ndev, DLL, divisor & 0xff);
 	write_reg(ndev, DLM, (divisor >> 8) & 0xff);
 	write_reg(ndev, LCR, read_reg(ndev, LCR) & (~UART_LCR_DLAB));
+}
+
+int ns16550_init(struct ns16550 *ndev)
+{
+	ns16550_set_speed(ndev, ndev->baudrate);
 	write_reg(ndev, IER, 0);
 	write_reg(ndev, MCR, UART_MCRVAL);
 	write_reg(ndev, FCR, UART_FCR_DEFVAL);

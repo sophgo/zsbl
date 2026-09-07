@@ -29,9 +29,19 @@ static int ns16550_device_getc(struct serial *sdev)
 	return ns16550_getc(&ndev->hw);
 }
 
+static int ns16550_device_set_speed(struct serial *sdev, unsigned long baudrate)
+{
+	struct ns16550_device *ndev = sdev->data;
+
+	ns16550_set_speed(&ndev->hw, baudrate);
+
+	return 0;
+}
+
 static struct serial_ops ops = {
 	.input = ns16550_device_getc,
 	.output = ns16550_device_putc,
+	.set_speed = ns16550_device_set_speed,
 };
 
 static int probe(struct platform_device *pdev)

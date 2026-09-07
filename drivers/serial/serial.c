@@ -133,6 +133,14 @@ int serial_output(struct serial *serial, uint8_t c)
 	return serial->ops->output(serial, c);
 }
 
+int serial_set_speed(struct serial *serial, unsigned long baudrate)
+{
+	if (serial->ops->set_speed)
+		return serial->ops->set_speed(serial, baudrate);
+
+	return -ENOTSUP;
+}
+
 static struct serial *serial_stdio;
 
 static int serial_stdio_input(void)

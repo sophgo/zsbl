@@ -12,5 +12,6 @@ struct ns16550 {
 int ns16550_putc(struct ns16550 *ndev, uint8_t ch);
 int ns16550_getc(struct ns16550 *ndev);
 int ns16550_init(struct ns16550 *ndev);
+void ns16550_set_speed(struct ns16550 *ndev, unsigned long baudrate);
 
 #endif
