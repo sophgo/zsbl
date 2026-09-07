@@ -66,10 +66,14 @@ char *strcpy(char *dest, const char *src)
 
 char *strncpy(char *dest, const char *src, size_t count)
 {
+	size_t i;
 	char *ret = dest;
 
-	while (count-- && *src != '\0') {
-		*dest++ = *src++;
+	for (i = 0; i < count; i++) {
+		if (*src != '\0')
+			*dest++ = *src++;
+		else
+			*dest++ = '\0';
 	}
 
 	return ret;
