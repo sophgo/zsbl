@@ -33,7 +33,7 @@ int sem_wait(struct sem *sem)
 		}
 		in_list = true;
 		t.thread->state = THREAD_STATE_BLOCK;
-		list_add_tail(&sem->wait_list, &t.list);
+		list_add_tail(&t.list, &sem->wait_list);
 		spin_unlock(&sem->lock);
 
 		sched_yield();
@@ -44,23 +44,29 @@ int sem_wait(struct sem *sem)
 
 int sem_post(struct sem *sem)
 {
-	/* pop up all threads that is waiting on this semaphore */
-	struct sem_thread *t;
+	struct sem_thread *t, *best = NULL;
+	int best_prio = -1;
 
 	spin_lock(&sem->lock);
 
 	++sem->count;
 
 	list_for_each_entry(t, &sem->wait_list, list) {
-		if (t->thread->state == THREAD_STATE_BLOCK)
-			t->thread->state = THREAD_STATE_RUNNABLE;
+		if (t->thread->state != THREAD_STATE_BLOCK)
+			continue;
+		if (t->thread->priority > best_prio) {
+			best_prio = t->thread->priority;
+			best = t;
+		}
 	}
-	/* empty wait list */
-	INIT_LIST_HEAD(&sem->wait_list);
+
+	if (best) {
+		best->thread->state = THREAD_STATE_RUNNABLE;
+		list_del_init(&best->list);
+	}
 
 	spin_unlock(&sem->lock);
 
-	/* let scheduler choose one */
 	sched_yield();
 
 	return 0;
