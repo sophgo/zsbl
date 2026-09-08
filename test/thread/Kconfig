@@ -3,3 +3,13 @@ config TEST_MULTI_THREAD
 	depends on MULTI_THREAD
 	help
 	Test multi thread
+
+config TEST_MULTI_THREAD_STRESS
+	bool "Multi Thread Stress Test"
+	depends on MULTI_THREAD
+	help
+	Comprehensive stress test for multi-threading:
+	- Thread lifecycle, priority scheduling, semaphore
+	- Spinlock contention, atomic operations, sleep/wakeup
+	- Preempt disable/enable, stack isolation, many threads
+	- Thread exit cleanup, long-running stability, fairness

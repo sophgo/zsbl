@@ -11,6 +11,7 @@ obj-$(CONFIG_TEST_BLKDEV) += blkdev/
 obj-$(CONFIG_TEST_BOOTDEV) += bootdev/
 obj-$(CONFIG_TEST_C2CLAT) += c2clat/
 obj-$(CONFIG_TEST_MULTI_THREAD) += thread/
+obj-$(CONFIG_TEST_MULTI_THREAD_STRESS) += thread/
 obj-$(CONFIG_TEST_MALLOC) += malloc/
 obj-$(CONFIG_TEST_VFS) += vfs/
 obj-$(CONFIG_TEST_MTDBLOCK) += mtdblock/
