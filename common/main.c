@@ -11,14 +11,13 @@
 
 int plat_main(void);
 
-/* major, minor, platform */
-
-/* platform version defines in platform.h */
+/* major, minor, patch */
 
 #define VERSION_MAJOR "3"
 #define VERSION_MINOR "0"
+#define VERSION_PATCH "6"
 
-#define ZSBL_VERSION	VERSION_MAJOR "." VERSION_MINOR "." VERSION_PLATFORM
+#define ZSBL_VERSION	VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH
 
 int __attribute__((weak)) main(void)
 {
