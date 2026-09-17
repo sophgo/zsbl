@@ -276,9 +276,9 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	const struct fdt_property *prop;
 	int plen;
 	const char *compatible;
-	const char *node_name;
 	int address_cells, size_cells, parent_node_offset;
 	uint64_t reg_base, reg_size;
+	int err;
 
 	prop = fdt_get_property(dtb, node_offset, "compatible", &plen);
 
@@ -351,11 +351,9 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	pdev->reg_base = reg_base;
 	pdev->reg_size = reg_size;
 
-	plen = sizeof(pdev->device.name);
-	node_name = fdt_get_name(dtb, node_offset, &plen);
-	if (node_name)
-		strcpy(pdev->device.name, node_name);
-	else
+	err = fdt_get_path(dtb, node_offset,
+				 pdev->device.name, sizeof(pdev->device.name));
+	if (err)
 		snprintf(pdev->device.name, sizeof(pdev->device.name), "%s.%lx", compatible, pdev->reg_base);
 
 	/* get alias */

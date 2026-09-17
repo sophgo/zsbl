@@ -3,7 +3,7 @@
 
 #include <lib/list.h>
 
-#define DEVICE_NAME_MAX	(64)
+#define DEVICE_NAME_MAX	(128)
 
 /*
  * DEVICE_STATUS_NEW: Newly created

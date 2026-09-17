@@ -2,6 +2,7 @@
 #include <timer.h>
 #include <common/module.h>
 #include <common/common.h>
+#include <lib/cli.h>
 
 static int is_early_init_work;
 
@@ -42,10 +43,9 @@ module_init(hello_module_init);
 
 static int hello(void)
 {
-	while (1) {
-		pr_info("Hello World\n");
-		mdelay(1000);
-	}
+	pr_info("Hello World\n");
+
+	cli_loop(0);
 
 	return 0;
 }
