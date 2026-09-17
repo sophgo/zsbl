@@ -371,6 +371,12 @@ static struct platform_device *platform_device_create(void *dtb, int node_offset
 	return pdev;
 }
 
+void platform_device_destroy(struct platform_device *pdev)
+{
+	platform_device_remove(pdev);
+	platform_device_free(pdev);
+}
+
 static int platform_probe(void)
 {
 	int offset;
@@ -410,7 +416,13 @@ static int platform_probe(void)
 		}
 
 		/* find drivers for this device */
-		match_table(pdev);
+		if (!match_table(pdev)) {
+			if (pdev->device.status == DEVICE_STATUS_NEW) {
+				pr_debug("no driver for devide %s\n",
+					 pdev->dev.name);
+				platform_device_destroy(pdev);
+			}
+		}
 	}
 
 	return 0;
