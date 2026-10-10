@@ -584,9 +584,9 @@ int plat_main(void)
 	parse_config_file(&cfg);
 	show_config(&cfg);
 
-	cli_loop(100000);
-
 	load_images(&cfg);
+
+	cli_loop(100000);
 
 	modify_dtb(&cfg);
 
