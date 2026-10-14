@@ -44,6 +44,17 @@ if PLAT_SG2044
 source "plat/sg2044/Kconfig"
 endif
 
+config CPUSYS
+	string
+	default "MP" if QEMU_RISCV_VIRT_MP || SG2042_MP || SG2044_MP
+	default "TP" if BM1690_TP
+	default "unknown-cpusys"
+
+config APP
+	string
+	default "ZSBL" if QEMU_RISCV_VIRT_MP_ZSBL || SG2042_MP_ZSBL || SG2044_MP_ZSBL || BM1690_TP_ZSBL
+	default "unknown-app"
+
 choice
 	prompt "Target"
 
