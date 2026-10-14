@@ -172,3 +172,5 @@ sphinx_*/
 zsbl.*
 *.lds
 plat/sg2042/include/board_scm.h
+AGENTS.md
+CLAUDE.md
