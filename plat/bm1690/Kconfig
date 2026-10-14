@@ -1,0 +1,4 @@
+config BM1690_TP
+	bool
+
+source "plat/bm1690/tp/Kconfig"

@@ -1,0 +1,10 @@
+choice
+	prompt "Application"
+
+config BM1690_TP_ZSBL
+	bool "ZSBL"
+	select BM1690_TP
+	help
+	1st boot on main processor
+
+endchoice

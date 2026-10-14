@@ -1,0 +1,10 @@
+choice
+	prompt "Application"
+
+config SG2044_MP_ZSBL
+	bool "ZSBL"
+	select SG2044_MP
+	help
+	1st boot on main processor
+
+endchoice

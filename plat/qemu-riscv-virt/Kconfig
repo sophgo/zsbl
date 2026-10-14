@@ -1,0 +1,4 @@
+config QEMU_RISCV_VIRT_MP
+	bool
+
+source "plat/qemu-riscv-virt/mp/Kconfig"

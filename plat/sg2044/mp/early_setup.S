@@ -1,5 +1,5 @@
-#include <platform.h>
 #include <encoding.h>
+#include <platform.h>
 
 	.global plat_early_setup
 	.func plat_early_setup

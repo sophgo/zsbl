@@ -1,6 +1,7 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
+/* C920v3 CSRs */
 #define CSR_MCOR         0x7c2
 #define CSR_MHCR         0x7c1
 #define CSR_MCCR2        0x7c3

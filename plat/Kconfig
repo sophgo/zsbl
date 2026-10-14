@@ -14,7 +14,7 @@ config PLAT_SG2044
 	bool "SG2044"
 	select RISCV_CMO
 
-config PLAT_BM1690TP
+config PLAT_BM1690
 	bool "BM1690 TPU SCALAR"
 	select RISCV_CMO
 
@@ -25,8 +25,24 @@ config PLAT
 	default "QEMU-RISCV-Virt" if PLAT_QEMU_RISCV_VIRT
 	default "SG2042" if PLAT_SG2042
 	default "SG2044" if PLAT_SG2044
-	default "BM1690TP" if PLAT_BM1690TP
+	default "BM1690" if PLAT_BM1690
 	default "unknown-platform"
+
+if PLAT_QEMU_RISCV_VIRT
+source "plat/qemu-riscv-virt/Kconfig"
+endif
+
+if PLAT_SG2042
+source "plat/sg2042/Kconfig"
+endif
+
+if PLAT_BM1690
+source "plat/bm1690/Kconfig"
+endif
+
+if PLAT_SG2044
+source "plat/sg2044/Kconfig"
+endif
 
 choice
 	prompt "Target"

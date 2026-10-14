@@ -1,0 +1,10 @@
+choice
+	prompt "Application"
+
+config QEMU_RISCV_VIRT_MP_ZSBL
+	bool "ZSBL"
+	select QEMU_RISCV_VIRT_MP
+	help
+	1st boot on main processor
+
+endchoice

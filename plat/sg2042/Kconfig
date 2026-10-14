@@ -1,0 +1,4 @@
+config SG2042_MP
+	bool
+
+source "plat/sg2042/mp/Kconfig"
