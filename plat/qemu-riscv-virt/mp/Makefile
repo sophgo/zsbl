@@ -1,1 +1,1 @@
-obj-y += plat.o
+obj-$(CONFIG_QEMU_RISCV_VIRT_MP_ZSBL) += zsbl/

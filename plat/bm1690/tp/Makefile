@@ -1,4 +1,1 @@
-obj-y += early_setup.o
-obj-y += plat.o
-obj-y += tp_dtb.o
-obj-y += ns16550.o
+obj-$(CONFIG_BM1690_TP_ZSBL) += zsbl/
